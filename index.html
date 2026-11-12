@@ -82,7 +82,6 @@ input[type=search]{width:100%;padding:10px 12px;border:1px solid var(--line);bor
 <div id="zoom"><button>Kapat ✕</button><img alt=""></div>
 <script>
 'use strict';
-const REPO={owner:'huseyintopcu06-cmyk',name:'Quva',branch:'main'};
 const $=s=>document.querySelector(s), M=$('#m');
 const LS={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 let D=null, tab=LS.get('tab')||'ozet', sel={}, mode='';
@@ -103,39 +102,49 @@ function fmt(v,h){
 }
 const sgn=(v,h)=>/Tempo|vs /.test(h||'')&&typeof v==='number'?(v>0?'pos':v<0?'neg':''):(typeof v==='number'&&v<0?'neg':'');
 
-/* ---------- veri yükleme ---------- */
-async function load(force){
-  const tok=LS.get('gh_token');
-  M.innerHTML='<div class="msg">Yükleniyor…</div>';
-  try{
-    let r=await fetch('latest.json?'+(force?Date.now():''),{cache:'no-store'});
-    if(r.ok&&(r.headers.get('content-type')||'').includes('json')){D=await r.json();mode='rel';return done()}
-  }catch(e){}
-  if(!tok){return setup()}
-  try{
-    const api=`https://api.github.com/repos/${REPO.owner}/${REPO.name}/contents/uygulama/latest.json?ref=${REPO.branch}`;
-    const r=await fetch(api,{headers:{Authorization:'Bearer '+tok,Accept:'application/vnd.github.raw+json'},cache:'no-store'});
-    if(r.status===401||r.status===403||r.status===404){LS.del('gh_token');return setup('Anahtar geçersiz ya da depoya erişemiyor. Yenisini gir.')}
-    if(!r.ok)throw new Error(r.status);
-    D=await r.json();mode='api';LS.set('cache',JSON.stringify(D));done();
-  }catch(e){
-    const c=LS.get('cache');
-    if(c){D=JSON.parse(c);mode='cache';done('Çevrimdışı: son kaydedilen veri gösteriliyor.')}
-    else M.innerHTML='<div class="msg">Veri alınamadı. İnterneti kontrol edip ↻ ye bas.</div>';
-  }
+/* ---------- veri yükleme (şifreli) ---------- */
+let KEY=null, SALT=null;
+const b64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function deriveKey(pw,salt,iter){
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:iter,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
 }
-function setup(err){
-  $('#sub').textContent='bağlantı gerekli';
-  M.innerHTML=`<div class="setup"><b>İlk kurulum (bir kez)</b>
-  <p class="note" style="margin-top:6px">Rapor verisi özel GitHub deposunda duruyor. Telefonda okuma anahtarını (token) bir kez gir; yalnızca bu cihazda saklanır.</p>
+async function gunzip(buf){return new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer()}
+async function openPack(text,pw){
+  const p=JSON.parse(text);
+  const key=await deriveKey(pw,b64(p.salt),p.iter);
+  const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64(p.iv)},key,b64(p.ct));   // yanlış şifrede hata verir
+  KEY=key;
+  return JSON.parse(new TextDecoder().decode(await gunzip(plain)));
+}
+async function load(force){
+  M.innerHTML='<div class="msg">Yükleniyor…</div>';
+  const pw=LS.get('pw');
+  if(!pw)return gate();
+  let text=null, offline=false;
+  try{
+    const r=await fetch('veri.enc?'+(force?Date.now():''),{cache:'no-store'});
+    if(!r.ok)throw new Error(r.status);
+    text=await r.text(); LS.set('cache_enc',text);
+  }catch(e){text=LS.get('cache_enc');offline=true}
+  if(!text){M.innerHTML='<div class="msg">Veri alınamadı. İnterneti kontrol edip ↻ ye bas.</div>';return}
+  try{
+    D=await openPack(text,pw);
+    done(offline?'Çevrimdışı: son kaydedilen veri gösteriliyor.':'');
+  }catch(e){LS.del('pw');gate('Şifre yanlış ya da değişmiş. Yeniden gir.')}
+}
+function gate(err){
+  $('#sub').textContent='şifre gerekli';
+  M.innerHTML=`<div class="setup"><b>Şifre</b>
+  <p class="note" style="margin-top:6px">Raporu görmek için sana verilen şifreyi gir. Bu cihazda hatırlanır.</p>
   ${err?`<p class="neg">${esc(err)}</p>`:''}
-  <input id="tk" type="password" placeholder="github_pat_…" autocomplete="off">
-  <button class="go" id="tkgo">Kaydet ve aç</button>
-  <p class="note">Anahtar: GitHub → Settings → Developer settings → Fine-grained tokens. Yalnızca <b>Quva</b> deposu, izin: <b>Contents → Read-only</b>.</p></div>`;
-  $('#tkgo').onclick=()=>{const v=$('#tk').value.trim();if(v){LS.set('gh_token',v);load(true)}};
+  <input id="pw" type="password" placeholder="Şifre" autocomplete="current-password">
+  <button class="go" id="pwgo">Aç</button></div>`;
+  const go=()=>{const v=$('#pw').value;if(v){LS.set('pw',v);load(true)}};
+  $('#pwgo').onclick=go; $('#pw').onkeydown=e=>{if(e.key==='Enter')go()};
 }
 function done(note){
-  $('#sub').textContent=(D.donem||'')+' · güncelleme '+(D.olusturma||'')+(mode==='cache'?' (çevrimdışı)':'');
+  $('#sub').textContent=(D.donem||'')+' · güncelleme '+(D.olusturma||'');
   render();
   if(note)M.insertAdjacentHTML('afterbegin',`<div class="note">${esc(note)}</div>`);
 }
@@ -231,17 +240,18 @@ function vTrf(){
   }).join('');
   return s;
 }
-function imgUrl(f){return mode==='rel'?`../${D.klasor}/gorseller/${f}`:`https://api.github.com/repos/${REPO.owner}/${REPO.name}/contents/${D.klasor}/gorseller/${f}?ref=${REPO.branch}`}
 async function loadImg(el,f){
   try{
-    if(mode==='rel'){el.src=imgUrl(f);return}
-    const r=await fetch(imgUrl(f),{headers:{Authorization:'Bearer '+LS.get('gh_token'),Accept:'application/vnd.github.raw+json'}});
-    if(!r.ok)throw 0; el.src=URL.createObjectURL(await r.blob());
+    const r=await fetch('g_'+f.replace(/\.png$/i,'')+'.enc',{cache:'no-store'});
+    if(!r.ok)throw 0;
+    const b=new Uint8Array(await r.arrayBuffer());
+    const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:b.slice(0,12)},KEY,b.slice(12));
+    el.src=URL.createObjectURL(new Blob([plain],{type:'image/webp'}));
   }catch(e){el.alt='Görsel yüklenemedi'}
 }
 function vImg(){
   const g=D.gorseller||[];
-  return `<div class="note" style="margin:0 0 10px">Dokun: büyüt (kaydırarak oku). Basılı tutup görseli kaydedebilirsin.</div><div class="imgs">`+
+  return `<div class="note" style="margin:0 0 10px">Dokun: büyüt (kaydırarak oku).</div><div class="imgs">`+
     g.map(f=>`<div><h2 style="margin-top:4px">${esc(f.replace('.png','').replace(/_/g,' '))}</h2><img data-f="${esc(f)}" alt="${esc(f)}"></div>`).join('')+'</div>';
 }
 
@@ -260,7 +270,7 @@ function render(){
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;LS.set('tab',tab);window.scrollTo(0,0);render()});
 $('#zoom button').onclick=()=>{$('#zoom').style.display='none'};
 $('#rf').onclick=()=>load(true);
-$('#st').onclick=()=>{if(confirm('Kayıtlı anahtar silinsin mi? (Yeniden giriş gerekir)')){LS.del('gh_token');LS.del('cache');load(true)}};
+$('#st').onclick=()=>{if(confirm('Çıkış yapılsın mı? (Şifre bu cihazdan silinir)')){LS.del('pw');LS.del('cache_enc');D=null;KEY=null;gate()}};
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 load();
 </script>
