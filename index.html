@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="11">
+<meta name="surum" content="12">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
 <link rel="manifest" href="manifest.webmanifest">
@@ -51,7 +51,9 @@ h2{font-size:14px;margin:16px 0 8px;color:var(--mut);text-transform:uppercase;le
 .nm span{font-size:12px;color:var(--mut)}
 .kv{flex:none;text-align:right}
 .kv b{font-size:18px;display:block}
-.kv span{font-size:12px;color:var(--org);font-weight:600}
+.kv span{display:block;font-size:12px;color:var(--org);font-weight:600}
+.kv small{display:block;font-size:10px;line-height:1;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-bottom:1px}
+.kv .stk{color:var(--mut);font-weight:500;margin-top:1px}
 .det{border-top:1px solid var(--line);padding:6px 12px 10px;display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:13px}
 .det h4{grid-column:1/-1;margin:10px 0 2px;padding-top:8px;border-top:1px solid var(--line);font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--org)}
 .det i{font-style:normal;color:var(--mut)}
@@ -209,10 +211,11 @@ function cardList(t,o){
   return t.satirlar.map(r=>{
     const det=grupla(h,r,o.name);
     const fc=o.fc>=0&&r[o.fc]!=null?`<span>Tahmin ${fmt(r[o.fc],h[o.fc])}</span>`:'';
+    const sk=o.sat>=0&&r[o.sat]!=null?`<span class="stk">Satılabilir stok ${fmt(r[o.sat],h[o.sat])}</span>`:'';
     return `<details class="card ${isGA(r)?'ga':''}"><summary>
       <div class="rk">${o.rank>=0?fmt(r[o.rank],''):''}</div>
       <div class="nm"><b>${esc(String(r[o.name]||'').replace(/^MEDIAMARKT\s*/,''))}</b><span>${o.sub>=0?esc(r[o.sub]):''}</span></div>
-      <div class="kv"><b>${o.main>=0?fmt(r[o.main],h[o.main]):''}</b>${fc}</div></summary><div class="det">${det}</div></details>`;
+      <div class="kv"><small>Sell-out</small><b>${o.main>=0?fmt(r[o.main],h[o.main]):''}</b>${fc}${sk}</div></summary><div class="det">${det}</div></details>`;
   }).join('');
 }
 
@@ -253,7 +256,8 @@ function vKat(){
   s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+
      chips(have.map(x=>[x,tc(x)]).concat([['','Tümü']]),rg,'rg');
   s+=`<div class="note" style="margin:0 0 8px">${esc(C.baslik||'')} · kartı aç: tüm kolonlar</div>`;
-  s+=cardList({kolonlar:h,satirlar:tot.concat(body)},{rank,name,sub,main,fc});
+  const sat=h.findIndex(x=>/Satılabilir/i.test(x));
+  s+=cardList({kolonlar:h,satirlar:tot.concat(body)},{rank,name,sub,main,fc,sat});
   return s;
 }
 function vTrf(){
