@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="22">
+<meta name="surum" content="24">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -664,24 +664,40 @@ function vIht(){
   return s;
 }
 
-/* ---- mağaza sayfası: günlük satış mini grafiği ---- */
+/* ---- mağaza sayfası: günlük satış grafiği ---- */
+const fmtD=v=>v>=10?String(Math.round(v)):(Math.round(v*10)/10).toString().replace('.',',');
 function grafikBolum(kod){
   const G=D.gecmis; if(!G||!G.gunler.length)return '';
   const gc=G.kat.includes(sel.gc)?sel.gc:'', ki=gc?G.kat.indexOf(gc):-1;
   const val=a=>a?(ki>=0?N(a[ki]):a.reduce((x,y)=>x+N(y),0)):0;
   let pg=0,pv=0; const pts=[];
-  G.gunler.forEach(g=>{const v=val(g.m[kod]),n=g.gun-pg;if(n>0)pts.push({gun:g.gun,d:(v-pv)/n,n});pg=g.gun;pv=v});
-  const mx=Math.max(1,...pts.map(p=>p.d)), W=300, Hh=84, n=pts.length, bw=Math.max(6,Math.min(30,Math.floor(270/Math.max(n,1))-4)), step=n>1?(W-bw-10)/(n-1):0;
-  let svg=`<svg viewBox="0 0 ${W} ${Hh+26}" style="width:100%;height:auto;display:block">`;
+  G.gunler.forEach(g=>{const v=val(g.m[kod]),n=g.gun-pg;if(n>0)pts.push({gun:g.gun,d:(v-pv)/n,n,v});pg=g.gun;pv=v});
+  const mm=String(D.donem||'').match(/\s(\S+)\s+\d{4}/), ay=mm?AYNO[mm[1].toLocaleLowerCase('tr')]:0;
+  const AB=(['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'][ay-1])||'';
+  const n=pts.length, last=pts[n-1]||{d:0,gun:0,v:0}, prev=n>1?pts[n-2]:null;
+  const avg=last.gun?last.v/last.gun:0, mxv=Math.max(0,...pts.map(p=>p.d)), peak=pts.find(p=>p.d===mxv)||last;
+  const nice=x=>{if(x<=0)return 1;const e=Math.pow(10,Math.floor(Math.log10(x))),f=x/e;return (f<=1?1:f<=2?2:f<=5?5:10)*e};
+  const top=nice(Math.max(mxv,avg,1)), W=320, H=156, L=30, R=8, T=18, B=28, ch=H-T-B, cw=W-L-R, y=v=>T+ch-(v/top)*ch;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="img" aria-label="Günlük satış grafiği">`;
+  [0,0.5,1].forEach(f=>{const yy=y(top*f);svg+=`<line x1="${L}" x2="${W-R}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="var(--line)" stroke-width="1"/><text x="${L-5}" y="${(yy+3).toFixed(1)}" font-size="9" text-anchor="end" fill="var(--mut)">${fmtD(top*f)}</text>`});
+  const slot=cw/Math.max(n,1), bw=Math.min(36,slot*0.62);
   pts.forEach((p,i)=>{
-    const h=Math.max(1,p.d/mx*Hh), x=n>1?5+i*step:(W-bw)/2, y=Hh-h+14;
-    svg+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw}" height="${h.toFixed(1)}" rx="3" fill="var(--ga-line)"/>`;
-    if(n<=14)svg+=`<text x="${(x+bw/2).toFixed(1)}" y="${(y-3).toFixed(1)}" font-size="9" text-anchor="middle" fill="var(--ink)">${p.d>=10?Math.round(p.d):p.d.toFixed(1).replace('.',',')}</text>`;
-    svg+=`<text x="${(x+bw/2).toFixed(1)}" y="${Hh+24}" font-size="9" text-anchor="middle" fill="var(--mut)">${p.gun}</text>`;
+    const x=L+slot*i+(slot-bw)/2, yy=y(Math.max(p.d,0)), hh=Math.max(1.5,T+ch-yy), son=i===n-1;
+    svg+=`<rect x="${x.toFixed(1)}" y="${(T+ch-hh).toFixed(1)}" width="${bw.toFixed(1)}" height="${hh.toFixed(1)}" rx="4" fill="${son?'var(--org)':'var(--ga-line)'}" opacity="${son?1:.7}"/>`;
+    if(n<=14)svg+=`<text x="${(x+bw/2).toFixed(1)}" y="${(T+ch-hh-4).toFixed(1)}" font-size="10" font-weight="700" text-anchor="middle" fill="var(--ink)">${fmtD(p.d)}</text>`;
+    if(n<=16||i===0||i===n-1||i%2===0)svg+=`<text x="${(x+bw/2).toFixed(1)}" y="${H-13}" font-size="9" text-anchor="middle" fill="var(--mut)">${p.gun}</text>`;
   });
+  svg+=`<text x="${L}" y="${H-2}" font-size="9" fill="var(--mut)">${esc(AB)} · rapor bitiş günü</text>`;
+  if(n>1){const ya=y(avg);svg+=`<line x1="${L}" x2="${W-R}" y1="${ya.toFixed(1)}" y2="${ya.toFixed(1)}" stroke="var(--ink)" stroke-width="1" stroke-dasharray="4 3" opacity=".55"/><text x="${L+3}" y="${(ya-3).toFixed(1)}" font-size="9" text-anchor="start" fill="var(--mut)">ay ort. ${fmtD(avg)}</text>`}
   svg+='</svg>';
-  return `<h2>Günlük satış (ortalama)</h2><div class="card dep">`+chips([['','Toplam']].concat(G.kat.map(k=>[k,KLAB[k]||k])),gc,'gc')+(n?svg:'')+
-    `<div class="note" style="margin:0">Her çubuk bir rapor aralığının günlük ortalaması (altta bitiş günü).${n<2?' Günler geçtikçe çubuklar çoğalacak; ilk çubuk ayın başından bu güne ortalamadır.':''}</div></div>`;
+  let dl='';
+  if(prev&&prev.d>0){const p=Math.round((last.d/prev.d-1)*100);dl=`<span class="${p>=0?'pos':'neg'}" style="font-size:12px;font-weight:600">${p>=0?'▲':'▼'} %${Math.abs(p)}</span>`}
+  const stat=n?`<div class="g4" style="grid-template-columns:repeat(3,1fr);margin-bottom:8px">
+    <div><small>Son aralık</small><b class="or">${fmtD(last.d)}</b>${dl?`<div>${dl}</div>`:''}</div>
+    <div><small>Ay ortalaması</small><b>${fmtD(avg)}</b></div>
+    <div><small>En yüksek</small><b>${fmtD(mxv)}</b><div style="font-size:11px;color:var(--mut)">${peak.gun} ${esc(AB)}</div></div></div>`:'';
+  return `<h2>Günlük satış (adet/gün)</h2><div class="card dep">`+chips([['','Toplam']].concat(G.kat.map(k=>[k,KLAB[k]||k])),gc,'gc')+stat+(n?svg:'')+
+    `<div class="note" style="margin:6px 0 0">Her çubuk, iki rapor arasındaki günlük ortalama satış.${n<2?' Günler geçtikçe çubuklar çoğalacak; ilk çubuk ayın başından bu güne ortalamadır.':''}</div></div>`;
 }
 
 /* ---- Transfer (yeniden) ---- */
