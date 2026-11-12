@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="12">
+<meta name="surum" content="13">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
 <link rel="manifest" href="manifest.webmanifest">
@@ -254,7 +254,7 @@ function vKat(){
   const rows=mag.satirlar.filter(r=>isTot(r)||((!rg||r[bi]===rg)&&(!q||String(r[name]).toLocaleLowerCase('tr').includes(q))));
   const tot=rows.filter(isTot), body=rows.filter(r=>!isTot(r));
   s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+
-     chips(have.map(x=>[x,tc(x)]).concat([['','Tümü']]),rg,'rg');
+     chips([['','Tümü']].concat(have.map(x=>[x,tc(x)])),rg,'rg');
   s+=`<div class="note" style="margin:0 0 8px">${esc(C.baslik||'')} · kartı aç: tüm kolonlar</div>`;
   const sat=h.findIndex(x=>/Satılabilir/i.test(x));
   s+=cardList({kolonlar:h,satirlar:tot.concat(body)},{rank,name,sub,main,fc,sat});
