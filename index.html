@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1F3864">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ham Data">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Ham Data</title>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--ink:#16202e;--mut:#667085;--line:#e3e8ef;--navy:#1F3864;--ga:#e3f0fb;--ga-line:#2E75B6;--ok:#117a3d;--bad:#c0392b;--org:#c65911;--chip:#e9eef6}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e131b;--card:#171e29;--ink:#e8edf5;--mut:#93a0b4;--line:#263041;--navy:#2c4a82;--ga:#16314a;--ga-line:#4f9bdc;--ok:#4cc27f;--bad:#ff7b6b;--org:#ffa45c;--chip:#222c3c}}
+:root[data-theme=dark]{--bg:#0e131b;--card:#171e29;--ink:#e8edf5;--mut:#93a0b4;--line:#263041;--navy:#2c4a82;--ga:#16314a;--ga-line:#4f9bdc;--ok:#4cc27f;--bad:#ff7b6b;--org:#ffa45c;--chip:#222c3c}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--navy);color:#fff;padding:calc(env(safe-area-inset-top) + 10px) 16px 8px}
+header h1{margin:0;font-size:17px;font-weight:700}
+header small{opacity:.8;font-size:12px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+button{font:inherit;color:inherit;cursor:pointer}
+.ib{background:rgba(255,255,255,.15);border:0;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px}
+main{padding:12px 16px calc(84px + env(safe-area-inset-bottom));max-width:900px;margin:0 auto}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;border:0;padding:9px 2px 8px;font-size:11.5px;color:var(--mut);display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button b{font-size:19px;font-weight:400}
+nav button.on{color:var(--navy);font-weight:700}
+@media(prefers-color-scheme:dark){nav button.on{color:#8db6ff}}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;background:var(--chip);border:1px solid transparent;border-radius:999px;padding:6px 13px;font-size:13px;color:var(--ink)}
+.chip.on{background:var(--navy);color:#fff}
+h2{font-size:14px;margin:16px 0 8px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:0 0 8px;overflow:hidden}
+.card.ga{background:var(--ga);border-color:var(--ga-line)}
+.card summary{list-style:none;padding:10px 12px;display:flex;gap:10px;align-items:center;cursor:pointer}
+.card summary::-webkit-details-marker{display:none}
+.rk{flex:none;width:30px;height:30px;border-radius:50%;background:var(--chip);display:grid;place-items:center;font-weight:700;font-size:13px}
+.nm{flex:1;min-width:0}
+.nm b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nm span{font-size:12px;color:var(--mut)}
+.kv{flex:none;text-align:right}
+.kv b{font-size:18px;display:block}
+.kv span{font-size:12px;color:var(--org);font-weight:600}
+.det{border-top:1px solid var(--line);padding:6px 12px 10px;display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:13px}
+.det i{font-style:normal;color:var(--mut)}
+.det b{text-align:right}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card);margin-bottom:10px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:7px 9px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th{background:var(--navy);color:#fff;font-weight:600;position:sticky;top:0}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--card);z-index:1}
+th:first-child{background:var(--navy)}
+tr.ga td{background:var(--ga)}
+tr.tot td{font-weight:700;background:var(--chip)}
+.pos{color:var(--ok)}.neg{color:var(--bad)}
+input[type=search]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;margin-bottom:8px}
+.tag{display:inline-block;border-radius:6px;padding:1px 7px;font-size:11.5px;font-weight:700;margin-right:6px}
+.t-red{background:#f8cbad;color:#a4261c}.t-org{background:#fce4d6;color:#a4501a}.t-yel{background:#fff2cc;color:#7a5b00}
+.imgs img{width:100%;border-radius:10px;border:1px solid var(--line);margin-bottom:12px;background:#fff}
+.msg{text-align:center;color:var(--mut);padding:36px 12px}
+.setup{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.setup input{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;margin:6px 0 10px}
+.setup .go{background:var(--navy);color:#fff;border:0;border-radius:8px;padding:10px 16px;font-weight:600}
+.note{font-size:12px;color:var(--mut);margin-top:10px}
+#zoom{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:20;display:none;overflow:auto;-webkit-overflow-scrolling:touch}
+#zoom img{width:240%;max-width:none;display:block}
+#zoom button{position:fixed;top:calc(env(safe-area-inset-top) + 10px);right:12px;z-index:21;background:#fff;color:#000;border:0;border-radius:8px;padding:8px 12px;font-weight:700}
+</style>
+</head>
+<body>
+<header><div class="row"><div><h1>Ham Data · Güney Anadolu</h1><small id="sub">yükleniyor…</small></div><div><button class="ib" id="rf">↻</button> <button class="ib" id="st">⚙</button></div></div></header>
+<main id="m"></main>
+<nav id="nv">
+<button data-t="ozet" class="on"><b>▦</b>Özet</button>
+<button data-t="kat"><b>☰</b>Kategori</button>
+<button data-t="trf"><b>⇄</b>Transfer</button>
+<button data-t="img"><b>▣</b>Görseller</button>
+</nav>
+<div id="zoom"><button>Kapat ✕</button><img alt=""></div>
+<script>
+'use strict';
+const REPO={owner:'huseyintopcu06-cmyk',name:'Quva',branch:'main'};
+const $=s=>document.querySelector(s), M=$('#m');
+const LS={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+let D=null, tab=LS.get('tab')||'ozet', sel={}, mode='';
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const isGA=r=>r.some(c=>typeof c==='string'&&/G[ÜU]NEY ANADOLU/i.test(c));
+const isTot=r=>r.some(c=>typeof c==='string'&&/TOPLAM/.test(c));
+
+/* ---------- sayı biçimi ---------- */
+function fmt(v,h){
+  if(v==null||v==='')return '–';
+  if(typeof v==='string')return esc(v);
+  h=h||'';
+  if(/Payı|İHS/.test(h)&&Math.abs(v)<=1.5)return (v*100).toFixed(1).replace('.',',')+'%';
+  if(/Tempo|vs |Tahmin vs/.test(h)&&Math.abs(v)<20){const p=Math.round(v*100);return (p>0?'+':'')+p+'%'}
+  if(/Devir/.test(h))return v.toFixed(2).replace('.',',');
+  if(Number.isInteger(v))return v.toLocaleString('tr-TR');
+  return Math.abs(v)<100?v.toFixed(1).replace('.',','):Math.round(v).toLocaleString('tr-TR');
+}
+const sgn=(v,h)=>/Tempo|vs /.test(h||'')&&typeof v==='number'?(v>0?'pos':v<0?'neg':''):(typeof v==='number'&&v<0?'neg':'');
+
+/* ---------- veri yükleme ---------- */
+async function load(force){
+  const tok=LS.get('gh_token');
+  M.innerHTML='<div class="msg">Yükleniyor…</div>';
+  try{
+    let r=await fetch('latest.json?'+(force?Date.now():''),{cache:'no-store'});
+    if(r.ok&&(r.headers.get('content-type')||'').includes('json')){D=await r.json();mode='rel';return done()}
+  }catch(e){}
+  if(!tok){return setup()}
+  try{
+    const api=`https://api.github.com/repos/${REPO.owner}/${REPO.name}/contents/uygulama/latest.json?ref=${REPO.branch}`;
+    const r=await fetch(api,{headers:{Authorization:'Bearer '+tok,Accept:'application/vnd.github.raw+json'},cache:'no-store'});
+    if(r.status===401||r.status===403||r.status===404){LS.del('gh_token');return setup('Anahtar geçersiz ya da depoya erişemiyor. Yenisini gir.')}
+    if(!r.ok)throw new Error(r.status);
+    D=await r.json();mode='api';LS.set('cache',JSON.stringify(D));done();
+  }catch(e){
+    const c=LS.get('cache');
+    if(c){D=JSON.parse(c);mode='cache';done('Çevrimdışı: son kaydedilen veri gösteriliyor.')}
+    else M.innerHTML='<div class="msg">Veri alınamadı. İnterneti kontrol edip ↻ ye bas.</div>';
+  }
+}
+function setup(err){
+  $('#sub').textContent='bağlantı gerekli';
+  M.innerHTML=`<div class="setup"><b>İlk kurulum (bir kez)</b>
+  <p class="note" style="margin-top:6px">Rapor verisi özel GitHub deposunda duruyor. Telefonda okuma anahtarını (token) bir kez gir; yalnızca bu cihazda saklanır.</p>
+  ${err?`<p class="neg">${esc(err)}</p>`:''}
+  <input id="tk" type="password" placeholder="github_pat_…" autocomplete="off">
+  <button class="go" id="tkgo">Kaydet ve aç</button>
+  <p class="note">Anahtar: GitHub → Settings → Developer settings → Fine-grained tokens. Yalnızca <b>Quva</b> deposu, izin: <b>Contents → Read-only</b>.</p></div>`;
+  $('#tkgo').onclick=()=>{const v=$('#tk').value.trim();if(v){LS.set('gh_token',v);load(true)}};
+}
+function done(note){
+  $('#sub').textContent=(D.donem||'')+' · güncelleme '+(D.olusturma||'')+(mode==='cache'?' (çevrimdışı)':'');
+  render();
+  if(note)M.insertAdjacentHTML('afterbegin',`<div class="note">${esc(note)}</div>`);
+}
+
+/* ---------- ortak bileşenler ---------- */
+function table(t,opts){
+  opts=opts||{};
+  const h=t.kolonlar;
+  let s='<div class="tw"><table><thead><tr>'+h.map(x=>`<th>${esc(x)}</th>`).join('')+'</tr></thead><tbody>';
+  for(const r of t.satirlar){
+    s+=`<tr class="${isGA(r)?'ga':''} ${isTot(r)?'tot':''}">`+h.map((x,i)=>{const hh=i>1?x+' '+(r[0]||''):x;return `<td class="${sgn(r[i],hh)}">${fmt(r[i],hh)}</td>`}).join('')+'</tr>';
+  }
+  return s+'</tbody></table></div>';
+}
+function chips(items,cur,key){
+  return '<div class="chips">'+items.map(([id,label])=>`<button class="chip ${id===cur?'on':''}" data-k="${key}" data-v="${esc(id)}">${esc(label)}</button>`).join('')+'</div>';
+}
+function bindChips(){
+  M.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{sel[b.dataset.k]=b.dataset.v;render()});
+}
+function cardList(t,o){
+  // o: {rank,name,sub,main,fc}
+  const h=t.kolonlar;
+  return t.satirlar.map(r=>{
+    const det=h.map((x,i)=>(r[i]==null||r[i]===''||i===o.name)?'':`<i>${esc(x)}</i><b class="${sgn(r[i],x)}">${fmt(r[i],x)}</b>`).join('');
+    const fc=o.fc>=0&&r[o.fc]!=null?`<span>Tahmin ${fmt(r[o.fc],h[o.fc])}</span>`:'';
+    return `<details class="card ${isGA(r)?'ga':''}"><summary>
+      <div class="rk">${o.rank>=0?fmt(r[o.rank],''):''}</div>
+      <div class="nm"><b>${esc(String(r[o.name]||'').replace(/^MEDIAMARKT\s*/,''))}</b><span>${o.sub>=0?esc(r[o.sub]):''}</span></div>
+      <div class="kv"><b>${o.main>=0?fmt(r[o.main],h[o.main]):''}</b>${fc}</div></summary><div class="det">${det}</div></details>`;
+  }).join('');
+}
+
+/* ---------- sekmeler ---------- */
+function vOzet(){
+  const T=D.ozet.filter(t=>t.satirlar.length);
+  const cur=sel.oz!=null?sel.oz:'0';
+  const short=T.map((t,i)=>[String(i),t.baslik.replace(/·.*$/,'').replace(/ORTALAMASI.*/,'ORTALAMA').trim()]);
+  // Güney Anadolu özet kartı
+  const g=T[0]&&T[0].satirlar.find(isGA), th=T[0]&&T[0].kolonlar;
+  let hero='';
+  const ft=T.find(t=>/TAHM/i.test(t.baslik)&&!/VC/.test(t.baslik));
+  if(g){
+    const gi=ft&&ft.satirlar.find(isGA), ti=th.findIndex(x=>/^Toplam/.test(x)), fi=ft?ft.kolonlar.findIndex(x=>/^Toplam/.test(x)):-1;
+    hero=`<div class="card ga" style="padding:12px 14px"><div class="row"><div><span style="font-size:12px;color:var(--mut)">GÜNEY ANADOLU · gerçekleşen</span><br><b style="font-size:26px">${ti>=0?fmt(g[ti],''):''}</b></div>
+    ${gi&&fi>=0?`<div style="text-align:right"><span style="font-size:12px;color:var(--mut)">ay sonu tahmini</span><br><b style="font-size:26px;color:var(--org)">${fmt(gi[fi],'')}</b></div>`:''}</div></div>`;
+  }
+  return hero+chips(short,cur,'oz')+table(T[+cur])+(D.kaynak?`<div class="note">${esc(D.kaynak)}</div>`:'');
+}
+function vKat(){
+  const keys=Object.keys(D.kategoriler);
+  const k=keys.includes(sel.kat)?sel.kat:keys[0], v=sel.kv||'mag';
+  const C=D.kategoriler[k], T=C.tablolar.filter(t=>t.satirlar.length);
+  const spv=T[0], mag=T[1];
+  let s=chips(keys.map(x=>[x,x]),k,'kat')+chips([['mag','Mağazalar'],['spv','SPV']],v,'kv');
+  if(v==='spv'||!mag)return s+table(spv);
+  const h=mag.kolonlar, ix=n=>h.indexOf(n);
+  const rank=ix('Sıra'), name=ix('Mağaza'), sub=ix('SPV');
+  let main=h.findIndex(x=>/Satış Adeti|Toplam Adet|^Toplam|Tam Otomatik/.test(x)&&!/Tahmini|Ort\.|Stok/.test(x));
+  if(main<0)main=ix('Bölge')+1;
+  const fc=h.findIndex(x=>/Ay Sonu Tahmini/.test(x));
+  const q=(sel.q||'').toLocaleLowerCase('tr'), ga=sel.ga!=='0';
+  const rows=mag.satirlar.filter(r=>isTot(r)||((!ga||isGA(r))&&(!q||String(r[name]).toLocaleLowerCase('tr').includes(q))));
+  const tot=rows.filter(isTot), body=rows.filter(r=>!isTot(r));
+  s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+
+     chips([['1','Sadece Güney Anadolu'],['0','Tüm mağazalar']],ga?'1':'0','gaf');
+  s+=`<div class="note" style="margin:0 0 8px">${esc(C.baslik||'')} · kartı aç: tüm kolonlar</div>`;
+  s+=cardList({kolonlar:h,satirlar:tot.concat(body)},{rank,name,sub,main,fc});
+  return s;
+}
+function vTrf(){
+  const T=D.transfer.filter(t=>t.satirlar.length);
+  if(!T.length)return '<div class="msg">Transfer verisi yok.</div>';
+  const cur=sel.tr!=null?sel.tr:'0';
+  let s=chips(T.map((t,i)=>[String(i),['Mağaza özeti','İhtiyaç / kaynak','Satmayan stok'][i]||t.baslik]),cur,'tr');
+  const t=T[+cur], h=t.kolonlar, ix=n=>h.indexOf(n);
+  if(+cur===0)return s+table(t);
+  const mi=ix('Mağaza'), ki=ix('Kod');
+  let pre=''; const H2=h.map(x=>{if(/^Kaynak \d/.test(x)){pre=x.replace(' mağaza','')+' · ';return x}return pre&&/Stok|Transfer|Önerilen/.test(x)?pre+x:x});
+  const stores=[...new Set(t.satirlar.map(r=>r[mi]))].filter(Boolean).sort((a,b)=>String(a).localeCompare(String(b),'tr'));
+  const fs=sel.ts||'';
+  s+=chips([['','Tüm mağazalar']].concat(stores.map(x=>[x,String(x)])),fs,'ts');
+  const rows=t.satirlar.filter(r=>!fs||r[mi]===fs);
+  const pi=ix('Öncelik');
+  s+=`<div class="note" style="margin:0 0 8px">${rows.length} kayıt · karta dokun: kaynaklar ve ayrıntılar</div>`;
+  s+=rows.map(r=>{
+    const det=H2.map((x,i)=>(r[i]==null||r[i]===''||i===mi)?'':`<i>${esc(x)}</i><b style="white-space:normal">${fmt(r[i],x)}</b>`).join('');
+    const pr=pi>=0?r[pi]:'';
+    const tag=pr?`<span class="tag ${pr==='Stoksuz'?'t-red':/Kritik/.test(pr)?'t-org':'t-yel'}">${esc(pr)}</span>`:'';
+    const nm=ix('Model'), ur=ix('Ürün');
+    return `<details class="card"><summary><div class="nm"><b>${esc(String(r[mi]||'').replace(/^MEDIAMARKT\s*/,''))}</b><span>${tag}${esc(r[nm]||'')} ${esc(r[ix('Kategori')]||'')}</span></div>
+      <div class="kv"><b>${fmt(r[ix('İhtiyaç (30 gün)')]!=null?r[ix('İhtiyaç (30 gün)')]:r[ix('Satılabilir stok')],'')}</b><span>${ix('İhtiyaç (30 gün)')>=0?'ihtiyaç':'stok'}</span></div></summary><div class="det">${det}</div></details>`;
+  }).join('');
+  return s;
+}
+function imgUrl(f){return mode==='rel'?`../${D.klasor}/gorseller/${f}`:`https://api.github.com/repos/${REPO.owner}/${REPO.name}/contents/${D.klasor}/gorseller/${f}?ref=${REPO.branch}`}
+async function loadImg(el,f){
+  try{
+    if(mode==='rel'){el.src=imgUrl(f);return}
+    const r=await fetch(imgUrl(f),{headers:{Authorization:'Bearer '+LS.get('gh_token'),Accept:'application/vnd.github.raw+json'}});
+    if(!r.ok)throw 0; el.src=URL.createObjectURL(await r.blob());
+  }catch(e){el.alt='Görsel yüklenemedi'}
+}
+function vImg(){
+  const g=D.gorseller||[];
+  return `<div class="note" style="margin:0 0 10px">Dokun: büyüt (kaydırarak oku). Basılı tutup görseli kaydedebilirsin.</div><div class="imgs">`+
+    g.map(f=>`<div><h2 style="margin-top:4px">${esc(f.replace('.png','').replace(/_/g,' '))}</h2><img data-f="${esc(f)}" alt="${esc(f)}"></div>`).join('')+'</div>';
+}
+
+/* ---------- çizim ---------- */
+function render(){
+  if(!D)return;
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
+  const y=window.scrollY;
+  M.innerHTML={ozet:vOzet,kat:vKat,trf:vTrf,img:vImg}[tab]();
+  bindChips();
+  const q=$('#q'); if(q)q.oninput=()=>{sel.q=q.value;const p=q.selectionStart;render();const n=$('#q');n.focus();n.setSelectionRange(p,p)};
+  M.querySelectorAll('.chip[data-k=gaf]').forEach(b=>b.onclick=()=>{sel.ga=b.dataset.v;render()});
+  M.querySelectorAll('.imgs img').forEach(im=>{loadImg(im,im.dataset.f);im.onclick=()=>{$('#zoom img').src=im.src;$('#zoom').style.display='block'}});
+  window.scrollTo(0,y);
+}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;LS.set('tab',tab);window.scrollTo(0,0);render()});
+$('#zoom button').onclick=()=>{$('#zoom').style.display='none'};
+$('#rf').onclick=()=>load(true);
+$('#st').onclick=()=>{if(confirm('Kayıtlı anahtar silinsin mi? (Yeniden giriş gerekir)')){LS.del('gh_token');LS.del('cache');load(true)}};
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+load();
+</script>
+</body>
+</html>

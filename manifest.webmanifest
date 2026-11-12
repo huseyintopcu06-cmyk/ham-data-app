@@ -1,0 +1,11 @@
+{
+  "name": "Ham Data · Güney Anadolu",
+  "short_name": "Ham Data",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1F3864",
+  "theme_color": "#1F3864",
+  "lang": "tr",
+  "icons": [{"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}]
+}
