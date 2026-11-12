@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="20">
+<meta name="surum" content="22">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -122,7 +122,7 @@ tbody tr[data-mk]{cursor:pointer}
 <button data-t="ozet" class="on"><b>▦</b>Özet</button>
 <button data-t="kat"><b>☰</b>Kategori</button>
 <button data-t="mag"><b>⌂</b>Mağaza</button>
-<button data-t="urun"><b>⌕</b>Ürün</button>
+<button data-t="urun"><b>⌕</b>Ara</button>
 <button data-t="trf"><b>⇄</b>Transfer</button>
 <button data-t="daha"><b>⋯</b>Daha</button>
 </nav>
@@ -323,8 +323,8 @@ function vKat(){
   const bi=ix('Bölge'); const ORD=['GÜNEY ANADOLU','DOĞU MARMARA','BATI MARMARA','İÇ ANADOLU','EGE AKDENİZ'];
   const have=[...new Set(mag.satirlar.map(r=>r[bi]).filter(x=>x&&x!=='ONLINE'))].sort((p,q2)=>(ORD.indexOf(p)<0?9:ORD.indexOf(p))-(ORD.indexOf(q2)<0?9:ORD.indexOf(q2)));
   const rg=sel.rg==null?'':sel.rg, tc=s=>s.toLocaleLowerCase('tr').replace(/(^|\s)\S/g,m=>m.toLocaleUpperCase('tr'));
-  const q=(sel.q||'').toLocaleLowerCase('tr');
-  const rows=mag.satirlar.filter(r=>isTot(r)||((!rg||r[bi]===rg)&&(!q||String(r[name]).toLocaleLowerCase('tr').includes(q))));
+  const q=fold(sel.q);
+  const rows=mag.satirlar.filter(r=>isTot(r)||((!rg||r[bi]===rg)&&(!q||fold(r[name]).includes(q))));
   const tot=rows.filter(isTot), body=rows.filter(r=>!isTot(r));
   s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+
      chips([['','Tümü']].concat(have.map(x=>[x,tc(x)])),rg,'rg');
@@ -352,6 +352,7 @@ const KATS=['MDA','Ankastre','VC','FOOD','FOOD Diğer','FAEM','Hava Temizleyici'
 const KLAB={'FOOD':'FOOD (MUM)'};
 const ORD=['GÜNEY ANADOLU','DOĞU MARMARA','BATI MARMARA','İÇ ANADOLU','EGE AKDENİZ'];
 const AYAD=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const fold=s=>String(s==null?'':s).toLocaleLowerCase('tr').replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ö/g,'o').replace(/ç/g,'c');   // arama: harf/aksan fark etmez
 const tc=s=>String(s==null?'':s).toLocaleLowerCase('tr').replace(/(^|\s)\S/g,m=>m.toLocaleUpperCase('tr'));
 const sade=s=>String(s||'').replace(/^MEDIAMARKT\s*/,'');
 const N=v=>(typeof v==='number'&&isFinite(v))?v:0;
@@ -414,7 +415,7 @@ function urunIdx(){
   const U=D.urunler; if(!U)return null;
   let x=_ux.get(D); if(x)return x;
   const byKod=new Map(); U.r.forEach(r=>{let a=byKod.get(r[1]);if(!a){a=[];byKod.set(r[1],a)}a.push(r)});
-  x={byKod,ul:U.u.map(s=>s.toLocaleLowerCase('tr'))}; _ux.set(D,x); return x;
+  x={byKod,ul:U.u.map(s=>fold(s))}; _ux.set(D,x); return x;
 }
 function stoksuzCokSatan(bolge){   // geçen ay ≥2 satan ama satılabilir stoğu olmayan (ürün × mağaza)
   const U=D.urunler; if(!U)return null;
@@ -426,8 +427,8 @@ function stoksuzCokSatan(bolge){   // geçen ay ≥2 satan ama satılabilir sto�
 /* ---- Mağaza sekmesi ---- */
 function vMag(){
   if(sel.mk)return vMagDetay(sel.mk);
-  const ml=magList().arr, rg=sel.mrg||'', q=(sel.q||'').toLocaleLowerCase('tr');
-  const rows=ml.filter(m=>(!rg||m.bolge===rg)&&(!q||m.ad.toLocaleLowerCase('tr').includes(q))).sort((a,b)=>b.top-a.top);
+  const ml=magList().arr, rg=sel.mrg||'', q=fold(sel.q);
+  const rows=ml.filter(m=>(!rg||m.bolge===rg)&&(!q||fold(m.ad).includes(q))).sort((a,b)=>b.top-a.top);
   let s=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+bolgeChips('mrg',rg);
   s+=`<div class="note" style="margin:0 0 8px">${rows.length} mağaza · tüm departmanların toplam sell-out'una göre · dokun: mağaza sayfası</div>`;
   s+=rows.map((m,i)=>`<div class="card ${m.bolge===GAB?'ga':''}" data-mk="${m.kod}"><div class="sm"><div class="rk">${i+1}</div><div class="nm"><b>${esc(m.ad)}</b><span>${esc(m.spv)} · ${tc(m.bolge)}</span></div><div class="kv"><small>Sell-out</small><b>${nf(m.top)}</b><span>Tahmin ${nf(m.topfc)}</span></div></div></div>`).join('');
@@ -467,11 +468,11 @@ function vMagDetay(kod){
 /* ---- Ürün sekmesi ---- */
 function vUrun(){
   const U=D.urunler; if(!U)return '<div class="msg">Bu raporda ürün verisi yok.</div>';
-  const ux=urunIdx(), q=(sel.q||'').toLocaleLowerCase('tr').trim(), rg=sel.urg||'', ust=sel.ustk==='yok';
-  let s=`<input type="search" id="q" placeholder="Ürün veya model ara… (ör. BCS71, robot)" value="${esc(sel.q||'')}">`+bolgeChips('urg',rg)+chips([['','Tümü'],['yok','Stoksuz mağazalar']],sel.ustk||'','ustk');
+  const ux=urunIdx(), q=fold(sel.q).trim(), rg=sel.urg||'', ust=sel.ustk==='yok';
+  let s=`<input type="search" id="q" placeholder="Mağaza, ürün veya model ara… (ör. Van, BCS71)" value="${esc(sel.q||'')}">`+bolgeChips('urg',rg)+chips([['','Tümü'],['yok','Stoksuz mağazalar']],sel.ustk||'','ustk');
   const toks=q.split(/\s+/).filter(Boolean);
   if(q.length<2){
-    s+='<div class="note" style="margin:0 0 8px">En az 2 harf yaz. Model kodunun bir kısmı da yeter.</div>';
+    s+='<div class="note" style="margin:0 0 8px">En az 2 harf yaz: mağaza adı, ürün adı ya da model kodunun bir kısmı.</div>';
     const z=stoksuzCokSatan(rg||GAB);
     if(z&&z.liste.length){
       s+=`<h2>Stoksuz çok satan · ${rg?tc(rg):'Güney Anadolu'}</h2>`+z.liste.slice(0,15).map(a=>`<div class="card"><div class="sm" data-ara="${a.u}"><div class="nm"><b style="white-space:normal">${esc(U.u[a.u])}</b><span>${a.n} mağazada stoksuz</span></div><div class="kv"><small>Geçen ay</small><b>${a.g}</b></div></div></div>`).join('');
@@ -486,8 +487,11 @@ function vUrun(){
     a.adet+=r[3];a.stok+=r[4];a.sat+=r[5];a.gel+=r[6];a.gec+=r[7];a.rows.push(r);
   });
   const list=[...hit.values()].sort((a,b)=>ust?(b.rows.length-a.rows.length||b.gec-a.gec):(b.adet-a.adet||b.sat-a.sat));
+  const stm=ust?[]:magList().arr.filter(m=>(!rg||m.bolge===rg)&&toks.every(t=>fold(m.ad+' '+m.spv).includes(t))).slice(0,8);
+  const stHtml=stm.length?'<h2>Mağazalar</h2>'+stm.map(m=>`<div class="card ${m.bolge===GAB?'ga':''}" data-mk="${m.kod}"><div class="sm"><div class="nm"><b>${esc(m.ad)}</b><span>${esc(m.spv)} · ${tc(m.bolge)}</span></div><div class="kv"><small>Sell-out</small><b>${nf(m.top)}</b></div><span class="chev">›</span></div></div>`).join(''):'';
+  s+=stHtml+(stHtml&&list.length?'<h2>Ürünler</h2>':'');
   s+=`<div class="note" style="margin:0 0 8px">${list.length} ürün${list.length>40?' (ilk 40 gösteriliyor)':''} · kartı aç: mağaza dağılımı</div>`;
-  if(!list.length)return s+'<div class="msg">Eşleşen ürün yok.</div>';
+  if(!list.length)return s+(stm.length?'':'<div class="msg">Eşleşen mağaza ya da ürün yok.</div>');
   s+=list.slice(0,40).map(a=>{
     const rows=a.rows.slice().sort((x,y)=>ust?(y[7]-x[7]||y[3]-x[3]):(y[3]-x[3]||y[5]-x[5])).slice(0,80);
     return `<details class="card"><summary><div class="nm"><b style="white-space:normal">${esc(U.u[a.u])}</b><span>${esc(U.k[a.k])}</span></div>
@@ -566,8 +570,8 @@ function vGid(){
   return s;
 }
 function vPer(){
-  const rg=sel.prg||'', q=(sel.q||'').toLocaleLowerCase('tr'), DEP=['MDA','VC','FOOD','FAEM'];
-  const rows=magList().arr.filter(m=>(!rg||m.bolge===rg)&&(!q||m.ad.toLocaleLowerCase('tr').includes(q)))
+  const rg=sel.prg||'', q=fold(sel.q), DEP=['MDA','VC','FOOD','FAEM'];
+  const rows=magList().arr.filter(m=>(!rg||m.bolge===rg)&&(!q||fold(m.ad).includes(q)))
     .sort((a,b)=>(ORD.indexOf(a.bolge)-ORD.indexOf(b.bolge))||a.ad.localeCompare(b.ad,'tr'));
   const cnt={}; DEP.forEach(k=>{cnt[k]={var:0,dol:0,acik:0,yok:0};rows.forEach(m=>{const c=perCls(m.k[k]&&m.k[k].per);if(cnt[k][c]!=null)cnt[k][c]++})});
   let s=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+bolgeChips('prg',rg);
@@ -597,8 +601,8 @@ function paylasMetin(kind,arg){
     return t.trim();
   }
   if(kind==='kat'){
-    const keys=KATS.filter(k=>katInfo(k)), k=keys.includes(sel.kat)?sel.kat:keys[0], I=katInfo(k), rg=sel.rg||'', q=(sel.q||'').toLocaleLowerCase('tr');
-    const rows=I.rows.filter(r=>(!rg||r[I.i.bolge]===rg)&&(!q||String(r[I.i.name]).toLocaleLowerCase('tr').includes(q))).slice(0,15);
+    const keys=KATS.filter(k=>katInfo(k)), k=keys.includes(sel.kat)?sel.kat:keys[0], I=katInfo(k), rg=sel.rg||'', q=fold(sel.q);
+    const rows=I.rows.filter(r=>(!rg||r[I.i.bolge]===rg)&&(!q||fold(r[I.i.name]).includes(q))).slice(0,15);
     let t=`${KLAB[k]||k} · ${rg?tc(rg):'Türkiye'} · ${vt}\n`;
     rows.forEach((r,i)=>{t+=`${r[I.i.rank]||i+1}. ${sade(r[I.i.name])} — ${nf(r[I.i.main])}`+(I.i.fcs.length?` (tahmin ${nf(I.i.fcs.reduce((a,j)=>a+N(r[j]),0))})`:'')+'\n'});
     return t.trim();
@@ -645,9 +649,9 @@ function ihtiyacBolum(kod){
 }
 function vIht(){
   if(!D.ihtiyac)return '<div class="msg">Bu raporda ihtiyaç listesi yok.</div>';
-  const tip=IHT[sel.it]?sel.it:'ankastre', rg=sel.irg||'', q=(sel.q||'').toLocaleLowerCase('tr');
+  const tip=IHT[sel.it]?sel.it:'ankastre', rg=sel.irg||'', q=fold(sel.q);
   const S=ihtSatirlar(tip); if(!S)return '<div class="msg">İhtiyaç listesi okunamadı.</div>';
-  const rows=S.rows.filter(m=>(!rg||m.bolge===rg)&&(!q||m.ad.toLocaleLowerCase('tr').includes(q))).sort((a,b)=>b.tot-a.tot);
+  const rows=S.rows.filter(m=>(!rg||m.bolge===rg)&&(!q||fold(m.ad).includes(q))).sort((a,b)=>b.tot-a.tot);
   const agg=new Map(); rows.forEach(x=>x.parts.forEach(p=>{const k=p.g+'|'+p.ad;agg.set(k,(agg.get(k)||0)+p.v)}));
   const top=[...agg.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8);
   const tot=rows.reduce((a,x)=>a+x.tot,0), n=rows.filter(x=>x.tot>0).length;
