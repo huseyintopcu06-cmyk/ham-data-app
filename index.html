@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="14">
+<meta name="surum" content="15">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
 <link rel="manifest" href="manifest.webmanifest">
@@ -235,10 +235,37 @@ function vOzet(){
   }
   return hero+chips(short,cur,'oz')+table(T[+cur])+(D.kaynak?`<div class="note">${esc(D.kaynak)}</div>`:'');
 }
+/* FOOD Diğer: FOOD sayfasından türetilen ayrı kategori (sıralama FOOD Diğer satışına göre) */
+let _fd=null;
+function fdKategori(){
+  if(_fd&&_fd.k===D)return _fd.v;
+  const src=D.kategoriler['FOOD']; if(!src)return null;
+  const m=String(D.donem||'').match(/(\d+)(?:\s*-\s*(\d+))?\s+(\S+)\s+(\d{4})/);
+  const pd=m?+(m[2]||m[1]):1, ay=m?AYNO[m[3].toLocaleLowerCase('tr')]:0, lmd=ay?new Date(+m[4],ay-1,0).getDate():30;
+  const isT=r=>r.some(c=>typeof c==='string'&&/TOPLAM/.test(c));
+  const mk=t=>{
+    const h=t.kolonlar, f=re=>h.findIndex(x=>re.test(x));
+    const iR=f(/^Sıra$/), iM=f(/^FOOD Diğer Toplam/), iF=f(/^Ay Sonu Tahmini FOOD Diğer/), iG=f(/Gelen.*FOOD Diğer/), iB=f(/Başlangıç FOOD Diğer/), iP=f(/^TR Payı/), iT=f(/Tempo vs/), iE=f(/^[^ ]+ FOOD Diğer Satış Adeti$/);
+    const rows=t.satirlar.map(r=>r.slice()), tot=rows.filter(isT), body=rows.filter(r=>!isT(r));
+    body.sort((a,b)=>(b[iM]||0)-(a[iM]||0));
+    let prev=null,rk=0; body.forEach((r,i)=>{if(r[iM]!==prev){rk=i+1;prev=r[iM]} if(iR>=0)r[iR]=rk});
+    const tm=tot.length?tot[0][iM]:0, keep=h.map((x,i)=>i).filter(i=>!h[i].includes('MUM'));
+    const all=body.concat(tot).map(r=>{
+      const v=r[iM]||0, fc=r[iF]||0;
+      if(iP>=0)r[iP]=tm?v/tm:null;
+      if(iT>=0)r[iT]=r[iE]>0?(v/pd)/(r[iE]/lmd)-1:null;
+      const sat=(r[iB]!=null&&r[iG]!=null)?r[iB]-r[iG]+Math.max(0,fc-v):null;
+      return keep.map(i=>r[i]).concat([sat]);
+    });
+    return {baslik:t.baslik,kolonlar:keep.map(i=>h[i]).concat(['FOOD Diğer Satılabilir Stok Adeti']),satirlar:all};
+  };
+  const v={baslik:'FOOD Diğer · '+(D.donem||'')+' Satış Sıralaması',tablolar:src.tablolar.filter(t=>t.satirlar.length).map(mk)};
+  _fd={k:D,v}; return v;
+}
 function vKat(){
-  const keys=Object.keys(D.kategoriler);
+  const keys=Object.keys(D.kategoriler); const fi=keys.indexOf('FOOD'); if(fi>=0)keys.splice(fi+1,0,'FOOD Diğer');
   const k=keys.includes(sel.kat)?sel.kat:keys[0], v=sel.kv||'mag';
-  const C=D.kategoriler[k], T=C.tablolar.filter(t=>t.satirlar.length);
+  const C=k==='FOOD Diğer'?fdKategori():D.kategoriler[k], T=C.tablolar.filter(t=>t.satirlar.length);
   const spv=T[0], mag=T[1];
   let s=chips(keys.map(x=>[x,x]),k,'kat')+chips([['mag','Mağazalar'],['spv','SPV']],v,'kv');
   if(v==='spv'||!mag)return s+table(spv);
