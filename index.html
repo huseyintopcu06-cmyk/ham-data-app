@@ -206,11 +206,14 @@ function vKat(){
   let main=h.findIndex(x=>/Satış Adeti|Toplam Adet|^Toplam|Tam Otomatik/.test(x)&&!/Tahmini|Ort\.|Stok/.test(x));
   if(main<0)main=ix('Bölge')+1;
   const fc=h.findIndex(x=>/Ay Sonu Tahmini/.test(x));
-  const q=(sel.q||'').toLocaleLowerCase('tr'), ga=sel.ga!=='0';
-  const rows=mag.satirlar.filter(r=>isTot(r)||((!ga||isGA(r))&&(!q||String(r[name]).toLocaleLowerCase('tr').includes(q))));
+  const bi=ix('Bölge'); const ORD=['GÜNEY ANADOLU','DOĞU MARMARA','BATI MARMARA','İÇ ANADOLU','EGE AKDENİZ'];
+  const have=[...new Set(mag.satirlar.map(r=>r[bi]).filter(x=>x&&x!=='ONLINE'))].sort((p,q2)=>(ORD.indexOf(p)<0?9:ORD.indexOf(p))-(ORD.indexOf(q2)<0?9:ORD.indexOf(q2)));
+  const rg=sel.rg==null?'GÜNEY ANADOLU':sel.rg, tc=s=>s.toLocaleLowerCase('tr').replace(/(^|\s)\S/g,m=>m.toLocaleUpperCase('tr'));
+  const q=(sel.q||'').toLocaleLowerCase('tr');
+  const rows=mag.satirlar.filter(r=>isTot(r)||((!rg||r[bi]===rg)&&(!q||String(r[name]).toLocaleLowerCase('tr').includes(q))));
   const tot=rows.filter(isTot), body=rows.filter(r=>!isTot(r));
   s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+
-     chips([['1','Sadece Güney Anadolu'],['0','Tüm mağazalar']],ga?'1':'0','gaf');
+     chips(have.map(x=>[x,tc(x)]).concat([['','Tümü']]),rg,'rg');
   s+=`<div class="note" style="margin:0 0 8px">${esc(C.baslik||'')} · kartı aç: tüm kolonlar</div>`;
   s+=cardList({kolonlar:h,satirlar:tot.concat(body)},{rank,name,sub,main,fc});
   return s;
@@ -263,7 +266,6 @@ function render(){
   M.innerHTML={ozet:vOzet,kat:vKat,trf:vTrf,img:vImg}[tab]();
   bindChips();
   const q=$('#q'); if(q)q.oninput=()=>{sel.q=q.value;const p=q.selectionStart;render();const n=$('#q');n.focus();n.setSelectionRange(p,p)};
-  M.querySelectorAll('.chip[data-k=gaf]').forEach(b=>b.onclick=()=>{sel.ga=b.dataset.v;render()});
   M.querySelectorAll('.imgs img').forEach(im=>{loadImg(im,im.dataset.f);im.onclick=()=>{$('#zoom img').src=im.src;$('#zoom').style.display='block'}});
   window.scrollTo(0,y);
 }
