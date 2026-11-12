@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="24">
+<meta name="surum" content="25">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -611,23 +611,27 @@ function paylasMetin(kind,arg){
 }
 
 /* ===================== ihtiyaç listeleri · mini grafik · yeni transfer ===================== */
-const IHT={ankastre:'Ankastre',sda:'SDA (VC · FOOD · FAEM)'};
+const IHT={ankastre:'Ankastre',vc:'VC',food:'FOOD',faem:'FAEM'};
+const IHTDEP={vc:'VC',food:'FOOD',faem:'FAEM'};
 function ihtSatirlar(tip){
-  const T=D.ihtiyac&&D.ihtiyac[tip]; if(!T)return null;
+  const T=D.ihtiyac&&D.ihtiyac[tip==='ankastre'?'ankastre':'sda']; if(!T)return null;
   const h=T.kolonlar, b=T.bant, f=re=>h.findIndex(x=>re.test(x));
+  const dn=IHTDEP[tip];   // VC / FOOD / FAEM (SDA listesinden ayrı ayrı)
   let model0, sip;
   if(tip==='ankastre'){sip=[f(/^Sipariş verilecek/)];model0=f(/^(Ocak|Fırın|Davlumbaz)\s/)}
   else{sip=[f(/^VC sipariş/),f(/^FOOD sipariş/),f(/^FAEM sipariş/)];model0=Math.max(...sip)+1}
   if(model0<0)return null;
+  const di=dn?['VC','FOOD','FAEM'].indexOf(dn):-1, pi=dn?f(new RegExp('^'+dn+' personel')):-1;
   const rows=T.satirlar.filter(r=>/^T\d{3}/.test(r[0]||'')).map(r=>{
-    const parts=[]; for(let i=model0;i<h.length;i++){const v=N(r[i]); if(v>0)parts.push({g:b[i]||'',ad:h[i],v})}
-    return {kod:r[0],ad:sade(r[1]),spv:r[2],bolge:r[3],tot:sip.reduce((a,i)=>a+(i>=0?N(r[i]):0),0),sipd:sip.map(i=>i>=0?N(r[i]):0),parts,r};
+    const parts=[]; for(let i=model0;i<h.length;i++){if(dn&&b[i]!==dn)continue;const v=N(r[i]); if(v>0)parts.push({g:b[i]||'',ad:h[i],v})}
+    const tot=dn?(sip[di]>=0?N(r[sip[di]]):0):sip.reduce((a,i)=>a+(i>=0?N(r[i]):0),0);
+    return {kod:r[0],ad:sade(r[1]),spv:r[2],bolge:r[3],tot,per:pi>=0?r[pi]:null,parts,r};
   });
   return {h,rows,f};
 }
-function partsHtml(parts){
+function partsHtml(parts,baslik){
   const g=new Map(); parts.forEach(p=>{if(!g.has(p.g))g.set(p.g,[]);g.get(p.g).push(p)});
-  return [...g.entries()].map(([k,l])=>`<div class="dk"><b>${esc(k)}</b><br>`+l.map(p=>`<span class="pill">${esc(p.ad)} <b>${p.v}</b></span>`).join(' ')+'</div>').join('');
+  return [...g.entries()].map(([k,l])=>`<div class="dk">${baslik?`<b>${esc(k)}</b><br>`:''}`+l.map(p=>`<span class="pill">${esc(p.ad)} <b>${p.v}</b></span>`).join(' ')+'</div>').join('');
 }
 function ihtDetay(tip,x,S){
   let s='';
@@ -635,9 +639,9 @@ function ihtDetay(tip,x,S){
     const f=S.f, r=x.r, g=n=>{const i=f(new RegExp('^'+n+'$'));return i>=0?N(r[i]):0};
     s+=`<div class="note" style="margin:0 0 6px">Mevcut set: Siyah ${g('Set Siyah')} · Beyaz ${g('Set Beyaz')} · Gri ${g('Set Gri')}</div>`;
   }else{
-    s+=`<div class="note" style="margin:0 0 6px">Sipariş: VC ${x.sipd[0]} · FOOD ${x.sipd[1]} · FAEM ${x.sipd[2]}</div>`;
+    s+=`<div class="note" style="margin:0 0 6px">Personel: <span class="pb ${perCls(x.per)}">${esc(perTxt(x.per))}</span></div>`;
   }
-  return s+(x.parts.length?partsHtml(x.parts):'<div class="note">Sipariş ihtiyacı yok.</div>');
+  return s+(x.parts.length?partsHtml(x.parts,tip==='ankastre'):'<div class="note">Sipariş ihtiyacı yok.</div>');
 }
 function ihtiyacBolum(kod){
   let s='';
@@ -659,7 +663,7 @@ function vIht(){
   s+=`<div class="card dep"><div class="g4" style="grid-template-columns:repeat(2,1fr)"><div><small>Toplam sipariş ihtiyacı</small><b class="or">${nf(tot)}</b></div><div><small>Siparişi olan mağaza</small><b>${n}<span style="font-size:12px;color:var(--mut)">/${rows.length}</span></b></div></div></div>`;
   if(top.length)s+='<h2>En çok istenen modeller</h2><div class="card dep">'+top.map(([k,v])=>{const [g,ad]=k.split('|');return `<div class="urow"><span><small style="color:var(--mut)">${esc(g)}</small> ${esc(ad)}</span><span><b>${v}</b></span></div>`}).join('')+'</div>';
   s+=`<h2>Mağazalar</h2>`+rows.map((x,i)=>`<details class="card ${x.bolge===GAB?'ga':''}"><summary><div class="rk">${i+1}</div><div class="nm"><b>${esc(x.ad)}</b><span>${esc(x.spv)} · ${tc(x.bolge)}</span></div>
-    <div class="kv"><small>Sipariş</small><b class="${x.tot>0?'or':''}">${nf(x.tot)}</b>${tip==='sda'?`<span class="stk">VC ${x.sipd[0]} · FOOD ${x.sipd[1]} · FAEM ${x.sipd[2]}</span>`:''}</div></summary>
+    <div class="kv"><small>Sipariş</small><b class="${x.tot>0?'or':''}">${nf(x.tot)}</b>${tip!=='ankastre'?`<span class="stk">Personel: ${esc(perTxt(x.per))}</span>`:''}</div></summary>
     <div class="det" style="display:block"><a class="lnk" data-mk="${x.kod}">Mağaza sayfasına git ›</a>${ihtDetay(tip,x,S)}</div></details>`).join('');
   return s;
 }
