@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="13">
+<meta name="surum" content="14">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
 <link rel="manifest" href="manifest.webmanifest">
@@ -249,7 +249,7 @@ function vKat(){
   const fc=h.findIndex(x=>/Ay Sonu Tahmini/.test(x));
   const bi=ix('Bölge'); const ORD=['GÜNEY ANADOLU','DOĞU MARMARA','BATI MARMARA','İÇ ANADOLU','EGE AKDENİZ'];
   const have=[...new Set(mag.satirlar.map(r=>r[bi]).filter(x=>x&&x!=='ONLINE'))].sort((p,q2)=>(ORD.indexOf(p)<0?9:ORD.indexOf(p))-(ORD.indexOf(q2)<0?9:ORD.indexOf(q2)));
-  const rg=sel.rg==null?'GÜNEY ANADOLU':sel.rg, tc=s=>s.toLocaleLowerCase('tr').replace(/(^|\s)\S/g,m=>m.toLocaleUpperCase('tr'));
+  const rg=sel.rg==null?'':sel.rg, tc=s=>s.toLocaleLowerCase('tr').replace(/(^|\s)\S/g,m=>m.toLocaleUpperCase('tr'));
   const q=(sel.q||'').toLocaleLowerCase('tr');
   const rows=mag.satirlar.filter(r=>isTot(r)||((!rg||r[bi]===rg)&&(!q||String(r[name]).toLocaleLowerCase('tr').includes(q))));
   const tot=rows.filter(isTot), body=rows.filter(r=>!isTot(r));
