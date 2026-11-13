@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="49">
+<meta name="surum" content="50">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -43,6 +43,7 @@ nav button.on{color:var(--navy);font-weight:700}
 @media(prefers-color-scheme:dark){nav button.on{color:#8db6ff}}
 .chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
+.chips.wrap{flex-wrap:wrap;overflow:visible}
 .chip{flex:none;background:var(--chip);border:1px solid transparent;border-radius:999px;padding:6px 13px;font-size:13px;color:var(--ink)}
 .chip.on{background:var(--navy);color:#fff}
 h2{font-size:14px;margin:16px 0 8px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
@@ -319,8 +320,8 @@ function table(t,opts){
   }
   return s+'</tbody></table></div>';
 }
-function chips(items,cur,key){
-  return '<div class="chips">'+items.map(([id,label])=>`<button class="chip ${id===cur?'on':''}" data-k="${key}" data-v="${esc(id)}">${esc(label)}</button>`).join('')+'</div>';
+function chips(items,cur,key,wrap){
+  return '<div class="chips'+(wrap?' wrap':'')+'">'+items.map(([id,label])=>`<button class="chip ${id===cur?'on':''}" data-k="${key}" data-v="${esc(id)}">${esc(label)}</button>`).join('')+'</div>';
 }
 function bindChips(){
   M.querySelectorAll('.chip[data-k]').forEach(b=>b.onclick=()=>{sel[b.dataset.k]=b.dataset.v;if(b.dataset.k==='bs'||b.dataset.k==='bm')sel.q='';render()});
@@ -830,7 +831,7 @@ function vBrand(){
   s+=`<div class="note" style="margin:0 0 6px">${esc(f.ad)}</div>`;
   if(f.personel)s+=`<div class="note" style="margin:0 0 6px">PERSONEL kolonu: ${esc(f.etiket)} ay sonu personel listesine göre (Var = o departmanda promotör var).</div>`;
   if(F.filter(x=>x.etiket===f.etiket).length>1)s+=`<div class="note" style="margin:0 0 6px">Bu ayın diğer dosyaları için geri dönüp seç.</div>`;
-  s+=chips(f.sayfalar.map((x,i)=>[String(i),x.ad]),String(si),'bs');
+  s+=chips(f.sayfalar.map((x,i)=>[String(i),x.ad]),String(si),'bs',true);
   s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`;
   if(bol.length>1)s+=chips([['','Tümü']].concat(bol.map(x=>[x,x.toLocaleLowerCase('tr').replace(/(^|\s)\S/g,m=>m.toLocaleUpperCase('tr'))])),rg,'brg');
   s+=`<div class="note" style="margin:0 0 8px">${rows.length} satır · yana kaydır</div>`;
@@ -917,7 +918,7 @@ function vBrandStore(key){
   const ayl=I.ayList.filter(a=>e.m.has(a.k)&&e.m.get(a.k).has(lab)).slice(-13);
   let s=`<div class="row" style="margin-bottom:8px"><button class="chip" data-bkback="1">← Mağazalar</button></div>`;
   s+=`<div class="card ${ml&&ml.bolge===GAB?'ga':''}" style="padding:12px 14px"><b style="font-size:17px">${esc(ml?ml.ad:e.ad)}</b><div class="note" style="margin:2px 0 0">${esc(e.kod)}${ml?' · '+esc(ml.spv)+' · '+tc(ml.bolge):''}</div></div>`;
-  s+=chips(labs.map(x=>[x,e.sy.get(x)||x]),lab,'bl')+chips([['adet','Adet'],['pay','Pay %']],met,'bt');
+  s+=chips(labs.map(x=>[x,e.sy.get(x)||x]),lab,'bl',true)+chips([['adet','Adet'],['pay','Pay %']],met,'bt');
   if(!ayl.length)return s+'<div class="msg">Bu sayfa için veri yok.</div>';
   const isTR=b=>/^tr$/i.test(b);
   const tot=a=>{const o=e.m.get(a.k).get(lab); const t=Object.keys(o).find(isTR); return t!=null?o[t]:Object.entries(o).reduce((x,[,v])=>x+v,0)};
