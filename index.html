@@ -1208,20 +1208,20 @@ function hedefHesap(x,G){
 }
 function hedefSatir(x,G,baslik,alt){
   const c=hedefHesap(x,G), br=x.b==='TL'?'TL':x.b;
-  if(!x.h)return `<div class="hrow"><div class="row"><span><b>${esc(baslik)}</b></span><span style="font-size:13px"><b>${hdeg(c.g,x.b)}</b> ${br} · hedef yok</span></div></div>`;
+  if(!x.h)return `<div class="hrow"><div class="row"><span><b>${esc(baslik)}</b></span><span style="font-size:13px"><b>${hdeg(c.g,x.b)}</b> ${br} · hedef yok${x.bn||x.bf?` · kazanç ${nf(x.bn)} → <b class="pos">${nf(x.bf)} TL</b>`:''}</span></div></div>`;
   const t=HDUR[c.d], w=v=>Math.max(0,Math.min(v,1.25))/1.25*100;
   let n=c.kal?(G.kalan>0?`Kalan ${hdeg(c.kal,x.b)} · günde <b>${hgun(c.kal/G.kalan,x.b)}</b> gerek, şu an günde ${hgun(c.g/Math.max(D.hedef.gun,1),x.b)}`:`Kalan ${hdeg(c.kal,x.b)}`):'Hedef tamam';
   if(x.p)n+=` · Dav ${nf(x.p[0])} · Fırın ${nf(x.p[1])} · Ocak ${nf(x.p[2])}`;
   return `<div class="hrow"><div class="row"><span style="min-width:0"><b>${esc(baslik)}</b>${alt?` <span class="note" style="margin:0">${esc(alt)}</span>`:''}</span><span class="tag ${t[0]}" style="margin:0;flex:none">${t[1]}</span></div>
     <div class="row" style="font-size:13px;margin-top:3px;flex-wrap:wrap;gap:0 8px"><span><b style="font-size:15px">${hdeg(c.g,x.b)}</b> / ${hdeg(x.h,x.b)} ${br} · %${Math.round(c.o*100)}</span><span style="color:var(--org);font-weight:700">Tahmin ${hdeg(c.fc,x.b)} · %${Math.round(c.of*100)}</span></div>
     <div class="hb"><i class="${c.d}" style="width:${w(c.o)}%"></i><u style="left:${w(1)}%"></u><em style="left:${w(c.of)}%"></em></div>
-    <div class="note" style="margin:0">${n}</div></div>`;
+    <div class="note" style="margin:0">${n}</div>${x.bn!=null?`<div class="row" style="font-size:12.5px;margin-top:3px"><span style="color:var(--mut)">Kazanç (brüt)</span><span>şu an <b>${nf(x.bn)}</b> → tahmini <b class="${x.bf>0?'pos':''}">${nf(x.bf)} TL</b></span></div>`:''}</div>`;
 }
 function hedefBaslik(){const H=D.hedef,G=hedefGun();return `1–${H.gun} ${AYAD[H.ay-1]} · ${G.kalan} gün kaldı`}
 function hedefBolum(kod){
   const H=D.hedef, L=H&&H.m&&H.m[kod]; if(!L)return '';
   const G=hedefGun();
-  return `<h2>Hedefler · ${hedefBaslik()}</h2>`+L.map(S=>`<div class="card dep"><div class="row" style="margin:0 0 2px"><span class="note" style="margin:0;text-transform:uppercase;letter-spacing:.03em">${esc(S.s)}</span><button class="chip rs" data-hr="${kod}" data-hs="${esc(S.s)}">⇪ Resim paylaş</button></div>${S.i.map(x=>hedefSatir(x,G,x.ad)).join('')}</div>`).join('');
+  return `<h2>Hedefler · ${hedefBaslik()}</h2>`+L.map(S=>`<div class="card dep"><div class="row" style="margin:0 0 2px"><span class="note" style="margin:0;text-transform:uppercase;letter-spacing:.03em">${esc(S.s)}</span><button class="chip rs" data-hr="${kod}" data-hs="${esc(S.s)}">⇪ Resim paylaş</button></div>${S.bn!=null?`<div style="font-size:13px;margin:2px 0 4px">Toplam kazanç: şu an <b>${nf(S.bn)}</b> → tahmini <b class="${S.bf>0?'pos':''}">${nf(S.bf)} TL</b></div>`:''}${S.i.map(x=>hedefSatir(x,G,x.ad)).join('')}</div>`).join('');
 }
 /* mağaza × departman hedef kartı: resim olarak önizle + paylaş */
 let HZ=null;
@@ -1235,7 +1235,8 @@ function hedefResim(kod,sad){
   const wrap=(t,mw)=>{const out=[];let l='';String(t).split(/\s+/).forEach(w=>{const n=l?l+' '+w:w;if(g.measureText(n).width>mw&&l){out.push(l);l=w}else l=n});if(l)out.push(l);return out};
   const rr=(X,Y,w,hh,r)=>{g.beginPath();g.moveTo(X+r,Y);g.arcTo(X+w,Y,X+w,Y+hh,r);g.arcTo(X+w,Y+hh,X,Y+hh,r);g.arcTo(X,Y+hh,X,Y,r);g.arcTo(X,Y,X+w,Y,r);g.closePath()};
   const hh=x=>x.h?236:88, INK='#16202e', MUT='#667085', ORG='#e07b1f', COL={tuttu:'#17803d',tutar:'#17803d',sinir:'#b58100',geride:'#c0392b'};
-  const Hh=P+250+items.reduce((a,x)=>a+hh(x),0)+96+P;
+  const KV=S.bn!=null, kn=KV?S.bn+(hv&&hv.bn||0):0, kf=KV?S.bf+(hv&&hv.bf||0):0;
+  const Hh=P+250+items.reduce((a,x)=>a+hh(x),0)+(KV?112:0)+96+P;
   c.width=W; c.height=Hh;
   const bg=g.createLinearGradient(0,0,W,Hh); bg.addColorStop(0,ac); bg.addColorStop(1,ae); g.fillStyle=bg; g.fillRect(0,0,W,Hh);
   g.fillStyle='#ffffff'; rr(P/2,P/2,W-P,Hh-P,48); g.fill();
@@ -1249,9 +1250,11 @@ function hedefResim(kod,sad){
   items.forEach(x=>{
     const k=hedefHesap(x,G), br=x.b==='TL'?'TL':x.b;
     g.fillStyle='#f4f7fb'; rr(X0-8,Y,IW-32,hh(x)-16,26); g.fill();
-    if(!x.h){font(700,30); g.fillStyle=INK; g.fillText(x.ad,ix,Y+46); font(600,28); g.fillStyle=MUT; g.textAlign='right'; g.fillText(`${hdeg(k.g,x.b)} ${br} · hedef yok`,ix+iw,Y+46); g.textAlign='left'; Y+=hh(x); return}
+    if(!x.h){font(700,30); g.fillStyle=INK; g.fillText(x.ad,ix,Y+46); font(600,28); g.fillStyle=MUT; g.textAlign='right'; g.fillText(`${hdeg(k.g,x.b)} ${br} · hedef yok`+(x.bn||x.bf?` · kazanç ${nf(x.bn)} → ${nf(x.bf)} TL`:''),ix+iw,Y+46); g.textAlign='left'; Y+=hh(x); return}
     font(700,32); g.fillStyle=INK; g.fillText(x.ad,ix,Y+50);
-    const dt=HDUR[k.d][1]; font(700,25); const dw=g.measureText(dt).width+40; g.fillStyle=COL[k.d]; rr(ix+iw-dw,Y+18,dw,46,23); g.fill(); g.fillStyle='#fff'; g.textAlign='center'; g.fillText(dt,ix+iw-dw/2,Y+50); g.textAlign='left';
+    const dt=HDUR[k.d][1]; font(700,25); const dw=g.measureText(dt).width+40; g.fillStyle=COL[k.d]; rr(ix+iw-dw,Y+18,dw,46,23); g.fill(); g.fillStyle='#fff'; g.textAlign='center'; g.fillText(dt,ix+iw-dw/2,Y+50);
+    if(x.bn!=null){font(700,26); g.fillStyle=x.bf>0?COL.tuttu:MUT; g.textAlign='right'; g.fillText(`Kazanç ${nf(x.bn)} → ${nf(x.bf)} TL`,ix+iw-dw-18,Y+50)}
+    g.textAlign='left';
     font(800,46); g.fillStyle=INK; const gt=hdeg(k.g,x.b); g.fillText(gt,ix,Y+112); const gw=g.measureText(gt).width;
     font(500,30); g.fillStyle=MUT; g.fillText(` / ${hdeg(x.h,x.b)} ${br} · %${Math.round(k.o*100)}`,ix+gw,Y+112);
     font(700,30); g.fillStyle=ORG; g.textAlign='right'; g.fillText(`Tahmin ${hdeg(k.fc,x.b)} · %${Math.round(k.of*100)}`,ix+iw,Y+110); g.textAlign='left';
@@ -1265,8 +1268,13 @@ function hedefResim(kod,sad){
     font(500,25); g.fillStyle=k.kal?MUT:COL.tuttu; g.fillText(n,ix,Y+200);
     Y+=hh(x);
   });
+  if(KV){
+    g.fillStyle=COL.tuttu; rr(X0-8,Y,IW-32,92,26); g.fill(); g.fillStyle='#fff';
+    font(800,30); g.fillText('TOPLAM KAZANÇ',ix,Y+58);
+    font(800,32); g.textAlign='right'; g.fillText(`Şu an ${nf(kn)} TL  →  Tahmini ${nf(kf)} TL`,ix+iw,Y+58); g.textAlign='left';
+  }
   font(500,22); g.fillStyle='#98a2b3'; g.textAlign='center';
-  g.fillText('Çizgi = hedef · turuncu ok = ay sonu tahmini (şu anki tempo, gün katsayılı)',W/2,Hh-P-58);
+  g.fillText('Çizgi = hedef · turuncu ok = ay sonu tahmini (şu anki tempo)'+(KV?' · Kazanç brüt: şu an → tahmini':''),W/2,Hh-P-58);
   g.fillText('Ham Data · BSH · Hedef Kontrol '+`1–${H.gun} ${AYAD[H.ay-1]}`,W/2,Hh-P-26); g.textAlign='left';
   return {c,ad:(ad+'_Hedef_'+sad).replace(/[^\wÇĞİÖŞÜçğıöşü\-]+/g,'_')+'.png',t:ad+' · Hedef · '+sad};
 }
@@ -1293,21 +1301,21 @@ function vHedef(){
   const b=all[0]?all[0].x.b:'adet', br=b==='TL'?'TL':b;
   const top=L=>({n:L.length,h:L.reduce((a,r)=>a+N(r.x.h),0),g:L.reduce((a,r)=>a+r.c.g,0),fc:L.reduce((a,r)=>a+r.c.fc,0),tut:L.filter(r=>r.c.d==='tuttu').length,yol:L.filter(r=>r.c.d==='tuttu'||r.c.d==='tutar').length});
   const rows=all.filter(r=>(!rg||r.bolge===rg)&&(!q||fold(r.ad).includes(q)||fold(r.kod).includes(q))).sort((x,y)=>sr==='iyi'?y.c.of-x.c.of:x.c.of-y.c.of);
-  const T=top(all.filter(r=>!rg||r.bolge===rg));
+  const T=top(all.filter(r=>!rg||r.bolge===rg)), KL=all.filter(r=>(!rg||r.bolge===rg)&&r.x.bn!=null), KZ={var:KL.length>0,n:KL.reduce((a,r)=>a+r.x.bn,0),f:KL.reduce((a,r)=>a+r.x.bf,0)};
   let s=`<div class="row" style="margin:0 0 8px;gap:8px"><span class="note" style="margin:0">Hedef Kontrol · ${hedefBaslik()}${H.gun!==donemGun()?` · ham data ${donemGun()}. güne kadar, hedef verisi ${H.gun}. güne kadar`:''}</span>${XLB}</div>`;
   s+=chips(HTUR.filter(t=>all.length&&t[0]===tur||Object.values(H.m).some(L=>L.some(S=>S.i.some(x=>x.k===t[0]&&x.h)))),tur,'ht')+bolgeChips('hrg',rg);
   if(!T.n)return s+'<div class="msg">Bu bölgede bu hedef türü yok.</div>';
   s+=`<div class="card dep"><div class="g4"><div><small>Hedef</small><b>${hdeg(T.h,b)}</b></div><div><small>Gerçekleşen</small><b>${hdeg(T.g,b)}</b><small style="text-transform:none;min-height:0">%${Math.round(T.g/T.h*100)}</small></div><div><small>Ay sonu tahmini</small><b class="or">${hdeg(T.fc,b)}</b><small style="text-transform:none;min-height:0">%${Math.round(T.fc/T.h*100)}</small></div><div><small>Hedefi tutacak</small><b>${T.yol}<span style="font-size:12px;color:var(--mut)"> / ${T.n}</span></b><small style="text-transform:none;min-height:0">${T.tut} tuttu</small></div></div>
-    <div class="note" style="margin:8px 0 0">${tc(rg||'Türkiye')} · ${HTUR.find(x=>x[0]===tur)[1]} (${br}) · ay ilerlemesi %${Math.round(G.a/G.t*100)} (gün katsayılı)</div></div>`;
+    <div class="note" style="margin:8px 0 0">${tc(rg||'Türkiye')} · ${HTUR.find(x=>x[0]===tur)[1]} (${br}) · ay ilerlemesi %${Math.round(G.a/G.t*100)} (gün katsayılı)${KZ.var?`<br>Bu kalemden kazanç (brüt): şu an <b>${nf(KZ.n)}</b> → tahmini <b>${nf(KZ.f)} TL</b>`:''}</div></div>`;
   if(!rg){
     s+='<h2>Bölgeler</h2><div class="card dep">'+ORD.map(B=>{const L=all.filter(r=>r.bolge===B); if(!L.length)return ''; const t=top(L);
       return `<div class="urow ${B===GAB?'gar':''}" style="grid-template-columns:1fr auto auto;cursor:pointer" data-hb="${esc(B)}"><span><b>${tc(B)}</b><br><span class="note" style="margin:0">${hdeg(t.g,b)} / ${hdeg(t.h,b)} · tutacak ${t.yol}/${t.n}</span></span><span style="text-align:right">%${Math.round(t.g/t.h*100)}</span><span style="text-align:right;color:var(--org);font-weight:700;min-width:54px">→ %${Math.round(t.fc/t.h*100)}</span></div>`}).join('')+'</div>';
   }
   s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+chips([['geri','Geride olan üstte'],['iyi','En iyi üstte']],sr,'hs');
   s+=rows.map(r=>`<div class="card ${r.bolge===GAB?'ga':''}" data-hr="${r.kod}" data-hs="${esc(r.S)}" style="padding:3px 12px;cursor:pointer">${hedefSatir(r.x,G,r.ad,r.S)}</div>`).join('')||'<div class="msg">Mağaza bulunamadı.</div>';
-  s+=`<div class="note">Mağazaya dokun: o departmanın hedef kartı resim olarak açılır, Paylaş ile gönderilir. Çubukta dikey çizgi = hedef, turuncu ok = ay sonu tahmini. Gerçekleşen, Hedef Kontrol dosyasındaki resmi sell-out'tur (MDA ciro = adet × TEPF; ankastre ve hava temizleme hariç). Tahmin = şu anki tempo, kalan günlerin gün katsayısıyla (Pzt–Per 1,0 · Cuma 1,2 · Cmt 1,7 · Paz 2,1). Tempoda = tahmin hedefi geçiyor · Sınırda = tahmin %85–99 · Geride = tahmin %85'in altında. KEA'da hedef ilk baremdir. Bonus tutarları gösterilmez. Kaynak: ${esc(H.kaynak)}</div>`;
-  XL=()=>({ad:'Hedef '+HTUR.find(x=>x[0]===tur)[1]+' '+(rg?tc(rg)+' ':'')+H.gun+' '+AYAD[H.ay-1],h:['Kod','Mağaza','SPV','Bölge','Hedef sayfası','Hedef','Gerçekleşen','Gerçekleşme %','Ay sonu tahmini','Tahmin %','Kalan','Günlük gereken','Durum'],
-    rows:rows.map(r=>[r.kod,r.ad,r.spv,r.bolge,r.S,r.x.h,r.c.g,Math.round(r.c.o*100),r.c.fc,Math.round(r.c.of*100),r.c.kal,G.kalan>0?Math.round(r.c.kal/G.kalan*10)/10:'',HDUR[r.c.d][1]])});
+  s+=`<div class="note">Mağazaya dokun: o departmanın hedef kartı resim olarak açılır, Paylaş ile gönderilir. Çubukta dikey çizgi = hedef, turuncu ok = ay sonu tahmini. Gerçekleşen, Hedef Kontrol dosyasındaki resmi sell-out'tur (MDA ciro = adet × TEPF; ankastre ve hava temizleme hariç). Tahmin = şu anki tempo, kalan günlerin gün katsayısıyla (Pzt–Per 1,0 · Cuma 1,2 · Cmt 1,7 · Paz 2,1). Tempoda = tahmin hedefi geçiyor · Sınırda = tahmin %85–99 · Geride = tahmin %85'in altında. KEA'da hedef ilk baremdir. Kazanç = brüt bonus, Hedef Kontrol dosyasındaki kurallarla hesaplanır: "şu an" bugünkü satışla hak edilen, "tahmini" ay sonu tahmini tutarsa hak edilecek tutardır. Hava temizleme kazancı kişi başıdır. Kaynak: ${esc(H.kaynak)}</div>`;
+  XL=()=>({ad:'Hedef '+HTUR.find(x=>x[0]===tur)[1]+' '+(rg?tc(rg)+' ':'')+H.gun+' '+AYAD[H.ay-1],h:['Kod','Mağaza','SPV','Bölge','Hedef sayfası','Hedef','Gerçekleşen','Gerçekleşme %','Ay sonu tahmini','Tahmin %','Kalan','Günlük gereken','Durum','Kazanç şu an (TL)','Kazanç tahmini (TL)'],
+    rows:rows.map(r=>[r.kod,r.ad,r.spv,r.bolge,r.S,r.x.h,r.c.g,Math.round(r.c.o*100),r.c.fc,Math.round(r.c.of*100),r.c.kal,G.kalan>0?Math.round(r.c.kal/G.kalan*10)/10:'',HDUR[r.c.d][1],r.x.bn!=null?r.x.bn:'',r.x.bf!=null?r.x.bf:''])});
   return s;
 }
 function vGid(){
