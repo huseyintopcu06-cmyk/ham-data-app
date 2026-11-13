@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="35">
+<meta name="surum" content="36">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -812,7 +812,7 @@ function vPer(){
   const rows=magList().arr.filter(m=>(!rg||m.bolge===rg)&&(!q||fold(m.ad).includes(q)))
     .sort((a,b)=>(ORD.indexOf(a.bolge)-ORD.indexOf(b.bolge))||a.ad.localeCompare(b.ad,'tr'));
   const cnt={}; DEP.forEach(k=>{cnt[k]={var:0,dol:0,acik:0,yok:0};rows.forEach(m=>{const c=perCls(m.k[k]&&m.k[k].per);if(cnt[k][c]!=null)cnt[k][c]++})});
-  let s=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+bolgeChips('prg',rg);
+  let s=(D.personel_liste?`<div class="card dep" style="padding:8px 12px"><b>Personel listesi: ${esc(D.personel_liste)}</b><div class="note" style="margin:2px 0 0">Aşağıdaki durum bu listeye göre</div></div>`:'')+`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+bolgeChips('prg',rg);
   s+='<div class="card dep"><div class="g4">'+DEP.map(k=>`<div><small>${k}</small><b>${cnt[k].var+cnt[k].dol}<span style="font-size:12px;color:var(--mut)">/${rows.length}</span></b><small style="text-transform:none">${cnt[k].acik?cnt[k].acik+' açık nokta · ':''}${cnt[k].yok} yok</small></div>`).join('')+'</div></div>';
   s+='<div class="note" style="margin:0 0 8px">Var = promotör var · dolaylı: FAEM\'ci/VC\'ci aynı işi yapıyor · açık nokta: personel aranıyor</div>';
   s+='<div class="tw"><table><thead><tr><th>Mağaza</th>'+DEP.map(k=>`<th>${k}</th>`).join('')+'</tr></thead><tbody>'+
