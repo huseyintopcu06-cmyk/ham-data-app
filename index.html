@@ -32,6 +32,8 @@ header .row>div:last-child{flex:none;display:flex;gap:4px}
 header h1,header small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
 #upd{position:sticky;top:58px;z-index:4;background:#FFC000;color:#1a1a1a;padding:9px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;font-weight:600}
 #upd[hidden]{display:none}
+#byt{margin:8px 12px 0;border-radius:16px;padding:9px 14px;font-size:13.5px;font-weight:600;line-height:1.35}#byt[hidden]{display:none}
+#byt.s{background:#FFE9B8;color:#5c3d00}#byt.k{background:#F8CBAD;color:#7a1810}
 #upd button{background:#1F3864;color:#fff;border:0;border-radius:8px;padding:7px 14px;font-weight:700}
 main{padding:12px 16px calc(84px + env(safe-area-inset-bottom));max-width:900px;margin:0 auto}
 nav{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
@@ -270,6 +272,7 @@ main{padding-bottom:calc(160px + env(safe-area-inset-bottom))}
 </head>
 <body>
 <header><div class="row"><div><h1 id="ttl">Ham Data</h1><small id="sub">yükleniyor…</small></div><div><button class="ib" id="rf" title="Veriyi yenile">↻</button> <button class="ib" id="th" title="Tema">◐</button> <button class="ib" id="gn" title="Uygulamayı güncelle (yeni sürümü al)">⬆</button> <button class="ib" id="st" title="Çıkış yap (şifreyi bu cihazdan sil)">Çıkış</button></div></div></header>
+<div id="byt" hidden></div>
 <div id="upd" hidden><span>Yeni sürüm var</span><button id="updgo">Yenile</button></div>
 <main id="m"></main>
 <nav id="nv">
@@ -361,7 +364,19 @@ function veriTarihi(d){  // "1-11 Kasım 2026" -> "11.11.2026" (verinin son gün
   const ay=AYNO[m[3].toLocaleLowerCase('tr')]; if(!ay)return '';
   return String(m[2]||m[1]).padStart(2,'0')+'.'+String(ay).padStart(2,'0')+'.'+m[4];
 }
+/* bayat veri uyarısı: verinin son günü bugünden 3+ gün gerideyse sarı, 5+ gün gerideyse kırmızı (normalde veri dünün verisidir; hafta sonu arası 3-4 gün olabilir) */
+function bayatKontrol(){
+  const e=$('#byt'); if(!e)return;
+  const m=D&&veriTarihi(D.donem).match(/(\d+)\.(\d+)\.(\d+)/); if(!m){e.hidden=true;return}
+  const bugun=new Date(); bugun.setHours(0,0,0,0);
+  const yas=Math.round((bugun-new Date(+m[3],+m[2]-1,+m[1]))/864e5);
+  if(yas<3){e.hidden=true;return}
+  e.className=yas>=5?'k':'s'; e.hidden=false;
+  e.textContent=`Veri güncel değil: son veri ${m[0]} (${yas} gün önce). Yeni rapor henüz gelmemiş olabilir; ↻ ile yeniden dene.`;
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)bayatKontrol()});
 function done(note){
+  bayatKontrol();
   const vt=veriTarihi(D.donem); $('#ttl').textContent='Ham Data'+(vt?' · '+vt:'');
   $('#sub').textContent=(D.donem||'')+' · güncelleme '+(D.olusturma||'');
   render();
