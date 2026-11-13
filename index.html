@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="37">
+<meta name="surum" content="38">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -259,13 +259,13 @@ function grupla(h,r,nameIdx){
   return s;
 }
 const KATVERI={'MDA':['MDA'],'Ankastre':['Ankastre'],'VC':['VC Bagless+Unlimited','VC Robot'],'FOOD':['FOOD MUM'],'FOOD Diğer':['FOOD Diğer'],'FAEM':['FAEM'],'Hava Temizleyici':['Hava Temizleyici']};
-function cihazlar(kod,cats){   // mağazanın satılabilir stoğunu oluşturan cihazlar
+function cihazlar(kod,cats){   // mağazanın satılabilir stoğunu ve açık siparişini oluşturan cihazlar
   const ux=urunIdx(); if(!ux||!cats)return '';
   const U=D.urunler, ok=new Set(cats.map(c=>U.k.indexOf(c)).filter(i=>i>=0));
-  const rows=(ux.byKod.get(kod)||[]).filter(r=>ok.has(r[2])&&r[5]>0).sort((a,b)=>b[5]-a[5]||a[0]-b[0]);
+  const rows=(ux.byKod.get(kod)||[]).filter(r=>ok.has(r[2])&&(r[5]>0||r[6]>0)).sort((a,b)=>(b[5]>0)-(a[5]>0)||b[5]-a[5]||b[6]-a[6]||a[0]-b[0]);
   if(!rows.length)return '';
-  const top=rows.reduce((a,r)=>a+r[5],0), L=rows.slice(0,40);
-  return `<h4>Satılabilir stok · cihazlar (${rows.length} model, ${nf(top)} adet)</h4>`+L.map(r=>`<div class="urow" style="grid-template-columns:1fr auto"><span>${esc(U.u[r[0]])}</span><span><b>${r[5]}</b>${r[6]>0?` <small style="color:var(--mut)">+${r[6]} açık sipariş</small>`:''}</span></div>`).join('')+(rows.length>L.length?`<div class="note">+${rows.length-L.length} model daha</div>`:'');
+  const top=rows.reduce((a,r)=>a+Math.max(0,r[5]),0), gel=rows.reduce((a,r)=>a+Math.max(0,r[6]),0), L=rows;
+  return `<h4>Cihazlar · stok ${nf(top)} · açık sipariş ${nf(gel)} (${rows.length} model)</h4>`+L.map(r=>`<div class="urow" style="grid-template-columns:1fr auto"><span>${esc(U.u[r[0]])}</span><span><b class="${r[5]>0?'':'neg'}">${Math.max(0,r[5])}</b>${r[6]>0?` <small style="color:var(--mut)">+${r[6]} açık sipariş</small>`:''}</span></div>`).join('')+(rows.length>L.length?`<div class="note">+${rows.length-L.length} model daha</div>`:'');
 }
 function cardList(t,o){
   // o: {rank,name,sub,main,fc}
