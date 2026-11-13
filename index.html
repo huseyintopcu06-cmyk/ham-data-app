@@ -619,7 +619,7 @@ function pdfHazirla(){
   const g=gsirali(), k=gkey('pdf');
   if(!g.length||!g.every(f=>GJ[gkey(f)]))return;
   if((GP&&GP.k===k)||(GPP&&GPP.k===k))return;
-  const p=pdfYap(g.map(f=>GJ[gkey(f)])).then(b=>{GP={k,file:new File([b],'BSH Ham Data '+(D.donem||'')+'.pdf',{type:'application/pdf'})};gorselDurum()});
+  const p=pdfYap(g.map(f=>GJ[gkey(f)])).then(b=>{GP={k,file:new File([b],(D.donem||veriTarihi(D.donem)||'Tablolar')+'.pdf',{type:'application/pdf'})};gorselDurum()});
   GPP={k,p}; p.catch(()=>{GPP=null});
 }
 async function pdfPaylas(){
