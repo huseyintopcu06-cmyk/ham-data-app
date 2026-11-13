@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="58">
+<meta name="surum" content="59">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -143,6 +143,18 @@ tbody tr[data-mk]{cursor:pointer}
 #zoom button{position:fixed;top:calc(env(safe-area-inset-top) + 10px);right:12px;z-index:21;background:#fff;color:#000;border:0;border-radius:8px;padding:8px 12px;font-weight:700}
 
 /* ===== cam / sıvı görünüm (13.11.2026) ===== */
+.oz{padding:4px 0;overflow:hidden}
+.ozr{display:grid;grid-template-columns:30px 1fr auto;gap:5px 10px;align-items:center;padding:10px 14px}
+.ozr+.ozr{border-top:1px solid var(--line)}
+.ozr.ga{background:var(--ga)}
+.ozr .kv{text-align:right}.ozr .kv b{font-size:19px}
+.ozr .nm span{font-size:12px}
+.ozr .bar{grid-column:2/-1;height:7px;border-radius:7px;background:rgba(127,127,127,.2);overflow:hidden}
+.ozr .bar i{display:block;height:100%;border-radius:7px;background:linear-gradient(90deg,var(--ac),var(--ad))}
+.ozt{display:flex;justify-content:space-between;gap:10px;padding:9px 14px;font-size:14px}
+.ozt+.ozt{border-top:1px solid var(--line)}
+.ozt span{color:var(--mut)}.ozt.b span{color:inherit;font-weight:700}.ozt.b b{font-size:17px}
+
 .tw:not(.mt){max-height:calc(100vh - 250px);overflow:auto;overscroll-behavior:contain}
 .tw{scrollbar-width:auto;scrollbar-color:var(--ac) rgba(127,127,127,.22)}
 .tw::-webkit-scrollbar{height:12px}
@@ -405,6 +417,24 @@ function cardList(t,o){
 }
 
 /* ---------- sekmeler ---------- */
+/* Özet: geniş SPV tablosu yerine seçilen göstergeye göre okunaklı sıralama kartları */
+function ozKart(t){
+  const h=t.kolonlar, mi=h.map((x,i)=>i).filter(i=>i>=4&&!/İHS|ÖHS/.test(h[i]));
+  mi.sort((x,y)=>(/^Toplam/.test(h[y])?1:0)-(/^Toplam/.test(h[x])?1:0));
+  let cm=(sel.om!=null&&mi.includes(+sel.om))?+sel.om:h.findIndex(x=>/^Toplam/.test(x)); if(cm<0)cm=mi[0];
+  const lab=x=>/^Toplam/.test(x)?'Toplam':x.replace(/ Satış Adeti$/,'');
+  const val=r=>fmt(r[cm],h[cm]+' '+(r[0]||'')), tc=s=>String(s||'').toLocaleLowerCase('tr').replace(/(^|\s)\S/g,m=>m.toLocaleUpperCase('tr'));
+  const reg=t.satirlar.filter(r=>r[1]&&r[1]!=='ONLINE').sort((a,b)=>N(b[cm])-N(a[cm]));
+  const rest=t.satirlar.filter(r=>!reg.includes(r)), tot=rest.filter(r=>/TOPLAM|Online/i.test(r[0])), oth=rest.filter(r=>!tot.includes(r));
+  const mx=Math.max(1,...reg.map(r=>N(r[cm])));
+  const line=r=>`<div class="ozt ${/GENEL|FİZİKSEL/.test(r[0])?'b':''}"><span>${esc(r[0])}</span><b>${val(r)}</b></div>`;
+  let s=chips(mi.map(i=>[String(i),lab(h[i])]),String(cm),'om',true);
+  s+='<div class="card oz">'+reg.map((r,i)=>`<div class="ozr ${isGA(r)?'ga':''}"><div class="rk">${i+1}</div><div class="nm"><b>${esc(tc(r[0]))}</b><span>${esc(tc(r[1]))} · ${nf(r[2])} mağaza · ${nf(r[3])} personel</span></div><div class="kv"><b>${val(r)}</b></div><div class="bar"><i style="width:${Math.max(2,Math.round(N(r[cm])/mx*100))}%"></i></div></div>`).join('')+'</div>';
+  if(tot.length)s+='<div class="card oz">'+tot.map(line).join('')+'</div>';
+  if(oth.length)s+='<h2>Karşılaştırma ve stok · '+esc(lab(h[cm]))+'</h2><div class="card oz">'+oth.map(line).join('')+'</div>';
+  s+='<details class="card"><summary style="padding:10px 12px;font-weight:600;cursor:pointer">Tüm sütunlar (tam tablo)</summary>'+table(t)+'</details>';
+  return s;
+}
 function vOzet(){
   const T=D.ozet.filter(t=>t.satirlar.length);
   const cur=sel.oz!=null?sel.oz:'0';
@@ -421,7 +451,7 @@ function vOzet(){
   let dl='';
   if(P){const a=gaToplam(D),b=gaToplam(P); if(a!=null&&b!=null)dl=`Son rapordan bu yana ${sg(a-b)} satış`}
   const extra=`<div class="row" style="margin:-2px 0 10px;gap:8px"><span class="note" style="margin:0">${esc(dl)}</span><button class="chip" data-sh="ozet">Paylaş</button></div>`+uyarilar().html;
-  return hero+extra+chips(short,cur,'oz')+table(T[+cur])+(D.kaynak?`<div class="note">${esc(D.kaynak)}</div>`:'');
+  return hero+extra+chips(short,cur,'oz')+((T[+cur].kolonlar[0]==='SPV'&&T[+cur].kolonlar[1]==='Bölge'&&T[+cur].kolonlar[2]==='Mağaza Sayısı')?ozKart(T[+cur]):table(T[+cur]))+(D.kaynak?`<div class="note">${esc(D.kaynak)}</div>`:'');
 }
 /* FOOD Diğer: FOOD sayfasından türetilen ayrı kategori (sıralama FOOD Diğer satışına göre) */
 const _fdc=new WeakMap();
