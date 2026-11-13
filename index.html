@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="48">
+<meta name="surum" content="49">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -73,6 +73,7 @@ h2{font-size:14px;margin:16px 0 8px;color:var(--mut);text-transform:uppercase;le
 .gt th.hs{background:#c65911}.gt th.hk{background:#2E75B6}.gt th.hg{background:#17803d}.gt th.ha{background:#5b6b82}
 .mt.gt td:first-child{min-width:0;max-width:none;color:var(--mut)}.mt.gt{overflow-x:visible}.mt.gt table{table-layout:auto}.gg>div{min-width:0}.gt td.v{text-align:right;white-space:normal}.gt td.v.n{width:1%;white-space:nowrap}
 .gt tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--chip) 55%,transparent)}
+.chip.rs{padding:5px 12px;font-size:12px;font-weight:600;color:#fff;background:linear-gradient(135deg,var(--ac),var(--ad));border-color:transparent}
 .art{display:block;font-size:10.5px;color:var(--mut);font-weight:500;letter-spacing:.2px;margin-top:1px}
 .mt{margin:4px 0 6px}.mt table{font-size:12px}.mt th,.mt td{padding:5px 7px}
 .mt td:first-child,.mt th:first-child{position:static;white-space:normal;min-width:130px;max-width:190px;text-align:left;line-height:1.25;background:transparent}
@@ -384,7 +385,7 @@ function cardList(t,o){
     const fc=fv!=null?`<span>Tahmin ${nf(fv)}</span>`:'';
     const pv=(o.prev&&o.kod>=0)?o.prev.get(r[o.kod]):null, cr=o.rank>=0?r[o.rank]:null;
     const ar=(pv&&cr&&pv!==cr)?(pv>cr?`<span class="pos"> ▲${pv-cr}</span>`:`<span class="neg"> ▼${cr-pv}</span>`):'';
-    const lk=(o.kod>=0&&r[o.kod])?`<a class="lnk" data-mk="${esc(r[o.kod])}" style="grid-column:1/-1;padding:4px 0">Mağaza sayfasına git ›</a>`:'';
+    const lk=(o.kod>=0&&r[o.kod])?`<div style="grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:2px 0 6px"><a class="lnk" data-mk="${esc(r[o.kod])}">Mağaza sayfasına git ›</a>${o.kat&&o.kat in KATVERI?`<button class="chip rs" data-kimg="${esc(r[o.kod])}" data-kk="${esc(o.kat)}">⇪ Resim paylaş</button>`:''}</div>`:'';
     const sk=o.sat>=0&&r[o.sat]!=null?`<span class="stk">Satılabilir stok ${fmt(r[o.sat],h[o.sat])}</span>`:'';
     const sv=(o.set&&o.set.length)?o.set.map(i=>N(r[i])):null, ss=sv?`<span class="stk">Satılabilir set ${fmt(sv.reduce((a,b)=>a+b,0),'')}</span>`:'';
     const gl=(o.gel&&o.gel.length)?o.gel.reduce((a,i)=>a+(+r[i]||0),0):null;
@@ -461,7 +462,7 @@ function vKat(){
   s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+
      chips([['','Tümü']].concat(have.map(x=>[x,tc(x)])),rg,'rg');
   s+=`<div class="row" style="margin:0 0 8px;gap:8px"><div class="note" style="margin:0">${esc(C.baslik||'')} · kartı aç: tüm kolonlar</div><button class="chip" data-sh="kat">Paylaş</button></div>`;
-  s+=cardList({kolonlar:h,satirlar:tot.concat(body)},{rank,name,sub,main,fcs:I.i.fcs,sat:I.i.sat,gel:I.i.gel,kod:ix('Kod'),prev,set:I.i.set,cats:KATVERI[k],yk:r=>{const m=magList().map.get(r[ix('Kod')]); const y=m&&yorumMag(m,k); return y?`<span class="yr">${esc(y.d)}${y.o.length?' · '+esc(y.o[0]):''}</span>`:''}});
+  s+=cardList({kolonlar:h,satirlar:tot.concat(body)},{rank,name,sub,main,fcs:I.i.fcs,sat:I.i.sat,gel:I.i.gel,kod:ix('Kod'),prev,set:I.i.set,cats:KATVERI[k],kat:k,yk:r=>{const m=magList().map.get(r[ix('Kod')]); const y=m&&yorumMag(m,k); return y?`<span class="yr">${esc(y.d)}${y.o.length?' · '+esc(y.o[0]):''}</span>`:''}});
   return s;
 }
 async function loadImg(el,f){
@@ -570,6 +571,64 @@ function yorumMag(m,k){
   if(d==='Düşük'&&!o.length)o.push('Teşhir/fiyat/promotör verimine bak');
   return {d,cls,t,o:o.slice(0,3)};
 }
+
+/* ---- mağaza × kategori durumunu resim olarak paylaş ---- */
+function kartResim(kod,k){
+  const m=magList().map.get(kod), x=m&&m.k[k]; if(!x){toast('Veri yok');return}
+  const y=yorumMag(m,k), bm=buAy(D), pm=oncekiAy(D), U=D.urunler, ux=urunIdx();
+  const cats=(KATVERI[k]||[]).map(c=>U.k.indexOf(c)).filter(i=>i>=0);
+  const rows=ux?(ux.byKod.get(kod)||[]).filter(r=>cats.includes(r[2])&&(r[3]>0||r[5]>0||r[6]>0)).sort((a,b)=>b[3]-a[3]||b[5]-a[5]||b[6]-a[6]).slice(0,12):[];
+  const css=getComputedStyle(document.documentElement), ac=css.getPropertyValue('--ac').trim()||'#3b6fc4', ad=css.getPropertyValue('--ad').trim()||'#1F3864', ae=css.getPropertyValue('--ae').trim()||'#16294a';
+  const W=1080, P=44, IW=W-2*P, c=document.createElement('canvas'), g=c.getContext('2d');
+  const font=(w,s)=>g.font=`${w} ${s}px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif`;
+  const wrap=(t,mw)=>{const out=[];let l='';String(t).split(/\s+/).forEach(w=>{const n=l?l+' '+w:w;if(g.measureText(n).width>mw&&l){out.push(l);l=w}else l=n});if(l)out.push(l);return out};
+  const rr=(X,Y,w,hh,r)=>{g.beginPath();g.moveTo(X+r,Y);g.arcTo(X+w,Y,X+w,Y+hh,r);g.arcTo(X+w,Y+hh,X,Y+hh,r);g.arcTo(X,Y+hh,X,Y,r);g.arcTo(X,Y,X+w,Y,r);g.closePath()};
+  // yükseklik hesabı
+  c.width=W; font(500,30);
+  const yl=y?wrap(y.t,IW-80):[], ol=y?y.o.flatMap(z=>wrap('• '+z,IW-80)):[];
+  const H=P+250+190+(x.set?60:0)+(y?70+yl.length*40+ol.length*40+30:0)+(rows.length?110+rows.length*86+20:0)+110+P;
+  c.height=H;
+  const bg=g.createLinearGradient(0,0,W,H); bg.addColorStop(0,ac); bg.addColorStop(1,ae); g.fillStyle=bg; g.fillRect(0,0,W,H);
+  g.fillStyle='#ffffff'; rr(P/2,P/2,W-P,H-P,48); g.fill();
+  let Y=P+34; const X0=P+24;
+  font(700,34); g.fillStyle=ad; g.fillText((KLAB[k]||k).toUpperCase(),X0,Y+30);
+  const vt=veriTarihi(D.donem); font(500,26); g.fillStyle='#667085'; g.textAlign='right'; g.fillText((vt||'')+' · '+(D.donem||''),W-P-24,Y+28); g.textAlign='left';
+  Y+=78; font(800,52); g.fillStyle='#16202e'; const nl=wrap(m.ad,IW-48); nl.slice(0,2).forEach((t,i)=>g.fillText(t,X0,Y+i*58)); Y+=(Math.min(nl.length,2)-1)*58+44;
+  font(500,28); g.fillStyle='#667085'; g.fillText(`${m.spv} · ${tc(m.bolge)} · ${m.kod}${x.rank?' · TR #'+x.rank:''}`,X0,Y);
+  Y=P+250;
+  // 4 kutu
+  const T=[['SELL-OUT',nf(x.main),'#c65911'],['TAHMİN',x.fc!=null?nf(x.fc):'–','#e07b1f'],['SATILABİLİR STOK',x.sat!=null?nf(x.sat):'–','#2E75B6'],['AÇIK SİPARİŞ',nf(x.gel),'#17803d']];
+  const tw=(IW-48-3*16)/4;
+  T.forEach(([l,v,col],i)=>{const tx=X0+i*(tw+16); g.fillStyle='#f1f5fb'; rr(tx,Y,tw,150,28); g.fill(); font(600,21); g.fillStyle='#667085'; g.textAlign='center'; g.fillText(l,tx+tw/2,Y+42); font(800,56); g.fillStyle=col; g.fillText(v,tx+tw/2,Y+112); g.textAlign='left'});
+  Y+=190;
+  if(x.set){font(600,28); g.fillStyle='#16202e'; g.fillText(`Satılabilir set ${nf(x.set.reduce((a,b)=>a+b,0))}  ·  Siyah ${nf(x.set[0])}  ·  Beyaz ${nf(x.set[1])}  ·  Gri ${nf(x.set[2])}`,X0,Y-10); Y+=50}
+  if(y){
+    const col=y.cls==='t-grn'?'#17803d':y.cls==='t-red'?'#c0392b':'#9a6b00';
+    font(700,26); const dw=g.measureText(y.d).width+36; g.fillStyle=col; rr(X0,Y,dw,44,22); g.fill(); g.fillStyle='#fff'; g.fillText(y.d,X0+18,Y+31);
+    Y+=78; font(500,30); g.fillStyle='#16202e'; yl.forEach(t=>{g.fillText(t,X0,Y);Y+=40});
+    g.fillStyle='#8a4b12'; ol.forEach(t=>{g.fillText(t,X0,Y);Y+=40}); Y+=20;
+  }
+  if(rows.length){
+    const cw=[470,110,110,110,110].map(v=>v*(IW-48)/910), cx=[0]; cw.forEach((w,i)=>cx.push(cx[i]+w));
+    const HD=[['Model',null],[bm,'#c65911'],[pm,'#5b6b82'],['Stok','#2E75B6'],['Açık','#17803d']];
+    HD.forEach(([t,col],i)=>{const hx=X0+cx[i]; if(col){g.fillStyle=col; rr(hx+3,Y,cw[i]-6,50,25); g.fill(); g.fillStyle='#fff'}else g.fillStyle='#16202e'; font(700,24); g.textAlign=col?'center':'left'; g.fillText(t,col?hx+cw[i]/2:hx+6,Y+34)}); g.textAlign='left';
+    Y+=70;
+    rows.forEach((r,ri)=>{
+      if(ri%2===0){g.fillStyle='#f6f8fc'; rr(X0-8,Y-6,IW-32,80,18); g.fill()}
+      font(600,25); g.fillStyle='#16202e'; let nm=String(U.u[r[0]]); while(g.measureText(nm).width>cw[0]-14&&nm.length>8)nm=nm.slice(0,-2); if(nm!==U.u[r[0]])nm=nm.trimEnd()+'…'; g.fillText(nm,X0+6,Y+28);
+      const ar=U.a&&U.a[r[0]]; if(ar){font(500,20); g.fillStyle='#667085'; g.fillText('Artikel: '+ar,X0+6,Y+56)}
+      [[r[3],'#c65911'],[r[7],'#5b6b82'],[r[5],'#2E75B6'],[r[6],'#17803d']].forEach(([v,col],i)=>{font(800,28); g.fillStyle=v>0?col:'#c7cfdb'; g.textAlign='center'; g.fillText(v>0?String(v):'·',X0+cx[i+1]+cw[i+1]/2,Y+40)}); g.textAlign='left';
+      Y+=86;
+    });
+  }
+  font(500,22); g.fillStyle='#98a2b3'; g.textAlign='center'; g.fillText('Ham Data · BSH Güney Anadolu · '+(D.olusturma||''),W/2,H-P-26); g.textAlign='left';
+  c.toBlob(async b=>{
+    const ad2=(m.ad.replace(/[^\w\-]+/g,'_')+'_'+k.replace(/\s+/g,'')+'.png');
+    const f=new File([b],ad2,{type:'image/png'});
+    try{ if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:m.ad+' · '+(KLAB[k]||k)});return} }catch(e){if(e&&e.name==='AbortError')return}
+    const u=URL.createObjectURL(b), a=document.createElement('a'); a.href=u; a.download=ad2; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),4000); toast('Resim indirildi');
+  },'image/png');
+}
 /* ---- mağaza bazlı birleşik görünüm ---- */
 const _ml=new WeakMap();
 function magList(DD){
@@ -621,7 +680,7 @@ function vMagDetay(kod){
   KATS.forEach(k=>{const x=m.k[k]; if(!x)return;
     const yet=x.bas.some(v=>typeof v==='number'&&v<0);
     const KI=katInfo(k), KR=KI&&KI.rows.find(r=>r[KI.i.kod]===kod);
-    const detay=KR?`<div class="det" style="border:0;padding:8px 0 0">${grupla(KI.h,KR,KI.i.name)}${modelTablo(kod,KATVERI[k])}</div>`:'';
+    const detay=KR?`<div class="det" style="border:0;padding:8px 0 0"><div style="grid-column:1/-1;display:flex;justify-content:flex-end;padding-bottom:6px"><button class="chip rs" data-kimg="${kod}" data-kk="${esc(k)}">⇪ Resim paylaş</button></div>${grupla(KI.h,KR,KI.i.name)}${modelTablo(kod,KATVERI[k])}</div>`:'';
     s+=`<details class="card dep"><summary style="display:block;padding:0"><div class="dh2"><b>${esc(KLAB[k]||k)}</b>${x.rank?`<span>TR #${x.rank}</span>`:''}${yet?'<span class="tag t-org">Ay sonuna yetmiyor</span>':''}</div>
       <div class="g4"><div><small>Sell-out</small><b>${nf(x.main)}</b></div><div><small>Tahmin</small><b class="or">${x.fc!=null?nf(x.fc):'–'}</b></div><div><small>Satılabilir stok</small><b>${x.sat!=null?nf(x.sat):'–'}</b></div><div><small>Açık sipariş</small><b>${nf(x.gel)}</b></div></div>${x.set?`<div class="note" style="margin:6px 0 0">Satılabilir set <b>${nf(x.set.reduce((a,b)=>a+b,0))}</b> · Siyah ${nf(x.set[0])} · Beyaz ${nf(x.set[1])} · Gri ${nf(x.set[2])}${x.set[3]?` · Inox ${nf(x.set[3])}`:''}</div>`:''}${yorumHtml(yorumMag(m,k))}${KR?'<div class="dbtn"><span class="a">Detayı aç · sell-out, stok, modeller</span><span class="b">Detayı kapat</span><i>▾</i></div>':''}</summary>${detay}</details>`;
   });
@@ -979,9 +1038,11 @@ function ihtSatirlar(tip){
   });
   return {h,rows,f};
 }
+function artIht(ad){const m=artMap(); if(!m)return ''; for(const t of String(ad).split(/[\s(]+/)){if(/\d/.test(t)&&/[A-Za-z]/.test(t)&&m.has(t))return m.get(t)} return ''}
 function partsHtml(parts,baslik){
   const g=new Map(); parts.forEach(p=>{if(!g.has(p.g))g.set(p.g,[]);g.get(p.g).push(p)});
-  return [...g.entries()].map(([k,l])=>`<div class="dk">${baslik?`<b>${esc(k)}</b><br>`:''}`+l.map(p=>`<span class="pill">${esc(p.ad)} <b>${p.v}</b></span>`).join(' ')+'</div>').join('');
+  return [...g.entries()].map(([k,l])=>`<div class="tw mt"><table><thead><tr><th>${esc(baslik&&k?k:'Model')}</th><th class="hs">Sipariş<small>adet</small></th></tr></thead><tbody>`+
+    l.map(p=>`<tr><td>${esc(p.ad)}${artHtml(artIht(p.ad))}</td><td class="s"><b>${p.v}</b></td></tr>`).join('')+'</tbody></table></div>').join('');
 }
 function ihtDetay(tip,x,S){
   let s='';
@@ -1011,7 +1072,7 @@ function vIht(){
   const tot=rows.reduce((a,x)=>a+x.tot,0), n=rows.filter(x=>x.tot>0).length;
   let s=chips(Object.keys(IHT).map(k=>[k,IHT[k]]),tip,'it')+`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+bolgeChips('irg',rg);
   s+=`<div class="card dep"><div class="g4" style="grid-template-columns:repeat(2,1fr)"><div><small>Toplam sipariş ihtiyacı</small><b class="or">${nf(tot)}</b></div><div><small>Siparişi olan mağaza</small><b>${n}<span style="font-size:12px;color:var(--mut)">/${rows.length}</span></b></div></div></div>`;
-  if(top.length)s+='<h2>En çok istenen modeller</h2><div class="card dep">'+top.map(([k,v])=>{const [g,ad]=k.split('|');return `<div class="urow"><span><small style="color:var(--mut)">${esc(g)}</small> ${esc(ad)}</span><span><b>${v}</b></span></div>`}).join('')+'</div>';
+  if(top.length)s+='<h2>En çok istenen modeller</h2><div class="card dep">'+top.map(([k,v])=>{const [g,ad]=k.split('|');return `<div class="urow"><span><small style="color:var(--mut)">${esc(g)}</small> ${esc(ad)}${artHtml(artIht(ad))}</span><span><b>${v}</b></span></div>`}).join('')+'</div>';
   s+=`<h2>Mağazalar</h2>`+rows.map((x,i)=>`<details class="card ${x.bolge===GAB?'ga':''}"><summary><div class="rk">${i+1}</div><div class="nm"><b>${esc(x.ad)}</b><span>${esc(x.spv)} · ${tc(x.bolge)}</span></div>
     <div class="kv"><small>Sipariş</small><b class="${x.tot>0?'or':''}">${nf(x.tot)}</b>${tip!=='ankastre'?`<span class="stk">Personel: ${esc(perTxt(x.per))}</span>`:''}</div></summary>
     <div class="det" style="display:block"><a class="lnk" data-mk="${x.kod}">Mağaza sayfasına git ›</a>${ihtDetay(tip,x,S)}</div></details>`).join('');
@@ -1131,6 +1192,7 @@ function render(){
   const go=(t,fn)=>{tab=t;LS.set('tab',t);if(fn)fn();render();window.scrollTo(0,0)};
   M.querySelectorAll('[data-mk]').forEach(el=>el.onclick=e=>{e.stopPropagation();const k=el.dataset.mk;go('mag',()=>{sel.mk=k})});
   M.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{if(b.dataset.back==='mk')sel.mk=null;if(b.dataset.back==='dh'){sel.dh='';if(sel.dhfrom){tab=sel.dhfrom;sel.dhfrom='';LS.set('tab',tab)}}render();window.scrollTo(0,0)});
+  M.querySelectorAll('[data-kimg]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();kartResim(b.dataset.kimg,b.dataset.kk)});
   M.querySelectorAll('[data-bk]').forEach(el=>el.onclick=()=>{sel.bk=el.dataset.bk;sel.bl='';sel.q='';render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-bkback]').forEach(el=>el.onclick=()=>{sel.bk=null;render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-bf]').forEach(el=>el.onclick=()=>{sel.bf=+el.dataset.bf;sel.bs=0;sel.q='';sel.brg='';render();window.scrollTo(0,0)});
