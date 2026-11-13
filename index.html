@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="46">
+<meta name="surum" content="47">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -147,6 +147,12 @@ tbody tr[data-mk]{cursor:pointer}
 :root[data-renk=pembe]{--navy:#a62a62;--ga-line:#e0558f;--ga:color-mix(in srgb,#e0558f 14%,var(--card));--ac:#ea6aa0;--ad:#a62a62;--ae:#721a43;--r1:240,98,146;--r2:255,152,0;--r3:186,104,200;--r4:244,143,177}
 :root[data-renk=turkuaz]{--navy:#0e7d70;--ga-line:#14b8a6;--ga:color-mix(in srgb,#14b8a6 14%,var(--card));--ac:#22c7b4;--ad:#0e7d70;--ae:#095249;--r1:20,184,166;--r2:79,142,247;--r3:46,204,113;--r4:3,169,244}
 :root[data-renk=grafit]{--navy:#334155;--ga-line:#64748b;--ga:color-mix(in srgb,#64748b 14%,var(--card));--ac:#64748b;--ad:#334155;--ae:#1e293b;--r1:100,116,139;--r2:148,163,184;--r3:71,85,105;--r4:120,144,156}
+.mt{padding:3px 4px 0}
+.mt thead th{border:3px solid transparent;border-bottom-width:3px;background-clip:padding-box;border-radius:14px;position:static}
+.mt.gt{padding:3px 4px 4px}
+.mt.gt thead th{border-radius:14px}
+.mt tr.tot td:first-child{border-bottom-left-radius:12px}.mt tr.tot td:last-child{border-bottom-right-radius:12px}
+.gt tbody tr:last-child td:first-child{border-bottom-left-radius:12px}.gt tbody tr:last-child td:last-child{border-bottom-right-radius:12px}
 #tp{position:fixed;inset:0;z-index:25;display:none;background:rgba(10,16,28,.45);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
 #tp.on{display:block}
 #tp .sheet{position:absolute;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));max-width:460px;margin:0 auto;padding:16px;border-radius:26px;background:var(--card);border:1px solid var(--glass-b);box-shadow:0 20px 50px rgba(0,0,0,.4)}
