@@ -617,10 +617,42 @@ async function gorselKaydet(tek){
   }
   toast(files.length>1?files.length+' görsel kaydedildi (İndirilenler)':'Görsel kaydedildi (İndirilenler)');
 }
+/* rapor Excel'i: Görseller sekmesi açılınca indirilip çözülür; Kaydet / Paylaş hazır dosyayı kullanır */
+let XF=null, XFP=null;
+function excelHazirla(){
+  if(!D.excel)return Promise.resolve(null);
+  const k=gkey('xlsx');
+  if(XF&&XF.k===k)return Promise.resolve(XF.file);
+  if(XFP&&XFP.k===k)return XFP.p;
+  const p=(async()=>{
+    const r=await fetch('rapor_xlsx.enc',{cache:'no-store'}); if(!r.ok)throw new Error(r.status);
+    const b=new Uint8Array(await r.arrayBuffer());
+    const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:b.slice(0,12)},KEY,b.slice(12));
+    XF={k,file:new File([plain],D.excel,{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})};
+    excelDurum(); return XF.file;
+  })();
+  XFP={k,p}; p.catch(()=>{XFP=null;excelDurum(true)});
+  return p;
+}
+function excelDurum(hata){
+  const d=$('#xdr'); if(!d)return;
+  const ok=!!(XF&&XF.k===gkey('xlsx'));
+  d.textContent=hata?'Excel alınamadı; interneti kontrol edip sekmeyi yeniden aç':ok?`${D.excel} · ${(XF.file.size/1048576).toFixed(1).replace('.',',')} MB · hazır`:'Hazırlanıyor…';
+  ['#xkd','#xsh'].forEach(q=>{const b=$(q); b.disabled=!ok; b.style.opacity=ok?1:.55});
+}
+function excelIndir(f){const u=URL.createObjectURL(f),a=document.createElement('a');a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),8000)}
+function excelKaydet(){if(XF){excelIndir(XF.file);toast('Excel kaydedildi (İndirilenler)')}}
+async function excelPaylas(){
+  if(!XF)return; const files=[XF.file];
+  try{ if(navigator.canShare&&navigator.canShare({files})){await navigator.share({files,title:'BSH · '+(D.donem||'')});return} }
+  catch(e){if(e&&e.name==='AbortError')return}
+  excelIndir(XF.file); toast('Bu cihaz Excel\'i doğrudan paylaşamıyor; kaydedildi, WhatsApp\'ta Belge\'den seç');
+}
 function vImg(){
   const g=D.gorseller||[];
-  if(!g.length)return '<div class="msg">Bu raporda görsel yok.</div>';
-  return `<div class="row" style="margin:0 0 10px;gap:8px"><span class="note" style="margin:0">Dokun: büyüt (kaydırarak oku).</span><span style="display:flex;gap:6px"><button class="chip" id="gkd">⬇ Kaydet</button><button class="chip rs" id="gsh" disabled style="opacity:.55">Hazırlanıyor…</button></span></div><div class="imgs">`+
+  const xl=D.excel?`<div class="card dep" style="padding:10px 12px"><div class="row" style="gap:8px"><span style="min-width:0"><b>Excel raporu</b><div class="note" id="xdr" style="margin:2px 0 0;word-break:break-all">Hazırlanıyor…</div></span><span style="display:flex;gap:6px;flex:none"><button class="chip" id="xkd" disabled style="opacity:.55">⬇ Kaydet</button><button class="chip rs" id="xsh" disabled style="opacity:.55">⇪ Paylaş</button></span></div></div>`:'';
+  if(!g.length)return xl||'<div class="msg">Bu raporda görsel yok.</div>';
+  return xl+`<div class="row" style="margin:0 0 10px;gap:8px"><span class="note" style="margin:0">Dokun: büyüt (kaydırarak oku).</span><span style="display:flex;gap:6px"><button class="chip" id="gkd">⬇ Kaydet</button><button class="chip rs" id="gsh" disabled style="opacity:.55">Hazırlanıyor…</button></span></div><div class="imgs">`+
     g.map(f=>`<div><div class="row" style="margin-top:4px"><h2 style="margin:8px 0">${esc(f.replace('.png','').replace(/_/g,' '))}</h2><span style="display:flex;gap:6px"><button class="chip" data-gk="${esc(f)}" style="visibility:hidden">⬇ Kaydet</button><button class="chip" data-gs="${esc(f)}" style="visibility:hidden">⇪ Paylaş</button></span></div><img data-f="${esc(f)}" alt="${esc(f)}"></div>`).join('')+'</div>';
 }
 
@@ -1631,6 +1663,7 @@ function render(){
   M.querySelectorAll('[data-sh]').forEach(b=>b.onclick=()=>{const t=paylasMetin(b.dataset.sh,b.dataset.arg);if(t)paylas(t);else if(b.dataset.sh==='sip')toast('Bu mağazada sipariş ihtiyacı görünmüyor')});
   M.querySelectorAll('[data-xl]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();xlsxIndir(XL&&XL())});
   M.querySelectorAll('.imgs img').forEach(im=>{loadImg(im,im.dataset.f);im.onclick=()=>{$('#zoom img').src=im.src;$('#zoom').style.display='block'}});
+  if($('#xkd')){$('#xkd').onclick=excelKaydet; $('#xsh').onclick=excelPaylas; excelDurum(); excelHazirla().catch(()=>{})}
   if($('#gsh')){$('#gsh').onclick=()=>gorselPaylas(); M.querySelectorAll('[data-gs]').forEach(b=>b.onclick=()=>gorselPaylas(b.dataset.gs)); $('#gkd').onclick=()=>gorselKaydet(); M.querySelectorAll('[data-gk]').forEach(b=>b.onclick=()=>gorselKaydet(b.dataset.gk)); gorselDurum()}
   window.scrollTo(0,y);
 }
