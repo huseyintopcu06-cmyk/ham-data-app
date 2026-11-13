@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="41">
+<meta name="surum" content="42">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -63,6 +63,11 @@ h2{font-size:14px;margin:16px 0 8px;color:var(--mut);text-transform:uppercase;le
 .det h4{grid-column:1/-1;margin:10px 0 2px;padding-top:8px;border-top:1px solid var(--line);font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--org)}
 .det i{font-style:normal;color:var(--mut)}
 .det b{text-align:right}
+.gg{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px;margin:6px 0 2px}
+.gg .mt{margin:0}.gt th{text-align:left!important;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+.gt th.hs{background:#c65911}.gt th.hk{background:#2E75B6}.gt th.hg{background:#17803d}.gt th.ha{background:#5b6b82}
+.mt.gt td:first-child{min-width:0;max-width:none;color:var(--mut)}.mt.gt{overflow-x:visible}.mt.gt table{table-layout:auto}.gg>div{min-width:0}.gt td.v{text-align:right;white-space:normal}.gt td.v.n{width:1%;white-space:nowrap}
+.gt tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--chip) 55%,transparent)}
 .mt{margin:4px 0 6px}.mt table{font-size:12px}.mt th,.mt td{padding:5px 7px}
 .mt td:first-child,.mt th:first-child{position:static;white-space:normal;min-width:130px;max-width:190px;text-align:left;line-height:1.25;background:transparent}
 .mt th{font-size:11px}.mt th small{display:block;font-weight:400;opacity:.8;font-size:9.5px}
@@ -252,6 +257,14 @@ function grpAd(x){
   if(/^(Sıra|Kod|Personel|SPV|Bölge|Mağaza)$/i.test(x))return 0;
   return 1;
 }
+function kisaAd(x,k){   // grup içinde tekrar eden sözcükleri at
+  let s=String(x).replace(/\s*Ade[dt]i\s*$/,'').replace(/\s*Ade[dt]i(?=\s)/,'');
+  if(k===1)s=s.replace(/\s*Satış$/,'').replace(/\s*Satış(?=\s)/,'')||s;
+  if(k===2)s=s.replace(/^Satılabilir Stok$/,'Satılabilir').replace(/^Toplam Stok$/,'Toplam stok');
+  if(k===3)s=s.replace(/^Gelen \(Açık Sipariş\)$/,'Açık sipariş').replace(/^Gelen$/,'Açık sipariş');
+  if(k===4)s=s.replace(/^\S+ Ayı Başlangıç (Stok|Set)\s*/,(m,t)=>t==='Set'?'Set ':'').trim()||'Toplam';
+  return s.trim()||x;
+}
 function grupla(h,r,nameIdx){
   const g={0:[],1:[],2:[],3:[],4:[]};
   h.forEach((x,i)=>{
@@ -259,10 +272,11 @@ function grupla(h,r,nameIdx){
     g[grpAd(x)].push({x,i,sat:/Satılabilir/i.test(x)?0:1});
   });
   g[2].sort((a,b)=>a.sat-b.sat||a.i-b.i);          // satılabilir stok önce
-  const row=e=>`<i>${esc(e.x)}</i><b class="${sgn(r[e.i],e.x)}">${fmt(r[e.i],e.x)}</b>`;
-  let s=g[0].map(row).join('');
-  [[1,'Sell-out'],[2,'Satılabilir stok'],[3,'Açık sipariş'],[4,'Ay başı stok']].forEach(([k,t])=>{ if(g[k].length)s+=`<h4>${t}</h4>`+g[k].map(row).join('') });
-  return s;
+  const info=g[0].map(e=>`<span class="pill">${esc(e.x)} <b>${fmt(r[e.i],e.x)}</b></span>`).join('');
+  const TT=[[1,'Sell-out','hs'],[2,'Satılabilir stok','hk'],[3,'Açık sipariş','hg'],[4,'Ay başı stok','ha']];
+  const tabs=TT.filter(([k])=>g[k].length).map(([k,t,c])=>`<div class="tw mt gt"><table><thead><tr><th class="${c}" colspan="2">${t}</th></tr></thead><tbody>`+
+    g[k].map(e=>`<tr><td>${esc(kisaAd(e.x,k))}</td><td class="v ${typeof r[e.i]==='number'?'n':''} ${sgn(r[e.i],e.x)}"><b>${fmt(r[e.i],e.x)}</b></td></tr>`).join('')+'</tbody></table></div>').join('');
+  return (info?`<div style="grid-column:1/-1">${info}</div>`:'')+`<div class="gg">${tabs}</div>`;
 }
 const KATVERI={'MDA':['MDA'],'Ankastre':['Ankastre'],'VC':['VC Bagless+Unlimited','VC Robot'],'FOOD':['FOOD MUM'],'FOOD Diğer':['FOOD Diğer'],'FAEM':['FAEM'],'Hava Temizleyici':['Hava Temizleyici']};
 function modelTablo(kod,cats){   // tek ızgara: model × (bu ay satış, geçen ay, stok, açık sipariş)
@@ -275,22 +289,6 @@ function modelTablo(kod,cats){   // tek ızgara: model × (bu ay satış, geçen
   return `<div style="grid-column:1/-1"><h4>Modeller · ${rows.length} model</h4><div class="tw mt"><table><thead><tr><th>Model</th><th class="hs">${esc(bm)}<small>satış</small></th><th>${esc(pm)}<small>satış</small></th><th class="hk">Stok<small>satılabilir</small></th><th class="hg">Açık<small>sipariş</small></th></tr></thead><tbody>`+
     rows.map(r=>`<tr><td>${esc(U.u[r[0]])}</td>${c(r[3],'s')}${c(r[7],'p')}${c(r[5],'k')}${c(r[6],'g')}</tr>`).join('')+
     `<tr class="tot"><td>Toplam</td><td class="s">${nf(T[0])}</td><td class="p">${nf(T[1])}</td><td class="k">${nf(T[2])}</td><td class="g">${nf(T[3])}</td></tr></tbody></table></div></div>`;
-}
-function satisCihaz(kod,cats){   // mağazada bu dönem hangi modelden kaç adet satıldı
-  const ux=urunIdx(); if(!ux||!cats)return '';
-  const U=D.urunler, ok=new Set(cats.map(c=>U.k.indexOf(c)).filter(i=>i>=0)), pm=oncekiAy(D), bm=buAy(D);
-  const rows=(ux.byKod.get(kod)||[]).filter(r=>ok.has(r[2])&&r[3]>0).sort((a,b)=>b[3]-a[3]||b[7]-a[7]||a[0]-b[0]);
-  if(!rows.length)return '';
-  const top=rows.reduce((a,r)=>a+r[3],0);
-  return `<h4>${esc(bm)} sell-out · modeller (${rows.length} model, ${nf(top)} adet)</h4>`+rows.map(r=>`<div class="urow" style="grid-template-columns:1fr auto"><span>${esc(U.u[r[0]])}</span><span><b>${r[3]}</b> <small style="color:var(--mut)">${esc(bm)}</small>${r[7]>0?` <small style="color:var(--mut)">· ${esc(pm)} ${r[7]}</small>`:''}</span></div>`).join('');
-}
-function cihazlar(kod,cats){   // mağazanın satılabilir stoğunu ve açık siparişini oluşturan cihazlar
-  const ux=urunIdx(); if(!ux||!cats)return '';
-  const U=D.urunler, ok=new Set(cats.map(c=>U.k.indexOf(c)).filter(i=>i>=0));
-  const rows=(ux.byKod.get(kod)||[]).filter(r=>ok.has(r[2])&&(r[5]>0||r[6]>0)).sort((a,b)=>(b[5]>0)-(a[5]>0)||b[5]-a[5]||b[6]-a[6]||a[0]-b[0]);
-  if(!rows.length)return '';
-  const top=rows.reduce((a,r)=>a+Math.max(0,r[5]),0), gel=rows.reduce((a,r)=>a+Math.max(0,r[6]),0), L=rows;
-  return `<h4>Cihazlar · stok ${nf(top)} · açık sipariş ${nf(gel)} (${rows.length} model)</h4>`+L.map(r=>`<div class="urow" style="grid-template-columns:1fr auto"><span>${esc(U.u[r[0]])}</span><span><b class="${r[5]>0?'':'neg'}">${Math.max(0,r[5])}</b>${r[6]>0?` <small style="color:var(--mut)">+${r[6]} açık sipariş</small>`:''}</span></div>`).join('')+(rows.length>L.length?`<div class="note">+${rows.length-L.length} model daha</div>`:'');
 }
 function cardList(t,o){
   // o: {rank,name,sub,main,fc}
