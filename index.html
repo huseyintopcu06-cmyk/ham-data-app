@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="51">
+<meta name="surum" content="52">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -659,7 +659,7 @@ function urunIdx(){
   const U=D.urunler; if(!U)return null;
   let x=_ux.get(D); if(x)return x;
   const byKod=new Map(); U.r.forEach(r=>{let a=byKod.get(r[1]);if(!a){a=[];byKod.set(r[1],a)}a.push(r)});
-  x={byKod,ul:U.u.map(s=>fold(s))}; _ux.set(D,x); return x;
+  x={byKod,ul:U.u.map((s,i)=>fold(s+' '+(U.a&&U.a[i]||'')))}; _ux.set(D,x); return x;
 }
 function stoksuzCokSatan(bolge){   // geçen ay ≥2 satan ama satılabilir stoğu olmayan (ürün × mağaza)
   const U=D.urunler; if(!U)return null;
@@ -715,10 +715,10 @@ function vMagDetay(kod){
 function vUrun(){
   const U=D.urunler; if(!U)return '<div class="msg">Bu raporda ürün verisi yok.</div>';
   const ux=urunIdx(), q=fold(sel.q).trim(), rg=sel.urg||'', ust=sel.ustk==='yok';
-  let s=`<input type="search" id="q" placeholder="Mağaza, ürün veya model ara… (ör. Van, BCS71)" value="${esc(sel.q||'')}">`+bolgeChips('urg',rg)+chips([['','Tümü'],['yok','Stoksuz mağazalar']],sel.ustk||'','ustk');
+  let s=`<input type="search" id="q" placeholder="Mağaza, ürün, model veya artikel ara… (ör. Van, BCS71)" value="${esc(sel.q||'')}">`+bolgeChips('urg',rg)+chips([['','Tümü'],['yok','Stoksuz mağazalar']],sel.ustk||'','ustk');
   const toks=q.split(/\s+/).filter(Boolean);
   if(q.length<2){
-    s+='<div class="note" style="margin:0 0 8px">En az 2 harf yaz: mağaza adı, ürün adı ya da model kodunun bir kısmı.</div>';
+    s+='<div class="note" style="margin:0 0 8px">En az 2 harf yaz: mağaza adı, ürün adı, model kodu ya da artikel numarasının bir kısmı.</div>';
     const z=stoksuzCokSatan(rg||GAB);
     if(z&&z.liste.length){
       s+=`<h2>Stoksuz çok satan · ${rg?tc(rg):'Güney Anadolu'}</h2>`+z.liste.slice(0,15).map(a=>`<div class="card"><div class="sm" data-ara="${a.u}"><div class="nm"><b style="white-space:normal">${esc(U.u[a.u])}</b>${artI(a.u)}<span>${a.n} mağazada stoksuz</span></div><div class="kv"><small>Geçen ay</small><b>${a.g}</b></div></div></div>`).join('');
