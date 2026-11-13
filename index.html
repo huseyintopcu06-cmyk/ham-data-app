@@ -1335,57 +1335,121 @@ function hedefBolum(kod){
 /* mağaza × departman hedef kartı: resim olarak önizle + paylaş */
 let HZ=null;
 function hedefResim(kod,sad){
+  /* Onaylı "Hedef Gerçekleştirme Kartı" düzeni (promotor-bonus-kartlari becerisindeki v2 stilinin tuval karşılığı):
+     lacivert başlık · 3 KPI kutusu · her kampanya ayrı kart (kademe çizgileri, turuncu ok = tahmin, kesik çizgi = bugün olması gereken)
+     · yeşil TOPLAM BONUS bandı · numaralı NE YAPMALI? listesi · dipnot. Ölçüler inç (genişlik 11), U = inç başına piksel. */
   const H=D.hedef, L=H&&H.m&&H.m[kod], S=L&&L.find(s=>s.s===sad); if(!S){toast('Veri yok');return null}
   const G=hedefGun(), m=magList().map.get(kod), um=((D.urunler&&D.urunler.m)||{})[kod], ad=m?m.ad:um?um[0]:kod, bolge=m?m.bolge:um?um[1]:'', spv=m?m.spv:um?um[2]:'';
   const hv=sad==='Hava Temizleme'?null:L.find(s=>s.s==='Hava Temizleme'), items=S.i.concat(hv?hv.i:[]).filter(hgor);
-  const css=getComputedStyle(document.documentElement), ac=css.getPropertyValue('--ac').trim()||'#3b6fc4', ad2=css.getPropertyValue('--ad').trim()||'#1F3864', ae=css.getPropertyValue('--ae').trim()||'#16294a';
-  const W=1080, P=44, IW=W-2*P, X0=P+24, c=document.createElement('canvas'), g=c.getContext('2d');
-  const font=(w,s)=>g.font=`${w} ${s}px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif`;
-  const wrap=(t,mw)=>{const out=[];let l='';String(t).split(/\s+/).forEach(w=>{const n=l?l+' '+w:w;if(g.measureText(n).width>mw&&l){out.push(l);l=w}else l=n});if(l)out.push(l);return out};
-  const rr=(X,Y,w,hh,r)=>{g.beginPath();g.moveTo(X+r,Y);g.arcTo(X+w,Y,X+w,Y+hh,r);g.arcTo(X+w,Y+hh,X,Y+hh,r);g.arcTo(X,Y+hh,X,Y,r);g.arcTo(X,Y,X+w,Y,r);g.closePath()};
-  const hh=x=>x.h?236:88, INK='#16202e', MUT='#667085', ORG='#e07b1f', COL={tuttu:'#17803d',tutar:'#17803d',sinir:'#b58100',geride:'#c0392b'};
-  const KV=S.bn!=null, kn=KV?S.bn+(hv&&hv.bn||0):0, kf=KV?S.bf+(hv&&hv.bf||0):0;
-  const Hh=P+250+items.reduce((a,x)=>a+hh(x),0)+(KV?112:0)+96+P;
-  c.width=W; c.height=Hh;
-  const bg=g.createLinearGradient(0,0,W,Hh); bg.addColorStop(0,ac); bg.addColorStop(1,ae); g.fillStyle=bg; g.fillRect(0,0,W,Hh);
-  g.fillStyle='#ffffff'; rr(P/2,P/2,W-P,Hh-P,48); g.fill();
-  let Y=P+34;
-  font(700,34); g.fillStyle=ad2; g.fillText(('HEDEF · '+sad).toLocaleUpperCase('tr'),X0,Y+30);
-  font(500,26); g.fillStyle=MUT; g.textAlign='right'; g.fillText(`1–${H.gun} ${AYAD[H.ay-1]} ${H.yil} · ${G.kalan} gün kaldı`,W-P-24,Y+28); g.textAlign='left';
-  Y+=78; font(800,52); g.fillStyle=INK; const nl=wrap(ad,IW-48); nl.slice(0,2).forEach((t,i)=>g.fillText(t,X0,Y+i*58)); Y+=(Math.min(nl.length,2)-1)*58+44;
-  font(500,28); g.fillStyle=MUT; g.fillText([spv,tc(bolge),kod].filter(Boolean).join(' · '),X0,Y);
-  Y=P+250;
-  const ix=X0+16, iw=IW-80, sc=v=>Math.max(0,Math.min(v,1.25))/1.25;
+  const U=120, W=11, Mg=.35, IW=W-2*Mg, PACE=H.gun/H.aygun, KALAN=G.kalan, AYA=AYAD[H.ay-1];
+  const NAVY='#16294D',NAVY2='#24407A',YEL='#FFD60A',ORG='#E8590C',GRN='#2B8A3E',GRNL='#D3F9D8',RED='#E03131',AMB='#F59F00',BG='#EEF2F7',INK='#111827',MUT='#4B5563',LINE='#D0D7E2',TRK='#E3E8EF';
+  const CM={G:GRN,R:RED,O:ORG};
+  const tl=v=>nf(v), pc=v=>'%'+Math.round(v*100), dd=v=>v<10?(Math.round(v*10)/10).toString().replace('.',','):nf(v);
+  const pcol=fr=>{const q=PACE?fr/PACE:1;return q>=1?GRN:q>=.8?AMB:RED};
+  const up=t=>String(t).toLocaleUpperCase('tr');
+  const DEPT={'MDA':'MDA','MDA (çift promo)':'MDA · ÇİFT PROMO','MDA + Süpürge':'MDA + VC','Süpürge + FAEM':'VC + FAEM','Süpürge + KEA':S.i.some(x=>x.k==='kea')?'VC + FOOD':'VC','Süpürge + KEA (çift promo)':'2VC','KEA':'FOOD','FAEM + KEA':'FAEM','Hava Temizleme':'HAVA'}[sad]||up(sad);
+  const wrapC=(t,n)=>String(t).split('\n').map(ln=>{const o=[];let l='';ln.split(/\s+/).forEach(w=>{if(l&&(l+' '+w).length>n){o.push(l);l=w}else l=l?l+' '+w:w});if(l)o.push(l);return o.join('\n')}).join('\n');
+  // ---- kampanya kartları + yapılacaklar ----
+  const C=[], A=[];
   items.forEach(x=>{
-    const k=hedefHesap(x,G), br=x.b==='TL'?'TL':x.b;
-    g.fillStyle='#f4f7fb'; rr(X0-8,Y,IW-32,hh(x)-16,26); g.fill();
-    if(!x.h){font(700,30); g.fillStyle=INK; g.fillText(x.ad,ix,Y+46); font(600,28); g.fillStyle=MUT; g.textAlign='right'; g.fillText(`${hdeg(k.g,x.b)} ${br}`+(x.bn||x.bf?` · kazanç ${nf(x.bn)} → ${nf(x.bf)} TL`:''),ix+iw,Y+46); g.textAlign='left'; Y+=hh(x); return}
-    font(700,32); g.fillStyle=INK; g.fillText(x.ad,ix,Y+50);
-    const dt=HDUR[k.d][1]; font(700,25); const dw=g.measureText(dt).width+40; g.fillStyle=COL[k.d]; rr(ix+iw-dw,Y+18,dw,46,23); g.fill(); g.fillStyle='#fff'; g.textAlign='center'; g.fillText(dt,ix+iw-dw/2,Y+50);
-    if(x.bn!=null){font(700,26); g.fillStyle=x.bf>0?COL.tuttu:MUT; g.textAlign='right'; g.fillText(`Kazanç ${nf(x.bn)} → ${nf(x.bf)} TL`,ix+iw-dw-18,Y+50)}
-    g.textAlign='left';
-    font(800,46); g.fillStyle=INK; const gt=hdeg(k.g,x.b); g.fillText(gt,ix,Y+112); const gw=g.measureText(gt).width;
-    font(500,30); g.fillStyle=MUT; g.fillText(` / ${hdeg(x.h,x.b)} ${br} · %${Math.round(k.o*100)}`,ix+gw,Y+112);
-    font(700,30); g.fillStyle=ORG; g.textAlign='right'; g.fillText(`Tahmin ${hdeg(k.fc,x.b)} · %${Math.round(k.of*100)}`,ix+iw,Y+110); g.textAlign='left';
-    const by=Y+140, bh=22;
-    g.fillStyle='#dfe5ee'; rr(ix,by,iw,bh,11); g.fill();
-    if(k.g>0){g.fillStyle=COL[k.d]; rr(ix,by,Math.max(iw*sc(k.o),bh),bh,11); g.fill()}
-    g.fillStyle=INK; g.fillRect(ix+iw*sc(1)-2,by-8,4,bh+16);
-    const fx=ix+iw*sc(k.of); g.fillStyle=ORG; g.beginPath(); g.moveTo(fx-11,by-17); g.lineTo(fx+11,by-17); g.lineTo(fx,by-3); g.closePath(); g.fill();
-    let n=k.kal?(G.kalan>0?`Kalan ${hdeg(k.kal,x.b)} · günde ${hgun(k.kal/G.kalan,x.b)} gerek, şu an günde ${hgun(k.g/Math.max(H.gun,1),x.b)}`:`Kalan ${hdeg(k.kal,x.b)}`):'Hedef tamam';
-    if(x.p)n+=` · Dav ${nf(x.p[0])} · Fırın ${nf(x.p[1])} · Ocak ${nf(x.p[2])}`;
-    font(500,25); g.fillStyle=k.kal?MUT:COL.tuttu; g.fillText(n,ix,Y+200);
-    Y+=hh(x);
+    const k=hedefHesap(x,G), bn=x.bn, bf=x.bf, g_=k.g, h=x.h, fc=k.fc, AD=up(x.ad);
+    if(!h){C.push({kind:'info',title:AD,now:bn,fc:bf,stats:[['Gerçekleşen',`${hdeg(g_,x.b)} adet`,null],['Ay sonu tahmini',`${hdeg(fc,x.b)} adet`,'O'],['Şart',x.k==='robot'?'Kampanya 1 %70':'Kampanya 1 tutmalı',null]]});return}
+    const kal=k.kal, gun=KALAN>0?kal/KALAN:0, simdi=g_/Math.max(H.gun,1);
+    if(x.k==='ciro'){
+      C.push({kind:'bar',title:'MDA CİRO + KOŞ-KAZAN',now:bn,fc:bf,cur:g_,target:h,fcv:fc,scale:2*h,ticks:[[h,'HEDEF'],[1.25*h,'%125'],[1.5*h,'%150'],[2*h,'%200']],label:pc(k.o),fclabel:'Tahmin '+pc(k.of),
+        stats:[['Hedef',tl(h),null],['Gerçekleşen',tl(g_),null],['Kalan',tl(kal),null],['Günlük gereken',tl(gun),null],['Şu anki günlük',tl(simdi),simdi>=gun?'G':'R']]});
+      if(g_<h)A.push(['Ciro',`Hedef için günde ${tl(gun)} TL gerekiyor; şu an günde ${tl(simdi)} TL. `+(simdi>=gun?'Bu tempo hedefi getirir.':'Tempoyu artırmak gerekiyor.')+(KALAN>0?`\n%125 için günde ${tl((h*1.25-g_)/KALAN)} TL, %150 için günde ${tl((h*1.5-g_)/KALAN)} TL gerekir.`:'')]);
+      else{const nx=[1.25,1.5,2].find(l=>g_<h*l); A.push(['Ciro','Hedef tuttu. '+(nx&&KALAN>0?`Sıradaki kademe %${Math.round(nx*100)}: günde ${tl((h*nx-g_)/KALAN)} TL gerekir.`:'Tüm kademeler tuttu.')])}
+    }else if(x.p){
+      const cu=x.p.map(v=>Math.max(N(v),0)), nm=['davlumbaz','fırın','ocak'], eks=cu.map((v,i)=>v<h?`${hdeg(h-v,'adet')} ${['Dav','Fırın','Ocak'][i]}`:'').filter(Boolean).join(' + ')||'-';
+      C.push({kind:'set',title:`ANKASTRE SET (hedef ${hdeg(h,'set')} set)`,now:bn,fc:bf,cu,SETH:h,st:g_,fst:fc,eks});
+      A.push(['Set',g_<h?cu.map((v,i)=>v<h?`${hdeg(h-v,'adet')} ${nm[i]}`:'').filter(Boolean).join(' + ')+` daha: ${hdeg(h,'set')} set tamam.`:`Set hedefi tuttu (${hdeg(g_,'set')} set). Set dışı fırın, ocak ve davlumbaz da adet başı kazandırır.`]);
+    }else{
+      const b=x.b, kisa={yildiz:'Yıldızlı',supurge:'Süpürge',kea:'KEA',mum:'MUM',faem:'FAEM',hava:'Hava'}[x.k]||x.ad;
+      C.push({kind:'bar',title:`${AD} (hedef ${hdeg(h,b)} ${b})`,now:bn,fc:bf,cur:g_,target:h,fcv:fc,scale:Math.max(h,fc,g_,1)*1.15,ticks:[[h,'HEDEF '+hdeg(h,b)]],label:`${hdeg(g_,b)} / ${hdeg(h,b)}`,fclabel:'Tahmin '+hdeg(fc,b),
+        note:x.k==='hava'?'Mağazanın ortak hedefi; tutunca mağazadaki her promotöre ödenir.':x.k==='kea'?'Süpürge, FAEM, robot, toz torbası ve batarya hariç küçük ev aletleri.':null,
+        stats:[['Gerçekleşen',`${hdeg(g_,b)} ${b}`,null],['Kalan',`${hdeg(kal,b)} ${b}`,kal?'R':'G'],['Günlük gereken',kal&&KALAN>0?`${dd(gun)} ${b}`:'-',null],['Ay sonu tahmini',`${hdeg(fc,b)} ${b}`,'O']]});
+      A.push([kisa,kal?`${hdeg(kal,b)} ${b} daha: günde ${dd(gun)} ${b} gerekiyor (şu an günde ${dd(simdi)}).`+(bf?` Tahmin tutarsa kazanç ${tl(bf)} TL.`:''):`Hedef tuttu`+(bn?` (${tl(bn)} TL).`:'.')+' Her ek adet kazancı artırır.']);
+    }
   });
-  if(KV){
-    g.fillStyle=COL.tuttu; rr(X0-8,Y,IW-32,92,26); g.fill(); g.fillStyle='#fff';
-    font(800,30); g.fillText('TOPLAM KAZANÇ',ix,Y+58);
-    font(800,32); g.textAlign='right'; g.fillText(`Şu an ${nf(kn)} TL  →  Tahmini ${nf(kf)} TL`,ix+iw,Y+58); g.textAlign='left';
+  const KV=S.bn!=null, nb=KV?S.bn+(hv&&hv.bn||0):null, fb=KV?S.bf+(hv&&hv.bf||0):null;
+  const ACT=A.map(([k,t])=>[k,wrapC(t,90)]);
+  const ch=c=>c.kind==='bar'?3.5+(c.note?.4:0):c.kind==='set'?2.75:1.75;
+  const listH=.95+ACT.reduce((a,x)=>a+.23*(x[1].split('\n').length)+.42,0);
+  const HT=.35+2.05+1.75+C.reduce((a,c)=>a+ch(c)+.25,0)+.05+(KV?1.25:0)+(ACT.length?listH+.25:0)+.85;
+  const c=document.createElement('canvas'), g=c.getContext('2d'); c.width=W*U; c.height=Math.round(HT*U);
+  // ---- çizim yardımcıları (inç) ----
+  const FW={SemiBold:600,Bold:700,ExtraBold:800,Black:900};
+  const font=(pt,w)=>{g.font=`${FW[w||'ExtraBold']} ${pt/72*U}px Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif`};
+  const rb=(x,y,w,h,fc,ec,r)=>{r=Math.min(r==null?.18:r,w/2,h/2);g.beginPath();const X=x*U,Y=y*U,Wd=w*U,Hh=h*U,R=r*U;g.moveTo(X+R,Y);g.arcTo(X+Wd,Y,X+Wd,Y+Hh,R);g.arcTo(X+Wd,Y+Hh,X,Y+Hh,R);g.arcTo(X,Y+Hh,X,Y,R);g.arcTo(X,Y,X+Wd,Y,R);g.closePath();if(fc){g.fillStyle=fc;g.fill()}if(ec){g.strokeStyle=ec;g.lineWidth=1.2*U/72;g.stroke()}};
+  const T=(x,y,s,pt,col,ha,w,va)=>{font(pt,w);g.fillStyle=col||INK;g.textAlign=ha||'left';const ls=String(s).split('\n'),lh=pt/72*1.3;
+    if(va==='top'){g.textBaseline='top';ls.forEach((t,i)=>g.fillText(t,x*U,(y+i*lh)*U))}
+    else{g.textBaseline='middle';ls.forEach((t,i)=>g.fillText(t,x*U,(y+(i-(ls.length-1)/2)*lh)*U))}};
+  const tw=(s,pt,w)=>{font(pt,w);return g.measureText(s).width/U};
+  const line=(x1,y1,x2,y2,col,lw,dash)=>{g.beginPath();g.setLineDash(dash?dash.map(v=>v*lw*U/72):[]);g.moveTo(x1*U,y1*U);g.lineTo(x2*U,y2*U);g.strokeStyle=col;g.lineWidth=lw*U/72;g.stroke();g.setLineDash([])};
+  const bar=(x,y,w,h,fr,col)=>{rb(x,y,w,h,TRK,null,h/2);if(fr>0)rb(x,y,Math.max(w*Math.min(fr,1),h),h,col,null,h/2)};
+  g.fillStyle=BG; g.fillRect(0,0,c.width,c.height);
+  let y=.35;
+  // ---- başlık ----
+  rb(Mg,y,IW,1.75,NAVY,null,.28);
+  rb(Mg+.3,y+.32,.95,.5,YEL,null,.12); T(Mg+.775,y+.57,kod,15,NAVY,'center','Black');
+  const bwid=.32+tw(DEPT,15,'Black')+.1;
+  rb(W-Mg-.3-bwid,y+.32,bwid,.5,YEL,null,.25); T(W-Mg-.3-bwid/2,y+.57,DEPT,15,NAVY,'center','Black');
+  let npt=21; const nmax=W-Mg-.3-bwid-.2-(Mg+1.45); while(npt>11&&tw(up(ad),npt,'Black')>nmax)npt-=1;
+  T(Mg+1.45,y+.57,up(ad),npt,'#ffffff','left','Black');
+  T(Mg+.32,y+1.15,[spv?'SPV: '+tc(spv):'',tc(bolge),`1–${H.gun} ${AYA} ${H.yil}`].filter(Boolean).join('   ·   '),12,'#C9D6EE','left','Bold');
+  rb(Mg+.32,y+1.42,IW-.64,.13,'#33508A',null,.065); rb(Mg+.32,y+1.42,Math.max((IW-.64)*PACE,.13),.13,YEL,null,.065);
+  T(W-Mg-.32,y+1.15,`Ay ilerlemesi ${pc(PACE)} · ${KALAN} gün kaldı`,12,YEL,'right');
+  y+=2.05;
+  // ---- 3 KPI ----
+  const x0=items.find(x=>x.h), k0=x0&&hedefHesap(x0,G), b0=x0&&x0.b, cr=b0==='TL';
+  const KP=[x0?['GERÇEKLEŞEN · '+up(x0.ad.replace(/\s*\(.*\)/,'')),cr?tl(k0.g)+' TL':`${hdeg(k0.g,b0)} / ${hdeg(x0.h,b0)} ${b0}`,'Hedefe oran '+pc(k0.o),NAVY2]:['GERÇEKLEŞEN','–','',NAVY2],
+            x0?['AY SONU TAHMİNİ',cr?para(k0.fc)+' TL':`${hdeg(k0.fc,b0)} ${b0}`,'Hedefe oran '+pc(k0.of),ORG]:['AY SONU TAHMİNİ','–','',ORG],
+            ['BONUS',KV?`${tl(nb)} → ${tl(fb)} TL`:'–','Şu an → tahmini',GRN]];
+  const kw=(IW-.4)/3;
+  KP.forEach(([a,b,s3,col],i)=>{const x=Mg+i*(kw+.2); rb(x,y,kw,1.45,'#ffffff',LINE,.2); rb(x+.25,y+.1,kw-.5,.09,col,null,.045);
+    T(x+kw/2,y+.42,a,11.5,MUT,'center'); T(x+kw/2,y+.85,b,b.length<16?21:17,col,'center','Black'); T(x+kw/2,y+1.2,s3,11,MUT,'center','Bold')});
+  y+=1.75;
+  // ---- kampanya kartları ----
+  const head=(y,c)=>{T(Mg+.35,y+.42,c.title,c.title.length<46?15:13.5,NAVY,'left','Black');
+    if(c.now==null)return; const ok=c.fc>0||c.now>0;
+    rb(W-Mg-2.75,y+.18,2.45,.5,ok?GRNL:'#F1F3F5',null,.25); T(W-Mg-1.525,y+.43,`${tl(c.now)}  →  ${tl(c.fc)} TL`,13,ok?GRN:MUT,'center','Black')};
+  const stats=(y,it)=>{const sw=(IW-.7)/it.length; it.forEach(([k,v,col],i)=>{const x=Mg+.35+i*sw; T(x,y,k,10.5,MUT,'left','Bold'); T(x,y+.36,v,String(v).length<16?14:12,CM[col]||INK,'left','Black')})};
+  C.forEach(c=>{
+    const h_=ch(c); rb(Mg,y,IW,h_,'#ffffff',LINE,.22); head(y,c);
+    if(c.kind==='bar'){
+      const bx=Mg+.35,bw=IW-.7,by=y+1.27,sc=c.scale,fr=c.target?c.cur/c.target:1;
+      bar(bx,by,bw,.34,c.cur/sc,pcol(fr));
+      const lx=Math.max(bx+bw*Math.min(Math.max(c.cur/sc,0),1),bx+.34);
+      const lw_=tw(c.label,13,'Black'); T(lx+.1+lw_>bx+bw?bx+bw-lw_-.1:lx+.1,by+.17,c.label,13,INK,'left','Black');
+      const xp=bx+bw*Math.min(c.target*PACE/sc,1); line(xp,by-.12,xp,by+.46,INK,1.6,[2,2]);
+      c.ticks.forEach(([lv,lab])=>{const xx=bx+bw*Math.min(lv/sc,1), hit=c.fcv>=lv; line(xx,by-.05,xx,by+.39,'#ffffff',2.2);
+        T(xx>bx+bw-.4?bx+bw:xx,by+.74,lab,10.5,hit?GRN:MUT,xx>bx+bw-.4?'right':'center',hit?'Black':'Bold')});
+      const xf=bx+bw*Math.min(c.fcv/sc,1); g.fillStyle=ORG; g.beginPath(); g.moveTo((xf-.1)*U,(by-.25)*U); g.lineTo((xf+.1)*U,(by-.25)*U); g.lineTo(xf*U,(by-.06)*U); g.closePath(); g.fill();
+      T(Math.min(Math.max(xf,bx+.6),bx+bw-.6),by-.4,c.fclabel,11,ORG,'center','Black');
+      stats(y+2.47,c.stats);
+      if(c.note)T(Mg+.35,y+3.5,c.note,10.5,MUT,'left','Bold');
+    }else if(c.kind==='set'){
+      const pw=(IW-.7-.5)/3;
+      ['Davlumbaz','Fırın','Ocak'].forEach((n,i)=>{const x=Mg+.35+i*(pw+.25), yy=y+.95; T(x,yy,n,12,MUT,'left','Bold'); T(x+pw,yy,`${hdeg(c.cu[i],'adet')} / ${hdeg(c.SETH,'adet')}`,14,INK,'right','Black'); bar(x,yy+.25,pw,.24,c.cu[i]/c.SETH,pcol(c.cu[i]/c.SETH))});
+      stats(y+1.75,[['Tamamlanan set',`${hdeg(c.st,'set')} set`,null],['Eksik',c.eks,c.st<c.SETH?'R':'G'],['Ay sonu tahmini',`${hdeg(c.fst,'set')} set`,'O']]);
+    }else stats(y+.95,c.stats);
+    y+=h_+.25;
+  });
+  y+=.05;
+  // ---- toplam bonus ----
+  if(KV){rb(Mg,y,IW,.95,GRN,null,.25); T(Mg+.4,y+.48,'TOPLAM BONUS',17,'#ffffff','left','Black'); T(W-Mg-.4,y+.48,`Şu an ${tl(nb)} TL   →   Tahmini ${tl(fb)} TL`,17,'#ffffff','right','Black'); y+=1.25}
+  // ---- ne yapmalı ----
+  if(ACT.length){
+    rb(Mg,y,IW,listH,'#ffffff',LINE,.22);
+    T(Mg+.35,y+.42,`NE YAPMALI?  (${Math.min(H.gun+1,H.aygun)}–${H.aygun} ${AYA})`,15,NAVY,'left','Black'); let yy=y+.95;
+    ACT.forEach(([k,t],i)=>{g.fillStyle=YEL; g.beginPath(); g.arc((Mg+.55)*U,(yy+.02)*U,.2*U,0,7); g.fill(); T(Mg+.55,yy+.02,String(i+1),13,NAVY,'center','Black');
+      T(Mg+.95,yy,k,13.5,NAVY,'left','Black'); T(Mg+2.15,yy-.12,t,12.5,INK,'left','Bold','top'); yy+=.23*t.split('\n').length+.42});
+    y+=listH+.25;
   }
-  font(500,22); g.fillStyle='#98a2b3'; g.textAlign='center';
-  g.fillText('Çizgi = hedef · turuncu ok = ay sonu tahmini'+(H.yontem==='kart'?` (${H.ortad||''} ort. × TR endeksi)`:' (şu anki tempo)')+(KV?' · Kazanç brüt: şu an → tahmini':''),W/2,Hh-P-58);
-  g.fillText('Ham Data · BSH · Hedef Kontrol '+`1–${H.gun} ${AYAD[H.ay-1]}`,W/2,Hh-P-26); g.textAlign='left';
-  return {c,ad:(ad+'_Hedef_'+sad).replace(/[^\wÇĞİÖŞÜçğıöşü\-]+/g,'_')+'.png',t:ad+' · Hedef · '+sad};
+  T(Mg,y,(H.yontem==='kart'?`Tahmin: mağazanın ${H.ortad||''} aylık ortalaması × kategori TR tahmin endeksi; tahmin gerçekleşenin altına inmez. Bonus tutarları brüt.`:'Tahmin: şu anki tempo (gün katsayılı). Bonus tutarları brüt.')+
+    `\nKaynak: MediaMarkt sell-out 1–${H.gun} ${AYA} ${H.yil} · Kesik çizgi = bugün olması gereken seviye · Renk: yeşil tempoda, sarı biraz geride, kırmızı geride.`,9,MUT,'left','SemiBold','top');
+  return {c,ad:(ad+'_Hedef_'+DEPT).replace(/[^\wÇĞİÖŞÜçğıöşü\-]+/g,'_')+'.png',t:ad+' · Hedef · '+DEPT};
 }
 function hedefAc(kod,sad){
   const r=hedefResim(kod,sad); if(!r)return;
