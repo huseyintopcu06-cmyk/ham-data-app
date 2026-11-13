@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="28">
+<meta name="surum" content="29">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -601,6 +601,7 @@ function vBrand(){
   });
   let s=`<div class="row" style="margin-bottom:8px"><button class="chip" data-bback="1">← ${esc(f.etiket)}</button></div>`;
   s+=`<div class="note" style="margin:0 0 6px">${esc(f.ad)}</div>`;
+  if(f.personel)s+=`<div class="note" style="margin:0 0 6px">PERSONEL kolonu: ${esc(f.etiket)} ay sonu personel listesine göre (Var = o departmanda promotör var).</div>`;
   if(F.filter(x=>x.etiket===f.etiket).length>1)s+=`<div class="note" style="margin:0 0 6px">Bu ayın diğer dosyaları için geri dönüp seç.</div>`;
   s+=chips(f.sayfalar.map((x,i)=>[String(i),x.ad]),String(si),'bs');
   s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`;
