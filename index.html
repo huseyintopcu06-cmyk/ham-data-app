@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="32">
+<meta name="surum" content="33">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -33,10 +33,10 @@ header h1,header small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis
 #upd{position:sticky;top:58px;z-index:4;background:#FFC000;color:#1a1a1a;padding:9px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;font-weight:600}
 #upd[hidden]{display:none}
 #upd button{background:#1F3864;color:#fff;border:0;border-radius:8px;padding:7px 14px;font-weight:700}
-main{padding:12px 16px calc(84px + env(safe-area-inset-bottom));max-width:900px;margin:0 auto}
+main{padding:12px 16px calc(58px + env(safe-area-inset-bottom));max-width:900px;margin:0 auto}
 nav{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
-nav button{flex:1;background:none;border:0;padding:9px 1px 8px;font-size:11px;color:var(--mut);display:flex;flex-direction:column;align-items:center;gap:2px}
-nav button b{font-size:19px;font-weight:400}
+nav button{flex:1;background:none;border:0;padding:4px 1px 3px;font-size:10px;line-height:1.1;color:var(--mut);display:flex;flex-direction:column;align-items:center;gap:0}
+nav button b{font-size:15px;line-height:1.2;font-weight:400}
 nav button.on{color:var(--navy);font-weight:700}
 @media(prefers-color-scheme:dark){nav button.on{color:#8db6ff}}
 .chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
@@ -298,7 +298,8 @@ function vOzet(){
   }
   let dl='';
   if(P){const a=gaToplam(D),b=gaToplam(P); if(a!=null&&b!=null)dl=`Son rapordan bu yana ${sg(a-b)} satış`}
-  const extra=`<div class="row" style="margin:-2px 0 10px;gap:8px"><span class="note" style="margin:0">${esc(dl)}</span><button class="chip" data-sh="ozet">Paylaş</button></div>`+uyarilar().html;
+  const kisa=`<div class="chips">${[['brand','BRAND'],['ihtiyac','İhtiyaç'],['gid','Gidişat'],['per','Personel'],['img','Görseller']].map(([k,t])=>`<button class="chip" data-dhgo="${k}">${t}</button>`).join('')}</div>`;
+  const extra=kisa+`<div class="row" style="margin:-2px 0 10px;gap:8px"><span class="note" style="margin:0">${esc(dl)}</span><button class="chip" data-sh="ozet">Paylaş</button></div>`+uyarilar().html;
   return hero+extra+chips(short,cur,'oz')+table(T[+cur])+(D.kaynak?`<div class="note">${esc(D.kaynak)}</div>`:'');
 }
 /* FOOD Diğer: FOOD sayfasından türetilen ayrı kategori (sıralama FOOD Diğer satışına göre) */
@@ -1011,11 +1012,12 @@ function render(){
   const q=$('#q'); if(q)q.oninput=()=>{sel.q=q.value;const p=q.selectionStart;render();const n=$('#q');n.focus();n.setSelectionRange(p,p)};
   const go=(t,fn)=>{tab=t;LS.set('tab',t);if(fn)fn();render();window.scrollTo(0,0)};
   M.querySelectorAll('[data-mk]').forEach(el=>el.onclick=e=>{e.stopPropagation();const k=el.dataset.mk;go('mag',()=>{sel.mk=k})});
-  M.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{if(b.dataset.back==='mk')sel.mk=null;if(b.dataset.back==='dh')sel.dh='';render();window.scrollTo(0,0)});
+  M.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{if(b.dataset.back==='mk')sel.mk=null;if(b.dataset.back==='dh'){sel.dh='';if(sel.dhfrom){tab=sel.dhfrom;sel.dhfrom='';LS.set('tab',tab)}}render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-bk]').forEach(el=>el.onclick=()=>{sel.bk=el.dataset.bk;sel.bl='';sel.q='';render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-bkback]').forEach(el=>el.onclick=()=>{sel.bk=null;render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-bf]').forEach(el=>el.onclick=()=>{sel.bf=+el.dataset.bf;sel.bs=0;sel.q='';sel.brg='';render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-bback]').forEach(el=>el.onclick=()=>{sel.bf=null;sel.q='';render();window.scrollTo(0,0)});
+  M.querySelectorAll('[data-dhgo]').forEach(el=>el.onclick=()=>{sel.dhfrom='ozet';sel.dh=el.dataset.dhgo;sel.q='';tab='daha';LS.set('tab','daha');render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-dh]').forEach(el=>el.onclick=()=>{sel.dh=el.dataset.dh;render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-ara]').forEach(el=>el.onclick=()=>go('urun',()=>{sel.q=D.urunler.u[+el.dataset.ara];sel.urg=GAB;sel.ustk=''}));
   M.querySelectorAll('[data-tf]').forEach(el=>el.onclick=()=>{sel.tr='1';sel.ts=el.dataset.tf;sel.to='';sel.tk='';render();window.scrollTo(0,0)});
@@ -1024,7 +1026,7 @@ function render(){
   M.querySelectorAll('.imgs img').forEach(im=>{loadImg(im,im.dataset.f);im.onclick=()=>{$('#zoom img').src=im.src;$('#zoom').style.display='block'}});
   window.scrollTo(0,y);
 }
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;LS.set('tab',tab);sel.q='';if(tab==='mag')sel.mk=null;if(tab==='daha')sel.dh='';window.scrollTo(0,0);render()});
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;LS.set('tab',tab);sel.q='';if(tab==='mag')sel.mk=null;if(tab==='daha'){sel.dh='';sel.dhfrom=''}window.scrollTo(0,0);render()});
 $('#zoom button').onclick=()=>{$('#zoom').style.display='none'};
 $('#rf').onclick=()=>load(true);
 $('#st').onclick=()=>{if(confirm('Çıkış yapılsın mı? (Şifre bu cihazdan silinir)')){LS.del('pw');LS.del('cache_enc');D=null;KEY=null;gate()}};
