@@ -1172,8 +1172,8 @@ function vBrand(){
   if(bol.length>1)s+=chips([['','Tümü']].concat(bol.map(x=>[x,x.toLocaleLowerCase('tr').replace(/(^|\s)\S/g,m=>m.toLocaleUpperCase('tr'))])),rg,'brg');
   const bcs=[]; hd.forEach((x,j)=>{ if(j!==sc&&/sat[ıi][şs]\s*adedi/i.test(x.b+' '+x.c)&&x.a)bcs.push({j,ad:bTitle(x.a),ih:(hd[j+1]&&/[İI]HS/i.test(hd[j+1].b))?j+1:-1}) });
   const dup={}; bcs.forEach(c=>{dup[c.ad]=(dup[c.ad]||0)+1; if(dup[c.ad]>1)c.ad+=' ('+dup[c.ad]+')'});
-  const kv=bcs.length&&sel.bv==='k';
-  if(bcs.length)s+=chips([['t','Tablo'],['k','Kompakt']],kv?'k':'t','bv');
+  const kv=bcs.length&&sel.bv!=='t';   // açılışta Kompakt
+  if(bcs.length)s+=chips([['k','Kompakt'],['t','Tablo']],kv?'k':'t','bv');
   if(kv)return s+brandKompakt(rows,hd,sc,bi,bcs);
   s+=`<div class="note" style="margin:0 0 8px">${rows.length} satır · yana kaydır</div>`;
   const ord=[sc].concat(hd.map((_,j)=>j).filter(j=>j!==sc));   // mağaza kolonu başa
