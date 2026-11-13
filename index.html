@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="31">
+<meta name="surum" content="32">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -272,12 +272,13 @@ function cardList(t,o){
     const ar=(pv&&cr&&pv!==cr)?(pv>cr?`<span class="pos"> ▲${pv-cr}</span>`:`<span class="neg"> ▼${cr-pv}</span>`):'';
     const lk=(o.kod>=0&&r[o.kod])?`<a class="lnk" data-mk="${esc(r[o.kod])}" style="grid-column:1/-1;padding:4px 0">Mağaza sayfasına git ›</a>`:'';
     const sk=o.sat>=0&&r[o.sat]!=null?`<span class="stk">Satılabilir stok ${fmt(r[o.sat],h[o.sat])}</span>`:'';
+    const sv=(o.set&&o.set.length)?o.set.map(i=>N(r[i])):null, ss=sv?`<span class="stk">Satılabilir set ${fmt(sv.reduce((a,b)=>a+b,0),'')}</span>`:'';
     const gl=(o.gel&&o.gel.length)?o.gel.reduce((a,i)=>a+(+r[i]||0),0):null;
     const gs=gl!=null?`<span class="stk">Açık sipariş ${fmt(gl,'')}</span>`:'';
     return `<details class="card ${isGA(r)?'ga':''}"><summary>
       <div class="rk">${o.rank>=0?fmt(r[o.rank],''):''}</div>
       <div class="nm"><b>${esc(String(r[o.name]||'').replace(/^MEDIAMARKT\s*/,''))}</b><span>${o.sub>=0?esc(r[o.sub]):''}${ar}</span>${o.yk?o.yk(r):''}</div>
-      <div class="kv"><small>Sell-out</small><b>${o.main>=0?fmt(r[o.main],h[o.main]):''}</b>${fc}${sk}${gs}</div></summary><div class="det">${lk}${det}${o.cats&&o.kod>=0?cihazlar(r[o.kod],o.cats):''}</div></details>`;
+      <div class="kv"><small>Sell-out</small><b>${o.main>=0?fmt(r[o.main],h[o.main]):''}</b>${fc}${sk}${ss}${gs}</div></summary><div class="det">${lk}${det}${o.cats&&o.kod>=0?cihazlar(r[o.kod],o.cats):''}</div></details>`;
   }).join('');
 }
 
@@ -346,7 +347,7 @@ function vKat(){
   s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+
      chips([['','Tümü']].concat(have.map(x=>[x,tc(x)])),rg,'rg');
   s+=`<div class="row" style="margin:0 0 8px;gap:8px"><div class="note" style="margin:0">${esc(C.baslik||'')} · kartı aç: tüm kolonlar</div><button class="chip" data-sh="kat">Paylaş</button></div>`;
-  s+=cardList({kolonlar:h,satirlar:tot.concat(body)},{rank,name,sub,main,fcs:I.i.fcs,sat:I.i.sat,gel:I.i.gel,kod:ix('Kod'),prev,cats:KATVERI[k],yk:r=>{const m=magList().map.get(r[ix('Kod')]); const y=m&&yorumMag(m,k); return y?`<span class="yr">${esc(y.d)}${y.o.length?' · '+esc(y.o[0]):''}</span>`:''}});
+  s+=cardList({kolonlar:h,satirlar:tot.concat(body)},{rank,name,sub,main,fcs:I.i.fcs,sat:I.i.sat,gel:I.i.gel,kod:ix('Kod'),prev,set:I.i.set,cats:KATVERI[k],yk:r=>{const m=magList().map.get(r[ix('Kod')]); const y=m&&yorumMag(m,k); return y?`<span class="yr">${esc(y.d)}${y.o.length?' · '+esc(y.o[0]):''}</span>`:''}});
   return s;
 }
 async function loadImg(el,f){
@@ -404,6 +405,7 @@ function katInfo(k,DD){
     i:{kod:ix('Kod'),name:ix('Mağaza'),spv:ix('SPV'),bolge:ix('Bölge'),rank:ix('Sıra'),per:ix('Personel'),main,
       fcs:idxs(/^Ay Sonu Tahmini/).filter(i=>sub(h[i])),
       sat:h.findIndex(x=>/Satılabilir/i.test(x)),
+      set:k==='Ankastre'?idxs(/^Set (Siyah|Beyaz|Gri|Inox)$/):[],
       gel:idxs(/Gelen|Açık Sipariş/i).filter(i=>k==='FOOD'?/MUM/.test(h[i]):true),
       bas:idxs(/Başlangıç/).filter(i=>!/Set|Sınırlayan/.test(h[i])&&sub(h[i])),
       ays:idxs(/Satış/).filter(i=>h[i].startsWith(pm+' ')&&!/Başlangıç/.test(h[i])&&sub(h[i]))}};
@@ -463,7 +465,7 @@ function magList(DD){
       const kod=r[q.kod]; let m=mp.get(kod);
       if(!m){m={kod,ad:sade(r[q.name]),spv:r[q.spv],bolge:r[q.bolge],k:{}};mp.set(kod,m)}
       m.k[k]={main:N(r[q.main]),fc:q.fcs.length?sm(r,q.fcs):null,sat:q.sat>=0?N(r[q.sat]):null,gel:sm(r,q.gel),
-        rank:q.rank>=0?r[q.rank]:null,per:q.per>=0?r[q.per]:null,bas:q.bas.map(i=>r[i]),ay:q.ays.length?sm(r,q.ays):null};
+        set:q.set.length?q.set.map(i=>N(r[i])):null,rank:q.rank>=0?r[q.rank]:null,per:q.per>=0?r[q.per]:null,bas:q.bas.map(i=>r[i]),ay:q.ays.length?sm(r,q.ays):null};
     });
   });
   const arr=[...mp.values()];
@@ -504,7 +506,7 @@ function vMagDetay(kod){
   KATS.forEach(k=>{const x=m.k[k]; if(!x)return;
     const yet=x.bas.some(v=>typeof v==='number'&&v<0);
     s+=`<div class="card dep"><div class="dh2"><b>${esc(KLAB[k]||k)}</b>${x.rank?`<span>TR #${x.rank}</span>`:''}${yet?'<span class="tag t-org">Ay sonuna yetmiyor</span>':''}</div>
-      <div class="g4"><div><small>Sell-out</small><b>${nf(x.main)}</b></div><div><small>Tahmin</small><b class="or">${x.fc!=null?nf(x.fc):'–'}</b></div><div><small>Satılabilir stok</small><b>${x.sat!=null?nf(x.sat):'–'}</b></div><div><small>Açık sipariş</small><b>${nf(x.gel)}</b></div></div>${yorumHtml(yorumMag(m,k))}</div>`;
+      <div class="g4"><div><small>Sell-out</small><b>${nf(x.main)}</b></div><div><small>Tahmin</small><b class="or">${x.fc!=null?nf(x.fc):'–'}</b></div><div><small>Satılabilir stok</small><b>${x.sat!=null?nf(x.sat):'–'}</b></div><div><small>Açık sipariş</small><b>${nf(x.gel)}</b></div></div>${x.set?`<div class="note" style="margin:6px 0 0">Satılabilir set <b>${nf(x.set.reduce((a,b)=>a+b,0))}</b> · Siyah ${nf(x.set[0])} · Beyaz ${nf(x.set[1])} · Gri ${nf(x.set[2])}${x.set[3]?` · Inox ${nf(x.set[3])}`:''}</div>`:''}${yorumHtml(yorumMag(m,k))}</div>`;
   });
   s+=grafikBolum(kod);
   s+='<h2>Personel</h2><div class="card dep"><div class="pbs">'+['MDA','VC','FOOD','FAEM'].map(k=>{const x=m.k[k];return `<div><small>${k}</small><span class="pb ${perCls(x&&x.per)}">${esc(perTxt(x&&x.per))}</span></div>`}).join('')+'</div></div>';
