@@ -517,6 +517,19 @@ function vcSirala(t){
   const bol=t.satirlar.filter(r=>r[1]&&r[1]!=='ONLINE').sort((a,b)=>N(b[i])-N(a[i])), dig=t.satirlar.filter(r=>!bol.includes(r));
   return {...t,satirlar:bol.concat(dig)};
 }
+/* VC İHS kırılımı kart görünümü: grup seç (VC Toplam / Bagless + Unlimited / Unlimited / Bagless / Robot) → bölge kartları; yana kaydırma yok */
+function vcIhsKart(t){
+  const h=t.kolonlar, gr=h.filter(x=>/ Adet$/.test(x)).map(x=>x.replace(/ Adet$/,'')).sort((a,b)=>(b==='VC Toplam')-(a==='VC Toplam'));
+  const cg=gr.includes(sel.vg)?sel.vg:gr[0], ia=h.indexOf(cg+' Adet'), ii=h.indexOf(cg+' İHS'), is=h.indexOf(cg+' Stok');
+  const reg=t.satirlar.filter(r=>r[1]&&r[1]!=='ONLINE').sort((a,b)=>N(b[ia])-N(a[ia])), dig=t.satirlar.filter(r=>!reg.includes(r));
+  const mx=Math.max(1,...reg.map(r=>N(r[ia]))), yz=v=>typeof v==='number'?(v*100).toFixed(1).replace('.',',')+'%':'–', stk=r=>is>=0&&r[is]!=null?nf(r[is]):'–';
+  let s=chips(gr.map(x=>[x,x]),cg,'vg',true);
+  s+='<div class="card oz">'+reg.map((r,i)=>`<div class="ozr ${isGA(r)?'ga':''}"><div class="rk">${i+1}</div><div class="nm"><b>${esc(tc(r[0]))}</b><span>${esc(tc(r[1]))} · stok ${stk(r)}</span></div><div class="kv"><b>${nf(r[ia])}</b><small style="margin:2px 0 0;text-transform:none">İHS ${ii>=0?yz(r[ii]):'–'}</small></div><div class="bar"><i style="width:${Math.max(2,Math.round(N(r[ia])/mx*100))}%"></i></div></div>`).join('')+'</div>';
+  if(dig.length)s+='<div class="card oz">'+dig.map(r=>`<div class="ozt ${/FİZİKSEL/.test(r[0]||'')?'b':''}"><span>${esc(r[0])}</span><b>${nf(r[ia])}<span style="font-weight:400;font-size:12px;color:var(--mut)"> · stok ${stk(r)}</span></b></div>`).join('')+'</div>';
+  s+=`<div class="note" style="margin:0 0 8px">${esc(cg)} · sıralama satış adedine göre · İHS = bölge adedi ÷ fiziksel TR adedi</div>`;
+  s+='<details class="card"><summary style="padding:10px 12px;font-weight:600;cursor:pointer">Tüm sütunlar (tam tablo)</summary>'+table(vcSirala(t))+'</details>';
+  return s;
+}
 function vOzet(){
   const T=D.ozet.filter(t=>t.satirlar.length);
   const cur=sel.oz!=null?sel.oz:'0';
@@ -536,7 +549,7 @@ function vOzet(){
   if(P){const a=bshToplam(D),b=bshToplam(P); if(a!=null&&b!=null)dl=`Son rapordan bu yana ${sg(a-b)} satış (BSH)`}
   const extra=`<div class="row" style="margin:-2px 0 10px;gap:8px"><span class="note" style="margin:0">${esc(dl)}</span><span style="display:flex;gap:6px"><button class="chip" data-sh="ozet">Paylaş</button>${XLB}</span></div>`+uyarilar().html+bugunDegisen();
   XL=()=>({ad:'Özet '+short[+cur][1]+' '+veriTarihi(D.donem),h:T[+cur].kolonlar,rows:T[+cur].satirlar});
-  return hero+extra+chips(short,cur,'oz')+((T[+cur].kolonlar[0]==='SPV'&&T[+cur].kolonlar[1]==='Bölge'&&T[+cur].kolonlar[2]==='Mağaza Sayısı')?ozKart(T[+cur]):table(vcSirala(T[+cur])))+(D.kaynak?`<div class="note">${esc(D.kaynak)}</div>`:'');
+  return hero+extra+chips(short,cur,'oz')+((T[+cur].kolonlar[0]==='SPV'&&T[+cur].kolonlar[1]==='Bölge'&&T[+cur].kolonlar[2]==='Mağaza Sayısı')?ozKart(T[+cur]):T[+cur].kolonlar.includes('VC Toplam Adet')?vcIhsKart(T[+cur]):table(T[+cur]))+(D.kaynak?`<div class="note">${esc(D.kaynak)}</div>`:'');
 }
 /* FOOD Diğer: FOOD sayfasından türetilen ayrı kategori (sıralama FOOD Diğer satışına göre) */
 const _fdc=new WeakMap();
