@@ -571,19 +571,46 @@ function vKat(){
   s+=cardList({kolonlar:h,satirlar:tot.concat(body)},opt);
   return s;
 }
+/* görseller: bir kez indirilir; paylaşım için PNG dosyası önceden hazırlanır (paylaş düğmesine basınca beklemeden açılsın diye) */
+const GU={}, GF={}, gkey=f=>f+'|'+(D&&D.olusturma||'');
 async function loadImg(el,f){
+  const k=gkey(f);
+  if(GU[k]){el.src=GU[k];return}
   try{
     const r=await fetch('g_'+f.replace(/\.png$/i,'')+'.enc',{cache:'no-store'});
     if(!r.ok)throw 0;
     const b=new Uint8Array(await r.arrayBuffer());
     const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:b.slice(0,12)},KEY,b.slice(12));
-    el.src=URL.createObjectURL(new Blob([plain],{type:'image/webp'}));
+    const blob=new Blob([plain],{type:'image/webp'});
+    GU[k]=URL.createObjectURL(blob); el.src=GU[k];
+    const bm=await createImageBitmap(blob), c=document.createElement('canvas'); c.width=bm.width; c.height=bm.height;
+    const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(bm,0,0);
+    c.toBlob(pb=>{if(pb){GF[k]=new File([pb],f.replace(/\.\w+$/,'')+'.png',{type:'image/png'});gorselDurum()}},'image/png');
   }catch(e){el.alt='Görsel yüklenemedi'}
+}
+function gorselDurum(){
+  const b=$('#gsh'); if(!b)return;
+  const g=D.gorseller||[], n=g.filter(f=>GF[gkey(f)]).length;
+  b.disabled=n<g.length; b.style.opacity=n<g.length?.55:1;
+  b.textContent=n<g.length?`Hazırlanıyor… ${n}/${g.length}`:`⇪ ${g.length} görseli birlikte paylaş`;
+  M.querySelectorAll('[data-gs]').forEach(x=>{x.style.visibility=GF[gkey(x.dataset.gs)]?'visible':'hidden'});
+}
+async function gorselPaylas(tek){
+  const g=tek?[tek]:(D.gorseller||[]), files=g.map(f=>GF[gkey(f)]).filter(Boolean);
+  if(!files.length||files.length<g.length){toast('Görseller hazırlanıyor, birazdan dene');return}
+  const baslik='BSH · '+(D.donem||'');
+  try{
+    if(navigator.canShare&&navigator.canShare({files})){await navigator.share({files,title:baslik});return}
+    if(files.length>1&&navigator.canShare&&navigator.canShare({files:[files[0]]})){toast('Bu telefon birden çok görseli birlikte paylaşamıyor; tek tek paylaş');return}
+  }catch(e){if(e&&e.name==='AbortError')return; toast('Paylaşılamadı; görsellerin altındaki tek tek paylaş düğmesini dene');return}
+  files.forEach(f=>{const u=URL.createObjectURL(f),a=document.createElement('a');a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)});
+  toast(files.length>1?'Görseller indirildi':'Görsel indirildi');
 }
 function vImg(){
   const g=D.gorseller||[];
-  return `<div class="note" style="margin:0 0 10px">Dokun: büyüt (kaydırarak oku).</div><div class="imgs">`+
-    g.map(f=>`<div><h2 style="margin-top:4px">${esc(f.replace('.png','').replace(/_/g,' '))}</h2><img data-f="${esc(f)}" alt="${esc(f)}"></div>`).join('')+'</div>';
+  if(!g.length)return '<div class="msg">Bu raporda görsel yok.</div>';
+  return `<div class="row" style="margin:0 0 10px;gap:8px"><span class="note" style="margin:0">Dokun: büyüt (kaydırarak oku).</span><button class="chip rs" id="gsh" disabled style="opacity:.55">Hazırlanıyor…</button></div><div class="imgs">`+
+    g.map(f=>`<div><div class="row" style="margin-top:4px"><h2 style="margin:8px 0">${esc(f.replace('.png','').replace(/_/g,' '))}</h2><button class="chip" data-gs="${esc(f)}" style="visibility:hidden">⇪ Paylaş</button></div><img data-f="${esc(f)}" alt="${esc(f)}"></div>`).join('')+'</div>';
 }
 
 /* ===================== yeni modüller: mağaza · ürün · uyarılar · gidişat · personel · paylaş ===================== */
@@ -1593,6 +1620,7 @@ function render(){
   M.querySelectorAll('[data-sh]').forEach(b=>b.onclick=()=>{const t=paylasMetin(b.dataset.sh,b.dataset.arg);if(t)paylas(t);else if(b.dataset.sh==='sip')toast('Bu mağazada sipariş ihtiyacı görünmüyor')});
   M.querySelectorAll('[data-xl]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();xlsxIndir(XL&&XL())});
   M.querySelectorAll('.imgs img').forEach(im=>{loadImg(im,im.dataset.f);im.onclick=()=>{$('#zoom img').src=im.src;$('#zoom').style.display='block'}});
+  if($('#gsh')){$('#gsh').onclick=()=>gorselPaylas(); M.querySelectorAll('[data-gs]').forEach(b=>b.onclick=()=>gorselPaylas(b.dataset.gs)); gorselDurum()}
   window.scrollTo(0,y);
 }
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;LS.set('tab',tab);sel.q='';if(tab==='mag')sel.mk=null;if(tab==='daha'){sel.dh=b.dataset.s||'';sel.dhfrom='';sel.dhnav=!!b.dataset.s}window.scrollTo(0,0);render()});
