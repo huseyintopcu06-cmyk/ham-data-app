@@ -573,6 +573,7 @@ function vKat(){
 }
 /* görseller: bir kez indirilir; paylaşım için PNG dosyası önceden hazırlanır (paylaş düğmesine basınca beklemeden açılsın diye) */
 const GU={}, GF={}, gkey=f=>f+'|'+(D&&D.olusturma||'');
+const gad=f=>{const t=(veriTarihi(D.donem)||'').slice(0,5);return f.replace(/\.\w+$/,'').replace(/_/g,' ')+(t?' '+t:'')+'.png'};
 async function loadImg(el,f){
   const k=gkey(f);
   if(GU[k]){el.src=GU[k];return}
@@ -585,7 +586,7 @@ async function loadImg(el,f){
     GU[k]=URL.createObjectURL(blob); el.src=GU[k];
     const bm=await createImageBitmap(blob), c=document.createElement('canvas'); c.width=bm.width; c.height=bm.height;
     const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(bm,0,0);
-    c.toBlob(pb=>{if(pb){GF[k]=new File([pb],f.replace(/\.\w+$/,'')+'.png',{type:'image/png'});gorselDurum()}},'image/png');
+    c.toBlob(pb=>{if(pb){GF[k]=new File([pb],gad(f),{type:'image/png'});gorselDurum()}},'image/png');
   }catch(e){el.alt='Görsel yüklenemedi'}
 }
 function gorselDurum(){
@@ -610,9 +611,8 @@ async function gorselPaylas(tek){
 async function gorselKaydet(tek){
   const g=tek?[tek]:(D.gorseller||[]), files=g.map(f=>GF[gkey(f)]).filter(Boolean);
   if(!files.length||files.length<g.length){toast('Görseller hazırlanıyor, birazdan dene');return}
-  const on=(veriTarihi(D.donem)||'').replace(/\./g,'-');
   for(const f of files){   // tarayıcı art arda indirmeyi engellemesin diye araya kısa bekleme
-    const u=URL.createObjectURL(f), a=document.createElement('a'); a.href=u; a.download=(on?on+'_':'')+f.name; document.body.appendChild(a); a.click(); a.remove();
+    const u=URL.createObjectURL(f), a=document.createElement('a'); a.href=u; a.download=f.name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(()=>URL.revokeObjectURL(u),8000); await new Promise(r=>setTimeout(r,450));
   }
   toast(files.length>1?files.length+' görsel kaydedildi (İndirilenler)':'Görsel kaydedildi (İndirilenler)');
