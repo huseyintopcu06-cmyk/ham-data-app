@@ -587,7 +587,7 @@ function vKat(){
   const k=keys.includes(sel.kat)?sel.kat:keys[0], v=sel.kv||'mag';
   const C=k==='FOOD Diğer'?fdKategori():D.kategoriler[k], T=C.tablolar.filter(t=>t.satirlar.length);
   const spv=T[0], mag=T[1];
-  let s=chips(keys.map(x=>[x,x]),k,'kat')+chips([['mag','Mağazalar'],['spv','SPV']],v,'kv');
+  let s=chips(keys.map(x=>[x,x]),k,'kat',true)+chips([['mag','Mağazalar'],['spv','SPV']],v,'kv');
   if(v==='spv'||!mag)return s+table(spv);
   const h=mag.kolonlar, ix=n=>h.indexOf(n);
   const rank=ix('Sıra'), name=ix('Mağaza'), sub=ix('SPV');
