@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="30">
+<meta name="surum" content="31">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -61,6 +61,8 @@ h2{font-size:14px;margin:16px 0 8px;color:var(--mut);text-transform:uppercase;le
 .det h4{grid-column:1/-1;margin:10px 0 2px;padding-top:8px;border-top:1px solid var(--line);font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--org)}
 .det i{font-style:normal;color:var(--mut)}
 .det b{text-align:right}
+.yrm{font-size:13px;line-height:1.45;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.yr{display:block;font-size:11.5px;color:var(--mut);margin-top:2px;white-space:normal}
 .bt th:first-child,.bt td:first-child{position:static;text-align:right;background:inherit;z-index:0}
 .bt td:first-child{background:transparent}
 .bt th.s1,.bt td.s1{position:sticky;left:0;z-index:2;text-align:left;background:var(--card)}
@@ -78,7 +80,7 @@ tr.tot td{font-weight:700;background:var(--chip)}
 .pos{color:var(--ok)}.neg{color:var(--bad)}
 input[type=search]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;margin-bottom:8px}
 .tag{display:inline-block;border-radius:6px;padding:1px 7px;font-size:11.5px;font-weight:700;margin-right:6px}
-.t-red{background:#f8cbad;color:#a4261c}.t-org{background:#fce4d6;color:#a4501a}.t-yel{background:#fff2cc;color:#7a5b00}
+.t-grn{background:#c6e7c9;color:#17622a}.t-red{background:#f8cbad;color:#a4261c}.t-org{background:#fce4d6;color:#a4501a}.t-yel{background:#fff2cc;color:#7a5b00}
 .imgs img{width:100%;border-radius:10px;border:1px solid var(--line);margin-bottom:12px;background:#fff}
 .msg{text-align:center;color:var(--mut);padding:36px 12px}
 .setup{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
@@ -274,7 +276,7 @@ function cardList(t,o){
     const gs=gl!=null?`<span class="stk">Açık sipariş ${fmt(gl,'')}</span>`:'';
     return `<details class="card ${isGA(r)?'ga':''}"><summary>
       <div class="rk">${o.rank>=0?fmt(r[o.rank],''):''}</div>
-      <div class="nm"><b>${esc(String(r[o.name]||'').replace(/^MEDIAMARKT\s*/,''))}</b><span>${o.sub>=0?esc(r[o.sub]):''}${ar}</span></div>
+      <div class="nm"><b>${esc(String(r[o.name]||'').replace(/^MEDIAMARKT\s*/,''))}</b><span>${o.sub>=0?esc(r[o.sub]):''}${ar}</span>${o.yk?o.yk(r):''}</div>
       <div class="kv"><small>Sell-out</small><b>${o.main>=0?fmt(r[o.main],h[o.main]):''}</b>${fc}${sk}${gs}</div></summary><div class="det">${lk}${det}${o.cats&&o.kod>=0?cihazlar(r[o.kod],o.cats):''}</div></details>`;
   }).join('');
 }
@@ -344,7 +346,7 @@ function vKat(){
   s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+
      chips([['','Tümü']].concat(have.map(x=>[x,tc(x)])),rg,'rg');
   s+=`<div class="row" style="margin:0 0 8px;gap:8px"><div class="note" style="margin:0">${esc(C.baslik||'')} · kartı aç: tüm kolonlar</div><button class="chip" data-sh="kat">Paylaş</button></div>`;
-  s+=cardList({kolonlar:h,satirlar:tot.concat(body)},{rank,name,sub,main,fcs:I.i.fcs,sat:I.i.sat,gel:I.i.gel,kod:ix('Kod'),prev,cats:KATVERI[k]});
+  s+=cardList({kolonlar:h,satirlar:tot.concat(body)},{rank,name,sub,main,fcs:I.i.fcs,sat:I.i.sat,gel:I.i.gel,kod:ix('Kod'),prev,cats:KATVERI[k],yk:r=>{const m=magList().map.get(r[ix('Kod')]); const y=m&&yorumMag(m,k); return y?`<span class="yr">${esc(y.d)}${y.o.length?' · '+esc(y.o[0]):''}</span>`:''}});
   return s;
 }
 async function loadImg(el,f){
@@ -407,6 +409,50 @@ function katInfo(k,DD){
       ays:idxs(/Satış/).filter(i=>h[i].startsWith(pm+' ')&&!/Başlangıç/.test(h[i])&&sub(h[i]))}};
   c[k]=info; return info;
 }
+/* ---- otomatik yorum (kısa, net): mağaza × departman ---- */
+function donemGun(DD){const m=String((DD||D).donem||'').match(/(\d+)(?:\s*-\s*(\d+))?\s+\S+\s+\d{4}/);return m?+(m[2]||m[1]):0}
+const _tro=new WeakMap();
+function trOrt(k){   // aktif mağaza ortalaması (ONLINE hariç)
+  let c=_tro.get(D); if(!c){c={};_tro.set(D,c)}
+  if(k in c)return c[k];
+  const I=katInfo(k); let v=0;
+  if(I){const a=I.rows.filter(r=>r[I.i.bolge]!=='ONLINE'&&N(r[I.i.main])>0); v=a.length?a.reduce((s,r)=>s+N(r[I.i.main]),0)/a.length:0}
+  return c[k]=v;
+}
+const modelAd=s=>{const t=String(s).split(/\s+/).filter(w=>!/^(BOSCH|SIEMENS|PROFILO)$/i.test(w));return t[0]||String(s)};
+function yorumHtml(y){return y?`<div class="yrm"><span class="tag ${y.cls}">${y.d}</span> ${esc(y.t)}${y.o.length?'<br>'+y.o.map(z=>'• '+esc(z)).join('<br>'):''}</div>`:''}
+function yorumMag(m,k){
+  const x=m.k[k]; if(!x)return null;
+  const ort=trOrt(k), end=ort?Math.round(x.main/ort*100):0, gun=donemGun(), ay=oncekiAy(D);
+  let d,cls;
+  if(x.main===0)[d,cls]=(x.sat>0||x.gel>0||x.ay>0)?['Satış yok','t-red']:['Ürün yok','t-yel'];
+  else if(end>=130&&x.main>=3)[d,cls]=['Güçlü','t-grn'];
+  else if(end>=100)[d,cls]=['İyi','t-grn'];
+  else if(end>=60)[d,cls]=['Gelişime açık','t-yel'];
+  else[d,cls]=['Düşük','t-red'];
+  let t=`${nf(x.main)} adet`+(x.rank?` (TR #${x.rank})`:'')+(ort&&x.main>0?`, ort. %${end}`:'');
+  if(x.fc!=null&&x.ay>0){const p=Math.round((x.fc/x.ay-1)*100);t+=`. Tahmin ${nf(x.fc)}, ${ay}'de ${nf(x.ay)}: ${p>=0?'+':'−'}%${Math.abs(p)}`}
+  else if(x.fc!=null)t+=`. Tahmin ${nf(x.fc)}`;
+  const o=[], neg=x.bas.filter(v=>typeof v==='number'&&v<0);
+  if(neg.length)o.push(`Stok+sipariş ay sonuna yetmiyor (${nf(-Math.min(...neg))} eksik): sipariş/transfer`);
+  const ux=urunIdx(), U=D.urunler;
+  if(ux){
+    const cats=(KATVERI[k]||[]).map(c=>U.k.indexOf(c)).filter(i=>i>=0);
+    const rows=(ux.byKod.get(m.kod)||[]).filter(r=>cats.includes(r[2]));
+    const oos=rows.filter(r=>r[7]>=2&&r[5]<=0).sort((a,b)=>b[7]-a[7]);
+    if(oos.length)o.push(`Stoksuz çok satan: ${oos.slice(0,2).map(r=>modelAd(U.u[r[0]])).join(', ')}${oos.length>2?' +'+(oos.length-2):''}: sipariş/transfer`);
+    const dead=rows.filter(r=>r[3]===0&&r[7]===0&&r[5]>0).reduce((s,r)=>s+r[5],0);
+    if(dead>=5)o.push(`${dead} adet satmayan stok: teşhir/fiyat`);
+  }
+  if(x.main===0&&x.sat>=3)o.push('Stok var satış yok: teşhir/yerleşim/promotör');
+  const kap=(x.main>0&&gun&&x.sat>=10)?x.sat/(x.main/gun):0;
+  if(kap>=120)o.push(`Stok ${Math.round(kap)} günlük: kampanya/transfer`);
+  if(x.ay>0&&x.fc!=null&&x.fc/x.ay-1<=-.3)o.push('Tempo düşük: nedenini sorgula');
+  const pc=perCls(x.per); if((pc==='yok'||pc==='acik')&&k!=='Ankastre'&&k!=='Hava Temizleyici'&&k!=='FOOD Diğer')o.push(pc==='acik'?'Açık nokta: promotör ata':'Promotör yok');
+  if(d==='Güçlü'&&!o.length)o.push('Örnek uygulama: diğer mağazalara anlat');
+  if(d==='Düşük'&&!o.length)o.push('Teşhir/fiyat/promotör verimine bak');
+  return {d,cls,t,o:o.slice(0,3)};
+}
 /* ---- mağaza bazlı birleşik görünüm ---- */
 const _ml=new WeakMap();
 function magList(DD){
@@ -458,7 +504,7 @@ function vMagDetay(kod){
   KATS.forEach(k=>{const x=m.k[k]; if(!x)return;
     const yet=x.bas.some(v=>typeof v==='number'&&v<0);
     s+=`<div class="card dep"><div class="dh2"><b>${esc(KLAB[k]||k)}</b>${x.rank?`<span>TR #${x.rank}</span>`:''}${yet?'<span class="tag t-org">Ay sonuna yetmiyor</span>':''}</div>
-      <div class="g4"><div><small>Sell-out</small><b>${nf(x.main)}</b></div><div><small>Tahmin</small><b class="or">${x.fc!=null?nf(x.fc):'–'}</b></div><div><small>Satılabilir stok</small><b>${x.sat!=null?nf(x.sat):'–'}</b></div><div><small>Açık sipariş</small><b>${nf(x.gel)}</b></div></div></div>`;
+      <div class="g4"><div><small>Sell-out</small><b>${nf(x.main)}</b></div><div><small>Tahmin</small><b class="or">${x.fc!=null?nf(x.fc):'–'}</b></div><div><small>Satılabilir stok</small><b>${x.sat!=null?nf(x.sat):'–'}</b></div><div><small>Açık sipariş</small><b>${nf(x.gel)}</b></div></div>${yorumHtml(yorumMag(m,k))}</div>`;
   });
   s+=grafikBolum(kod);
   s+='<h2>Personel</h2><div class="card dep"><div class="pbs">'+['MDA','VC','FOOD','FAEM'].map(k=>{const x=m.k[k];return `<div><small>${k}</small><span class="pb ${perCls(x&&x.per)}">${esc(perTxt(x&&x.per))}</span></div>`}).join('')+'</div></div>';
@@ -665,6 +711,25 @@ function vBrandMag(){
   s+=L.map(x=>`<div class="card ${x.bolge===GAB?'ga':''}"><div class="sm" data-bk="${esc(x.e.key)}"><div class="nm"><b>${esc(x.ad)}</b><span>${esc(x.e.kod)} ${x.bolge?'· '+tc(x.bolge):''}</span></div><span class="chev">›</span></div></div>`).join('');
   return s;
 }
+function brandYorum(e,lab,ayl,tot,isTR,isB){
+  const tam=ayl.filter(a=>!/\*$/.test(a.t)), son=tam[tam.length-1], si=ayl.indexOf(son), onc=ayl[si-1], u3=ayl[si-3];
+  if(!son||!onc)return '';
+  const val=(a,b)=>{const v=e.m.get(a.k).get(lab)[b];return v==null?null:v};
+  const pay=(a,b)=>{const t=tot(a),v=val(a,b);return t&&v!=null?v/t*100:null};
+  const bn=Object.keys(e.m.get(son.k).get(lab)).find(isB); if(!bn)return '';
+  const br=Object.keys(e.m.get(son.k).get(lab)).filter(b=>!isTR(b));
+  const sira=[...br].sort((a,b)=>(val(son,b)||0)-(val(son,a)||0)), rk=sira.indexOf(bn)+1;
+  const f1=v=>v.toFixed(1).replace('.',','), sgp=v=>(v>=0?'+':'−')+f1(Math.abs(v));
+  const pS=pay(son,bn), pO=pay(onc,bn), pU=u3?pay(u3,bn):null;
+  const L=[];
+  L.push(`${son.t}: Bosch ${nf(val(son,bn))} adet, pay %${f1(pS)}, ${rk}. sırada`+(rk>1?` (lider ${sira[0]} ${nf(val(son,sira[0]))})`:' (lider)')+'.');
+  if(pO!=null)L.push(`${onc.t}'a göre pay ${sgp(pS-pO)} puan`+(pU!=null?`, ${u3.t}'a göre ${sgp(pS-pU)} puan.`:'.'));
+  const dl=br.filter(b=>!isB(b)&&pay(son,b)!=null&&pay(onc,b)!=null).map(b=>({b,d:pay(son,b)-pay(onc,b),p:pay(son,b)}));
+  const up=dl.filter(x=>x.p>=3).sort((a,b)=>b.d-a.d)[0], dn=dl.filter(x=>x.p>=3||true).sort((a,b)=>a.d-b.d)[0];
+  if(up&&up.d>=1)L.push(`En çok yükselen: ${up.b} (${sgp(up.d)} puan, pay %${f1(up.p)}).`);
+  if(dn&&dn.d<=-1)L.push(`En çok düşen: ${dn.b} (${sgp(dn.d)} puan).`);
+  return `<div class="card dep"><div class="yrm" style="border:0;margin:0;padding:0"><b>Yorum</b><br>${L.map(esc).join('<br>')}</div></div>`;
+}
 function vBrandStore(key){
   const I=brandIdx(), e=I.S.get(key); if(!e){sel.bk=null;return vBrandMag()}
   const ml=e.kod?magList().map.get(e.kod):null;
@@ -685,6 +750,7 @@ function vBrandStore(key){
   s+='<div class="tw bt"><table><thead><tr><th class="s1">Marka</th>'+ayl.map(a=>`<th>${esc(a.t)}</th>`).join('')+'</tr></thead><tbody>';
   rows.forEach(b=>{s+=`<tr class="${isB(b)?'ga':''}"><td class="s1">${esc(b)}</td>`+ayl.map(a=>`<td>${cell(a,b)}</td>`).join('')+'</tr>'});
   s+='<tr class="tot"><td class="s1">Toplam</td>'+ayl.map(a=>`<td>${fmt(tot(a),'')}</td>`).join('')+'</tr></tbody></table></div>';
+  s+=brandYorum(e,lab,ayl,tot,isTR,isB);
   s+=`<div class="note">${ayl.some(a=>/\*$/.test(a.t))?'* ay içi dönem (ay tamamlanmadı). ':''}Pay % = marka adedi ÷ o sayfadaki toplam. Bosch üstte, diğer markalar seçili dönemdeki satışa göre sıralı.</div>`;
   return s;
 }
@@ -717,6 +783,15 @@ function vGid(){
   let s=`<div class="note" style="margin:0 0 8px">${esc(P.donem||'önceki')} → ${esc(D.donem||'şimdi')}</div>`;
   s+=chips(KATS.map(x=>[x,KLAB[x]||x]),kk,'gk')+bolgeChips('grg',rg);
   s+=`<div class="card dep"><div class="g4" style="grid-template-columns:repeat(2,1fr)"><div><small>Son rapordan bu yana satış</small><b>${sg(tp)}</b></div><div><small>Tahmin değişimi</small><b class="or">${sg(tf)}</b></div></div></div>`;
+  if(rows.length){
+    const up=rows.slice(0,3).filter(r=>r.d>0), rk=[...rows].filter(r=>r.dr>0).sort((a,b)=>b.dr-a.dr).slice(0,2), rd=[...rows].filter(r=>r.dr<0).sort((a,b)=>a.dr-b.dr).slice(0,2);
+    const L=[`${KLAB[kk]||kk}: son rapordan bu yana ${sg(tp)} adet satış`+(tf?`, tahmin ${sg(tf)}`:'')+'.'];
+    if(up.length)L.push('En çok satan: '+up.map(r=>`${r.m.ad} ${sg(r.d)}`).join(', ')+'.');
+    if(rk.length)L.push('Sırası yükselen: '+rk.map(r=>`${r.m.ad} ▲${r.dr}`).join(', ')+'.');
+    if(rd.length)L.push('Sırası düşen: '+rd.map(r=>`${r.m.ad} ▼${-r.dr}`).join(', ')+'.');
+    const st=rows.filter(r=>r.x.sat!=null&&r.x.sat<=0).length; if(st)L.push(`${st} mağazada satılabilir stok yok.`);
+    s+=`<div class="card dep"><div class="yrm" style="border:0;margin:0;padding:0"><b>Yorum</b><br>${L.map(esc).join('<br>')}</div></div>`;
+  }
   s+=rows.map(r=>{
     const ar=r.dr>0?`<span class="pos">▲${r.dr}</span>`:r.dr<0?`<span class="neg">▼${-r.dr}</span>`:'<span style="color:var(--mut)">=</span>';
     return `<div class="card ${r.m.bolge===GAB?'ga':''}" data-mk="${r.m.kod}"><div class="sm"><div class="rk" style="font-size:11px">${r.x.rank||''}</div><div class="nm"><b>${esc(r.m.ad)}</b><span>${ar} sıra · ${esc(r.m.spv)}</span></div>
