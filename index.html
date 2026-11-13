@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="60">
+<meta name="surum" content="61">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -144,6 +144,19 @@ tbody tr[data-mk]{cursor:pointer}
 #zoom button{position:fixed;top:calc(env(safe-area-inset-top) + 10px);right:12px;z-index:21;background:#fff;color:#000;border:0;border-radius:8px;padding:8px 12px;font-weight:700}
 
 /* ===== cam / sıvı görünüm (13.11.2026) ===== */
+.bsel{flex:1;min-width:0;padding:9px 12px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:inherit;font:inherit;font-weight:600}
+.bkr{display:grid;grid-template-columns:1fr auto 52px;gap:3px 10px;align-items:center;padding:8px 14px}
+.bkr+.bkr{border-top:1px solid var(--line)}
+.bkr.ga{background:var(--ga)}
+.bkr .nm{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.bkr .nm b{font-size:14px;white-space:normal}
+.bkr .v{font-weight:700;font-size:16px;text-align:right}
+.bkr .i{font-size:12px;color:var(--mut);text-align:right}
+.bkr .bar{grid-column:1/-1;height:5px;border-radius:5px;background:rgba(127,127,127,.2);overflow:hidden}
+.bkr .bar i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--ac),var(--ad))}
+.bkr.tt{background:var(--chip)}
+.bkh{display:flex;justify-content:space-between;align-items:center;margin:12px 0 6px;padding:8px 14px;border-radius:999px;background:linear-gradient(135deg,var(--ac),var(--ad));color:#fff;font-weight:700;font-size:13px}
+
 .oz{padding:4px 0;overflow:hidden}
 .ozr{display:grid;grid-template-columns:30px 1fr auto;gap:5px 10px;align-items:center;padding:10px 14px}
 .ozr+.ozr{border-top:1px solid var(--line)}
@@ -839,6 +852,28 @@ function brandFmt(v,h){
   if(brandOran(h)&&Math.abs(v)<=1.5)return (v*100).toFixed(1).replace('.',',')+'%';
   return fmt(v,'');
 }
+/* BRAND kompakt görünüm: seçilen marka için mağazalar bölge bölge, değer + İHS + çubuk */
+function brandKompakt(rows,hd,sc,bi,bcs){
+  const pj=hd.findIndex(x=>/personel/i.test(x.a+x.b)); 
+  let cur=bcs.find(c=>String(c.j)===String(sel.bb))||bcs.find(c=>/^bosch/i.test(c.ad))||bcs[0];
+  const tcb=x=>String(x||'').toLocaleLowerCase('tr').replace(/(^|\s)\S/g,m=>m.toLocaleUpperCase('tr'));
+  const val=r=>typeof r[cur.j]==='number'?r[cur.j]:null, ihs=r=>cur.ih>=0&&typeof r[cur.ih]==='number'?brandFmt(r[cur.ih],'İHS'):'';
+  const isT=r=>r.some(c=>typeof c==='string'&&/TOPLAM/i.test(c));
+  const tot=rows.filter(isT), st=rows.filter(r=>!isT(r));
+  const mx=Math.max(1,...st.map(r=>val(r)||0));
+  const pill=r=>{if(pj<0)return '';const v=String(r[pj]||'').trim(); return v?`<span class="tag ${/yok/i.test(v)?'t-red':/var/i.test(v)?'t-grn':'t-yel'}">${esc(v)}</span>`:''};
+  const row=r=>`<div class="bkr ${isGA(r)?'ga':''}"><div class="nm"><b>${esc(String(r[sc]||'').replace(/^T\d{3}\s*-\s*/,''))}</b> ${pill(r)}</div><div class="v">${val(r)==null?'–':nf(val(r))}</div><div class="i">${ihs(r)}</div><div class="bar"><i style="width:${val(r)?Math.max(2,Math.round(val(r)/mx*100)):0}%"></i></div></div>`;
+  const trow=r=>{const nm=(bi>=0&&typeof r[bi]==='string'&&r[bi].trim()&&/^\s*TOPLAM\s*$/i.test(String(r[sc]||'')))?tcb(r[bi])+' toplam':String(r[sc]||'');return `<div class="bkr tt"><div class="nm"><b>${esc(nm)}</b></div><div class="v">${val(r)==null?'–':nf(val(r))}</div><div class="i">${ihs(r)}</div></div>`};
+  let s=`<div class="row" style="gap:8px;margin:2px 0 8px;align-items:center"><span class="note" style="margin:0">Marka</span><select class="bsel" onchange="sel.bb=this.value;render()">${bcs.map(c=>`<option value="${c.j}" ${c===cur?'selected':''}>${esc(c.ad)}</option>`).join('')}</select></div>`;
+  s+=`<div class="note" style="margin:0 0 8px">${esc(cur.ad)} · satış adedi${cur.ih>=0?' · İHS':''} · ${st.length} mağaza</div>`;
+  if(tot.length)s+='<div class="card oz">'+tot.map(trow).join('')+'</div>';
+  const gr=new Map(); st.forEach(r=>{const k=bi>=0&&typeof r[bi]==='string'&&r[bi].trim()?r[bi].trim():'Mağazalar'; if(!gr.has(k))gr.set(k,[]); gr.get(k).push(r)});
+  [...gr.keys()].sort((a,b)=>(ORD.indexOf(a)<0?9:ORD.indexOf(a))-(ORD.indexOf(b)<0?9:ORD.indexOf(b))).forEach(k=>{
+    const L=gr.get(k).slice().sort((a,b)=>(val(b)||0)-(val(a)||0)), sm=L.reduce((a,r)=>a+(val(r)||0),0);
+    s+=`<div class="bkh"><span>${esc(tcb(k))} · ${L.length} mağaza</span><b>${nf(sm)}</b></div><div class="card oz">${L.map(row).join('')}</div>`;
+  });
+  return s;
+}
 function vBrand(){
   if(!BR){
     brandYukle();
@@ -879,6 +914,11 @@ function vBrand(){
   s+=chips(f.sayfalar.map((x,i)=>[String(i),x.ad]),String(si),'bs',true);
   s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`;
   if(bol.length>1)s+=chips([['','Tümü']].concat(bol.map(x=>[x,x.toLocaleLowerCase('tr').replace(/(^|\s)\S/g,m=>m.toLocaleUpperCase('tr'))])),rg,'brg');
+  const bcs=[]; hd.forEach((x,j)=>{ if(j!==sc&&/sat[ıi][şs]\s*adedi/i.test(x.b+' '+x.c)&&x.a)bcs.push({j,ad:bTitle(x.a),ih:(hd[j+1]&&/[İI]HS/i.test(hd[j+1].b))?j+1:-1}) });
+  const dup={}; bcs.forEach(c=>{dup[c.ad]=(dup[c.ad]||0)+1; if(dup[c.ad]>1)c.ad+=' ('+dup[c.ad]+')'});
+  const kv=bcs.length&&sel.bv==='k';
+  if(bcs.length)s+=chips([['t','Tablo'],['k','Kompakt']],kv?'k':'t','bv');
+  if(kv)return s+brandKompakt(rows,hd,sc,bi,bcs);
   s+=`<div class="note" style="margin:0 0 8px">${rows.length} satır · yana kaydır</div>`;
   const ord=[sc].concat(hd.map((_,j)=>j).filter(j=>j!==sc));   // mağaza kolonu başa
   s+='<div class="tw bt"><table><thead><tr>'+ord.map(j=>{const x=hd[j];return `<th class="${j===sc?'s1':''}">${esc(x.a||x.b)}${x.a&&x.b?`<small>${esc(x.b)}</small>`:''}${x.c?`<small>${esc(x.c)}</small>`:''}</th>`}).join('')+'</tr></thead><tbody>';
