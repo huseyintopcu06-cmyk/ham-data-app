@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="29">
+<meta name="surum" content="30">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -227,7 +227,7 @@ function chips(items,cur,key){
   return '<div class="chips">'+items.map(([id,label])=>`<button class="chip ${id===cur?'on':''}" data-k="${key}" data-v="${esc(id)}">${esc(label)}</button>`).join('')+'</div>';
 }
 function bindChips(){
-  M.querySelectorAll('.chip[data-k]').forEach(b=>b.onclick=()=>{sel[b.dataset.k]=b.dataset.v;if(b.dataset.k==='bs')sel.q='';render()});
+  M.querySelectorAll('.chip[data-k]').forEach(b=>b.onclick=()=>{sel[b.dataset.k]=b.dataset.v;if(b.dataset.k==='bs'||b.dataset.k==='bm')sel.q='';render()});
 }
 /* kart içi kolonları başlıklı gruplara ayır: mağaza bilgisi · Sell-out · Satılabilir stok · Açık sipariş · Ay başı */
 const GRUP=[['Sell-out'],['Satılabilir stok'],['Açık sipariş'],['Ay başı stok']];
@@ -575,11 +575,14 @@ function vBrand(){
     return BRHATA&&BRHATA!=='yukleniyor'?`<div class="msg">${esc(BRHATA)}<br>İnterneti kontrol edip tekrar dene.</div>`:'<div class="msg">BRAND yükleniyor…</div>';
   }
   const F=BR.dosyalar; if(!F.length)return '<div class="msg">BRAND verisi yok.</div>';
+  const bm=sel.bm==='mag'?'mag':'ay';
+  if(bm==='mag'&&sel.bk)return vBrandStore(sel.bk);
+  if(bm==='mag')return chips([['ay','Aylar'],['mag','Mağazalar']],'mag','bm')+vBrandMag();
   const yillar=[...new Set(F.map(f=>f.yil))].sort((a,b)=>b-a);
   const yil=yillar.includes(+sel.by)?+sel.by:yillar[0];
   if(sel.bf==null||!F[sel.bf]){
-    let s=chips(yillar.map(y=>[String(y),String(y)]),String(yil),'by');
-    s+=`<div class="note" style="margin:0 0 8px">${yil} · ay seç · markalar ve rakip adları gizli ("Rakip N")</div>`;
+    let s=chips([['ay','Aylar'],['mag','Mağazalar']],'ay','bm')+chips(yillar.map(y=>[String(y),String(y)]),String(yil),'by');
+    s+=`<div class="note" style="margin:0 0 8px">${yil} · ay seç · ay seç · mağaza karşılaştırması için Mağazalar</div>`;
     F.forEach((f,i)=>{ if(f.yil!==yil)return;
       s+=`<div class="card"><div class="sm" data-bf="${i}"><div class="rk">${f.ay||'–'}</div><div class="nm"><b>${esc(f.etiket)}</b><span style="white-space:normal">${esc(f.ad)} · ${f.sayfalar.length} sayfa</span></div><span class="chev">›</span></div></div>`});
     return s;
@@ -613,6 +616,77 @@ function vBrand(){
     s+=`<tr class="${isGA(r)?'ga':''} ${isTot(r)?'tot':''}">`+ord.map(j=>{const v=r[j],hh=(hd[j].a+' '+hd[j].b+' '+hd[j].c);return `<td class="${j===sc?'s1':''}">${brandFmt(v,hh)}</td>`}).join('')+'</tr>';
   });
   return s+'</tbody></table></div>';
+}
+
+/* ---- BRAND mağaza karşılaştırması: bir mağazada ay ay, marka marka satış ---- */
+let _bi=null;
+const bTitle=s=>{s=String(s||'').trim();return s.length<=3?s:s.toLowerCase().replace(/(^|[\s&])\S/g,m=>m.toUpperCase())};
+const bKey=n=>fold(String(n||'').replace(/^T\d{3}\s*-\s*/,'').replace(/^Media\s+/i,'')).replace(/\s+/g,'');
+function brandCols(s){
+  const R=s.satirlar, bas=Math.max(1,s.bas), n=R[0].length; let mj=-1; const b=[];
+  for(let j=0;j<n;j++){
+    for(let i=0;i<bas;i++)if(/^ma[ğg]aza$/i.test(String(R[i][j]||'').trim())){mj=j}
+    const sub=[...Array(bas).keys()].some(i=>/sat[ıi][şs]\s*adedi/i.test(String(R[i][j]||'')));
+    const br=R[0][j]; if(sub&&typeof br==='string'&&br.trim()&&!/sat[ıi][şs]\s*adedi/i.test(br))b.push([j,bTitle(br)]);
+  }
+  return {mj,b};
+}
+function brandIdx(){
+  if(_bi&&_bi.src===BR)return _bi;
+  const S=new Map(), AYL=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'], kodKey=new Map();
+  BR.dosyalar.forEach(f=>f.sayfalar.forEach(s=>{const mj=brandCols(s).mj; if(mj<0)return; s.satirlar.slice(s.bas).forEach(r=>{const m=String(r[mj]||'').match(/^(T\d{3})\s*-/); if(m)kodKey.set(bKey(r[mj]),m[1])})}));
+  const ayList=new Map();
+  BR.dosyalar.forEach(f=>{
+    if(!f.ay)return;
+    const ak=f.yil*100+f.ay, kismi=/^\s*\d+\s*-\s*\d+/.test(f.ad);
+    ayList.set(ak,{k:ak,t:AYL[f.ay-1]+' '+String(f.yil).slice(2)+(kismi?'*':'')});
+    f.sayfalar.forEach(s=>{
+      if(/KATEG/i.test(fold(s.ad)))return;
+      const c=brandCols(s); if(c.mj<0||!c.b.length)return;
+      const lab=fold(s.ad).replace(/\s+/g,'').toUpperCase(), ad=lab==='FLOORCARE'?'FloorCare':s.ad;
+      s.satirlar.slice(s.bas).forEach(r=>{
+        const nm=String(r[c.mj]||''); if(!nm||/TOPLAM/i.test(nm))return;
+        const key=bKey(nm); let e=S.get(key);
+        if(!e){e={key,ad:nm.replace(/^T\d{3}\s*-\s*/,'').replace(/^Media\s+/i,''),kod:kodKey.get(key)||'',m:new Map(),sy:new Map()};S.set(key,e)}
+        let M=e.m.get(ak); if(!M){M=new Map();e.m.set(ak,M)}
+        const o={}; c.b.forEach(([j,b])=>{const v=r[j]; if(typeof v==='number')o[b]=v}); M.set(lab,o); e.sy.set(lab,ad);
+      });
+    });
+  });
+  _bi={src:BR,S,ayList:[...ayList.values()].sort((a,b)=>a.k-b.k)}; return _bi;
+}
+function vBrandMag(){
+  const I=brandIdx(), q=fold(sel.q), rg=sel.brg2||'';
+  const ml=magList().map;
+  let L=[...I.S.values()].filter(e=>e.kod||e.m.size>3).map(e=>{const m=e.kod?ml.get(e.kod):null;return {e,bolge:m?m.bolge:'',ad:m?m.ad:e.ad}});
+  L=L.filter(x=>(!rg||x.bolge===rg)&&(!q||fold(x.ad).includes(q))).sort((a,b)=>(a.e.kod||'Z').localeCompare(b.e.kod||'Z'));
+  let s=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+bolgeChips('brg2',rg);
+  s+=`<div class="note" style="margin:0 0 8px">${L.length} mağaza · dokun: ay ay marka karşılaştırması</div>`;
+  s+=L.map(x=>`<div class="card ${x.bolge===GAB?'ga':''}"><div class="sm" data-bk="${esc(x.e.key)}"><div class="nm"><b>${esc(x.ad)}</b><span>${esc(x.e.kod)} ${x.bolge?'· '+tc(x.bolge):''}</span></div><span class="chev">›</span></div></div>`).join('');
+  return s;
+}
+function vBrandStore(key){
+  const I=brandIdx(), e=I.S.get(key); if(!e){sel.bk=null;return vBrandMag()}
+  const ml=e.kod?magList().map.get(e.kod):null;
+  const ORDL=['MDA','FLOORCARE','KAHVE','SDA'];
+  const labs=[...new Set([...e.m.values()].flatMap(M=>[...M.keys()]))].sort((a,b)=>{const x=ORDL.indexOf(a),y=ORDL.indexOf(b);return (x<0?9:x)-(y<0?9:y)||a.localeCompare(b)});
+  const lab=labs.includes(sel.bl)?sel.bl:labs[0], met=sel.bt==='pay'?'pay':'adet';
+  const ayl=I.ayList.filter(a=>e.m.has(a.k)&&e.m.get(a.k).has(lab)).slice(-13);
+  let s=`<div class="row" style="margin-bottom:8px"><button class="chip" data-bkback="1">← Mağazalar</button></div>`;
+  s+=`<div class="card ${ml&&ml.bolge===GAB?'ga':''}" style="padding:12px 14px"><b style="font-size:17px">${esc(ml?ml.ad:e.ad)}</b><div class="note" style="margin:2px 0 0">${esc(e.kod)}${ml?' · '+esc(ml.spv)+' · '+tc(ml.bolge):''}</div></div>`;
+  s+=chips(labs.map(x=>[x,e.sy.get(x)||x]),lab,'bl')+chips([['adet','Adet'],['pay','Pay %']],met,'bt');
+  if(!ayl.length)return s+'<div class="msg">Bu sayfa için veri yok.</div>';
+  const isTR=b=>/^tr$/i.test(b);
+  const tot=a=>{const o=e.m.get(a.k).get(lab); const t=Object.keys(o).find(isTR); return t!=null?o[t]:Object.entries(o).reduce((x,[,v])=>x+v,0)};
+  const brands=new Set(); ayl.forEach(a=>Object.keys(e.m.get(a.k).get(lab)).forEach(b=>{if(!isTR(b))brands.add(b)}));
+  const sum=b=>ayl.reduce((x,a)=>x+(e.m.get(a.k).get(lab)[b]||0),0), isB=b=>/^bosch$/i.test(b);
+  const rows=[...brands].sort((a,b)=>(isB(b)-isB(a))||sum(b)-sum(a)).filter(b=>sum(b)>0||isB(b));
+  const cell=(a,b)=>{const v=e.m.get(a.k).get(lab)[b]; if(v==null)return '–'; if(met==='adet')return fmt(v,''); const t=tot(a); return t?(v/t*100).toFixed(1).replace('.',',')+'%':'–'};
+  s+='<div class="tw bt"><table><thead><tr><th class="s1">Marka</th>'+ayl.map(a=>`<th>${esc(a.t)}</th>`).join('')+'</tr></thead><tbody>';
+  rows.forEach(b=>{s+=`<tr class="${isB(b)?'ga':''}"><td class="s1">${esc(b)}</td>`+ayl.map(a=>`<td>${cell(a,b)}</td>`).join('')+'</tr>'});
+  s+='<tr class="tot"><td class="s1">Toplam</td>'+ayl.map(a=>`<td>${fmt(tot(a),'')}</td>`).join('')+'</tr></tbody></table></div>';
+  s+=`<div class="note">${ayl.some(a=>/\*$/.test(a.t))?'* ay içi dönem (ay tamamlanmadı). ':''}Pay % = marka adedi ÷ o sayfadaki toplam. Bosch üstte, diğer markalar seçili dönemdeki satışa göre sıralı.</div>`;
+  return s;
 }
 
 /* ---- Daha: görseller · gidişat · personel ---- */
@@ -861,6 +935,8 @@ function render(){
   const go=(t,fn)=>{tab=t;LS.set('tab',t);if(fn)fn();render();window.scrollTo(0,0)};
   M.querySelectorAll('[data-mk]').forEach(el=>el.onclick=e=>{e.stopPropagation();const k=el.dataset.mk;go('mag',()=>{sel.mk=k})});
   M.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{if(b.dataset.back==='mk')sel.mk=null;if(b.dataset.back==='dh')sel.dh='';render();window.scrollTo(0,0)});
+  M.querySelectorAll('[data-bk]').forEach(el=>el.onclick=()=>{sel.bk=el.dataset.bk;sel.bl='';sel.q='';render();window.scrollTo(0,0)});
+  M.querySelectorAll('[data-bkback]').forEach(el=>el.onclick=()=>{sel.bk=null;render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-bf]').forEach(el=>el.onclick=()=>{sel.bf=+el.dataset.bf;sel.bs=0;sel.q='';sel.brg='';render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-bback]').forEach(el=>el.onclick=()=>{sel.bf=null;sel.q='';render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-dh]').forEach(el=>el.onclick=()=>{sel.dh=el.dataset.dh;render();window.scrollTo(0,0)});
