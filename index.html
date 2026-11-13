@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="59">
+<meta name="surum" content="60">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -89,6 +89,7 @@ h2{font-size:14px;margin:16px 0 8px;color:var(--mut);text-transform:uppercase;le
 .bt th.s1,.bt td.s1{position:sticky;left:0;z-index:2;text-align:left;background:var(--card)}
 .bt th.s1{background:var(--navy)}
 .bt tr.ga td.s1{background:var(--ga)}.bt tr.tot td.s1{background:var(--chip)}
+.bt tr.rgh td.s1{background:linear-gradient(135deg,var(--ac),var(--ad));color:#fff;font-weight:700;font-size:13px;letter-spacing:.2px;text-align:left;padding:7px 10px}
 .bt th{line-height:1.25}.bt th small{display:block;font-weight:400;opacity:.8;font-size:10.5px}
 .tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card);margin-bottom:10px}
 table{border-collapse:collapse;width:100%;font-size:12.5px}
@@ -881,9 +882,16 @@ function vBrand(){
   s+=`<div class="note" style="margin:0 0 8px">${rows.length} satır · yana kaydır</div>`;
   const ord=[sc].concat(hd.map((_,j)=>j).filter(j=>j!==sc));   // mağaza kolonu başa
   s+='<div class="tw bt"><table><thead><tr>'+ord.map(j=>{const x=hd[j];return `<th class="${j===sc?'s1':''}">${esc(x.a||x.b)}${x.a&&x.b?`<small>${esc(x.b)}</small>`:''}${x.c?`<small>${esc(x.c)}</small>`:''}</th>`}).join('')+'</tr></thead><tbody>';
-  rows.forEach(r=>{
-    s+=`<tr class="${isGA(r)?'ga':''} ${isTot(r)?'tot':''}">`+ord.map(j=>{const v=r[j],hh=(hd[j].a+' '+hd[j].b+' '+hd[j].c);return `<td class="${j===sc?'s1':''}">${brandFmt(v,hh)}</td>`}).join('')+'</tr>';
-  });
+  const satir=r=>`<tr class="${isGA(r)?'ga':''} ${isTot(r)?'tot':''}">`+ord.map(j=>{const v=r[j],hh=(hd[j].a+' '+hd[j].b+' '+hd[j].c);const bt=(j===sc&&bi>=0&&isTot(r)&&/^\s*TOPLAM\s*$/i.test(String(v||''))&&typeof r[bi]==='string'&&r[bi].trim())?tcb(r[bi])+' TOPLAM':null;return `<td class="${j===sc?'s1':''}">${bt!=null?esc(bt):brandFmt(v,hh)}</td>`}).join('')+'</tr>';
+  const tcb=x=>String(x||'').toLocaleLowerCase('tr').replace(/(^|\s)\S/g,m=>m.toLocaleUpperCase('tr'));
+  if(bi>=0){   // TOPLAM satırları üstte, altında bölge başlıklı gruplar (yana kaydırırken bölge görünür kalır)
+    rows.filter(r=>isTot(r)).forEach(r=>{s+=satir(r)});
+    const gr=new Map(); rows.filter(r=>!isTot(r)).forEach(r=>{const k=typeof r[bi]==='string'&&r[bi].trim()?r[bi].trim():'Diğer'; if(!gr.has(k))gr.set(k,[]); gr.get(k).push(r)});
+    [...gr.keys()].sort((a,b)=>(ORD.indexOf(a)<0?9:ORD.indexOf(a))-(ORD.indexOf(b)<0?9:ORD.indexOf(b))).forEach(k=>{
+      s+=`<tr class="rgh"><td class="s1" colspan="${ord.length}">${esc(tcb(k))} · ${gr.get(k).length} mağaza</td></tr>`;
+      gr.get(k).forEach(r=>{s+=satir(r)});
+    });
+  }else rows.forEach(r=>{s+=satir(r)});
   return s+'</tbody></table></div>';
 }
 
