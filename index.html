@@ -1294,7 +1294,7 @@ async function hedefPaylas(){
 }
 function vHedef(){
   const H=D.hedef; if(!H||!H.m)return '<div class="msg">Bu ay için Hedef Kontrol dosyası henüz gelmedi.<br>Dosya geldiğinde hedefler burada görünecek.</div>';
-  const G=hedefGun(), tur=HTUR.some(x=>x[0]===sel.ht)?sel.ht:'ciro', rg=sel.hrg==null?GAB:sel.hrg, q=fold(sel.q), sr=sel.hs==='iyi'?'iyi':'geri';
+  const G=hedefGun(), tur=HTUR.some(x=>x[0]===sel.ht)?sel.ht:'ciro', rg=sel.hrg||'', q=fold(sel.q), sr=sel.hs==='geri'?'geri':'iyi';
   const ML=magList().map, UM=(D.urunler&&D.urunler.m)||{}, all=[];
   Object.keys(H.m).forEach(kod=>{const m=ML.get(kod), um=UM[kod], ad=m?m.ad:um?um[0]:kod, bolge=m?m.bolge:um?um[1]:'', spv=m?m.spv:um?um[2]:'';
     H.m[kod].forEach(S=>S.i.forEach(x=>{if(x.k===tur&&x.h)all.push({kod,ad,bolge,spv,var:!!m,S:S.s,x,c:hedefHesap(x,G)})}))});
@@ -1311,7 +1311,7 @@ function vHedef(){
     s+='<h2>Bölgeler</h2><div class="card dep">'+ORD.map(B=>{const L=all.filter(r=>r.bolge===B); if(!L.length)return ''; const t=top(L);
       return `<div class="urow ${B===GAB?'gar':''}" style="grid-template-columns:1fr auto auto;cursor:pointer" data-hb="${esc(B)}"><span><b>${tc(B)}</b><br><span class="note" style="margin:0">${hdeg(t.g,b)} / ${hdeg(t.h,b)} · tutacak ${t.yol}/${t.n}</span></span><span style="text-align:right">%${Math.round(t.g/t.h*100)}</span><span style="text-align:right;color:var(--org);font-weight:700;min-width:54px">→ %${Math.round(t.fc/t.h*100)}</span></div>`}).join('')+'</div>';
   }
-  s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+chips([['geri','Geride olan üstte'],['iyi','En iyi üstte']],sr,'hs');
+  s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+chips([['iyi','En iyi üstte'],['geri','Geride olan üstte']],sr,'hs');
   s+=rows.map(r=>`<div class="card ${r.bolge===GAB?'ga':''}" data-hr="${r.kod}" data-hs="${esc(r.S)}" style="padding:3px 12px;cursor:pointer">${hedefSatir(r.x,G,r.ad,r.S)}</div>`).join('')||'<div class="msg">Mağaza bulunamadı.</div>';
   s+=`<div class="note">Mağazaya dokun: o departmanın hedef kartı resim olarak açılır, Paylaş ile gönderilir. Çubukta dikey çizgi = hedef, turuncu ok = ay sonu tahmini. Gerçekleşen, Hedef Kontrol dosyasındaki resmi sell-out'tur (MDA ciro = adet × TEPF; ankastre ve hava temizleme hariç). Tahmin = şu anki tempo, kalan günlerin gün katsayısıyla (Pzt–Per 1,0 · Cuma 1,2 · Cmt 1,7 · Paz 2,1). Tempoda = tahmin hedefi geçiyor · Sınırda = tahmin %85–99 · Geride = tahmin %85'in altında. KEA'da hedef ilk baremdir. Kazanç = brüt bonus, Hedef Kontrol dosyasındaki kurallarla hesaplanır: "şu an" bugünkü satışla hak edilen, "tahmini" ay sonu tahmini tutarsa hak edilecek tutardır. Hava temizleme kazancı kişi başıdır. Kaynak: ${esc(H.kaynak)}</div>`;
   XL=()=>({ad:'Hedef '+HTUR.find(x=>x[0]===tur)[1]+' '+(rg?tc(rg)+' ':'')+H.gun+' '+AYAD[H.ay-1],h:['Kod','Mağaza','SPV','Bölge','Hedef sayfası','Hedef','Gerçekleşen','Gerçekleşme %','Ay sonu tahmini','Tahmin %','Kalan','Günlük gereken','Durum','Kazanç şu an (TL)','Kazanç tahmini (TL)'],
