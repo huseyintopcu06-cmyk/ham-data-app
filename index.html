@@ -257,6 +257,12 @@ nav button{border-radius:20px}
 nav button.on{box-shadow:none;background:color-mix(in srgb,var(--c) 18%,transparent);margin:3px 2px;padding:5px 0 4px}
 main{padding-bottom:calc(104px + env(safe-area-inset-bottom))}
 #toast{bottom:calc(96px + env(safe-area-inset-bottom));-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+/* alt menü: satırda en çok 8 düğme, fazlası ikinci satıra iner; yana kaydırma yok */
+nav{flex-wrap:wrap;justify-content:center;overflow:visible}
+nav button{flex:0 0 12.5%;min-width:0;text-align:center;line-height:1.1}
+nav button.on{margin:3px 0}
+main{padding-bottom:calc(160px + env(safe-area-inset-bottom))}
+#toast{bottom:calc(152px + env(safe-area-inset-bottom))}
 .setup{border-radius:24px;background:var(--glass);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
 .setup .go,.go{border-radius:999px}
 #zoom button{border-radius:999px}
@@ -277,7 +283,7 @@ main{padding-bottom:calc(104px + env(safe-area-inset-bottom))}
 <button style="--c:#FF5FA2" data-t="daha" data-s="gid"><b>↗</b>Gidişat</button>
 <button style="--c:#8BC34A" data-t="daha" data-s="hedef"><b>◎</b>Hedef</button>
 <button style="--c:#22B8E6" data-t="daha" data-s="per"><b>☺</b>Personel</button>
-<button style="--c:#FB7B3C" data-t="daha" data-s="img"><b>▣</b>Görseller</button>
+<button style="--c:#FB7B3C" data-t="daha" data-s="img"><b>▣</b>Sıralama Görsel</button>
 </nav>
 <div id="tp"><div class="sheet"><h3>Mod</h3><div class="modes" id="tpm"></div><h3>Renk</h3><div class="sws" id="tps"></div></div></div>
 <div id="toast"></div>
@@ -1288,7 +1294,7 @@ function vDaha(){
   if(sub==='brand')return back+vBrand();
   return [['brand','▤','BRAND','Aylık BRAND tabloları: departman bazlı TR satışları (2025–2026)'],
           ['ihtiyac','☰','İhtiyaç listeleri','Ankastre ve SDA: hangi mağazaya hangi modelden kaç sipariş'],
-          ['img','▣','Görseller','6 tablo görseli (MDA, Ankastre, VC, FOOD, FAEM, Hava)'],
+          ['img','▣','Sıralama Görsel','6 sıralama tablosu görseli (MDA, Ankastre, VC, FOOD, FAEM, Hava)'],
           ['gid','↗','Gidişat','Önceki rapora göre günlük satış, sıra ve tahmin değişimi'],
           ['hedef','◎','Hedef','Mağaza hedefleri: gerçekleşen, ay sonu tahmini, günde gereken'],
           ['per','☺','Personel','Mağaza × departman promotör durumu']]
