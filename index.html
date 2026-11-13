@@ -382,7 +382,7 @@ function chips(items,cur,key,wrap){
   return '<div class="chips'+(wrap?' wrap':'')+'">'+items.map(([id,label])=>`<button class="chip ${id===cur?'on':''}" data-k="${key}" data-v="${esc(id)}">${esc(label)}</button>`).join('')+'</div>';
 }
 function bindChips(){
-  M.querySelectorAll('.chip[data-k]').forEach(b=>b.onclick=()=>{sel[b.dataset.k]=b.dataset.v;if(b.dataset.k==='bs'||b.dataset.k==='bm')sel.q='';render()});
+  M.querySelectorAll('.chip[data-k]').forEach(b=>b.onclick=()=>{sel[b.dataset.k]=b.dataset.v;if(b.dataset.k==='bs'||b.dataset.k==='bm')sel.q='';if(b.dataset.k==='om'||b.dataset.k==='oz')sel.okm=null;render()});
 }
 /* kart içi kolonları başlıklı gruplara ayır: mağaza bilgisi · Sell-out · Satılabilir stok · Açık sipariş · Ay başı */
 const GRUP=[['Sell-out'],['Satılabilir stok'],['Açık sipariş'],['Ay başı stok']];
@@ -477,7 +477,11 @@ function ozKart(t){
   let s=chips(mi.map(i=>[String(i),lab(h[i])]),String(cm),'om',true);
   s+='<div class="card oz">'+reg.map((r,i)=>`<div class="ozr ${isGA(r)?'ga':''}"><div class="rk">${i+1}</div><div class="nm"><b>${esc(tc(r[0]))}</b><span>${esc(tc(r[1]))} · ${nf(r[2])} mağaza · ${nf(pers(r))} ${dep?dep+' ':''}personel</span></div><div class="kv"><b>${val(r)}</b>${ihs(r)?`<small style="margin:2px 0 0;text-transform:none">İHS ${ihs(r)}</small>`:''}</div><div class="bar"><i style="width:${Math.max(2,Math.round(N(r[cm])/mx*100))}%"></i></div></div>`).join('')+'</div>';
   if(tot.length)s+='<div class="card oz">'+tot.map(line).join('')+'</div>';
-  if(oth.length)s+='<h2>Karşılaştırma ve stok · '+esc(lab(h[cm]))+'</h2><div class="card oz">'+oth.map(line).join('')+'</div>';
+  if(oth.length){
+    const c2=(sel.okm!=null&&mi.includes(+sel.okm))?+sel.okm:cm;
+    const line2=r=>`<div class="ozt ${/GENEL|FİZİKSEL/.test(r[0])?'b':''}"><span>${esc(r[0])}</span><b>${fmt(r[c2],h[c2]+' '+(r[0]||''))}</b></div>`;
+    s+='<h2>Karşılaştırma ve stok · '+esc(lab(h[c2]))+'</h2>'+chips(mi.map(i=>[String(i),lab(h[i])]),String(c2),'okm',true)+'<div class="card oz">'+oth.map(line2).join('')+'</div>';
+  }
   s+='<details class="card"><summary style="padding:10px 12px;font-weight:600;cursor:pointer">Tüm sütunlar (tam tablo)</summary>'+table(t)+'</details>';
   return s;
 }
