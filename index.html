@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="39">
+<meta name="surum" content="40">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -261,11 +261,11 @@ function grupla(h,r,nameIdx){
 const KATVERI={'MDA':['MDA'],'Ankastre':['Ankastre'],'VC':['VC Bagless+Unlimited','VC Robot'],'FOOD':['FOOD MUM'],'FOOD Diğer':['FOOD Diğer'],'FAEM':['FAEM'],'Hava Temizleyici':['Hava Temizleyici']};
 function satisCihaz(kod,cats){   // mağazada bu dönem hangi modelden kaç adet satıldı
   const ux=urunIdx(); if(!ux||!cats)return '';
-  const U=D.urunler, ok=new Set(cats.map(c=>U.k.indexOf(c)).filter(i=>i>=0)), pm=oncekiAy(D);
+  const U=D.urunler, ok=new Set(cats.map(c=>U.k.indexOf(c)).filter(i=>i>=0)), pm=oncekiAy(D), bm=buAy(D);
   const rows=(ux.byKod.get(kod)||[]).filter(r=>ok.has(r[2])&&r[3]>0).sort((a,b)=>b[3]-a[3]||b[7]-a[7]||a[0]-b[0]);
   if(!rows.length)return '';
   const top=rows.reduce((a,r)=>a+r[3],0);
-  return `<h4>Sell-out · modeller (${rows.length} model, ${nf(top)} adet)</h4>`+rows.map(r=>`<div class="urow" style="grid-template-columns:1fr auto"><span>${esc(U.u[r[0]])}</span><span><b>${r[3]}</b>${r[7]>0?` <small style="color:var(--mut)">${esc(pm)} ${r[7]}</small>`:''}</span></div>`).join('');
+  return `<h4>${esc(bm)} sell-out · modeller (${rows.length} model, ${nf(top)} adet)</h4>`+rows.map(r=>`<div class="urow" style="grid-template-columns:1fr auto"><span>${esc(U.u[r[0]])}</span><span><b>${r[3]}</b> <small style="color:var(--mut)">${esc(bm)}</small>${r[7]>0?` <small style="color:var(--mut)">· ${esc(pm)} ${r[7]}</small>`:''}</span></div>`).join('');
 }
 function cihazlar(kod,cats){   // mağazanın satılabilir stoğunu ve açık siparişini oluşturan cihazlar
   const ux=urunIdx(); if(!ux||!cats)return '';
@@ -391,6 +391,7 @@ const N=v=>(typeof v==='number'&&isFinite(v))?v:0;
 const nf=v=>Math.round(N(v)).toLocaleString('tr-TR');
 const sg=v=>(v>0?'+':v<0?'−':'')+nf(Math.abs(v));
 const GAB='GÜNEY ANADOLU';
+function buAy(DD){const m=String((DD||D).donem||'').match(/\s(\S+)\s+\d{4}/);const a=m?AYNO[m[1].toLocaleLowerCase('tr')]:0;return a?AYAD[a-1]:''}
 function oncekiAy(DD){const m=String(DD.donem||'').match(/\s(\S+)\s+\d{4}/);const a=m?AYNO[m[1].toLocaleLowerCase('tr')]:0;return a?AYAD[(a+10)%12]:''}
 function bolgeChips(key,cur){return chips([['','Tümü']].concat(ORD.map(x=>[x,tc(x)])),cur||'',key)}
 let _tt2=0;
