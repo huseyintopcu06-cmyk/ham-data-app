@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="43">
+<meta name="surum" content="44">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -63,6 +63,11 @@ h2{font-size:14px;margin:16px 0 8px;color:var(--mut);text-transform:uppercase;le
 .det h4{grid-column:1/-1;margin:10px 0 2px;padding-top:8px;border-top:1px solid var(--line);font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--org)}
 .det i{font-style:normal;color:var(--mut)}
 .det b{text-align:right}
+.dbtn{margin-top:10px;display:flex;justify-content:center;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;background:linear-gradient(135deg,#2E75B6,#1F3864);color:#fff;font-weight:600;font-size:13px;letter-spacing:.2px;box-shadow:0 2px 6px rgba(31,56,100,.35)}
+.dbtn i{font-style:normal;font-size:15px;transition:transform .2s}
+.card.dep:not([open]) .dbtn .b{display:none}.card.dep[open] .dbtn .a{display:none}.card.dep[open] .dbtn i{transform:rotate(180deg)}
+.card.dep[open] .dbtn{background:linear-gradient(135deg,#5b6b82,#3a4658);box-shadow:none}
+.dbtn:active{filter:brightness(1.15)}
 .gg{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px;margin:6px 0 2px}
 .gg .mt{margin:0}.gt th{text-align:left!important;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
 .gt th.hs{background:#c65911}.gt th.hk{background:#2E75B6}.gt th.hg{background:#17803d}.gt th.ha{background:#5b6b82}
@@ -538,7 +543,7 @@ function vMagDetay(kod){
     const KI=katInfo(k), KR=KI&&KI.rows.find(r=>r[KI.i.kod]===kod);
     const detay=KR?`<div class="det" style="border:0;padding:8px 0 0">${grupla(KI.h,KR,KI.i.name)}${modelTablo(kod,KATVERI[k])}</div>`:'';
     s+=`<details class="card dep"><summary style="display:block;padding:0"><div class="dh2"><b>${esc(KLAB[k]||k)}</b>${x.rank?`<span>TR #${x.rank}</span>`:''}${yet?'<span class="tag t-org">Ay sonuna yetmiyor</span>':''}</div>
-      <div class="g4"><div><small>Sell-out</small><b>${nf(x.main)}</b></div><div><small>Tahmin</small><b class="or">${x.fc!=null?nf(x.fc):'–'}</b></div><div><small>Satılabilir stok</small><b>${x.sat!=null?nf(x.sat):'–'}</b></div><div><small>Açık sipariş</small><b>${nf(x.gel)}</b></div></div>${x.set?`<div class="note" style="margin:6px 0 0">Satılabilir set <b>${nf(x.set.reduce((a,b)=>a+b,0))}</b> · Siyah ${nf(x.set[0])} · Beyaz ${nf(x.set[1])} · Gri ${nf(x.set[2])}${x.set[3]?` · Inox ${nf(x.set[3])}`:''}</div>`:''}${yorumHtml(yorumMag(m,k))}${KR?'<div class="note" style="margin:6px 0 0;text-align:right;color:var(--ga-line)">Detay: sell-out, stok, modeller ▾</div>':''}</summary>${detay}</details>`;
+      <div class="g4"><div><small>Sell-out</small><b>${nf(x.main)}</b></div><div><small>Tahmin</small><b class="or">${x.fc!=null?nf(x.fc):'–'}</b></div><div><small>Satılabilir stok</small><b>${x.sat!=null?nf(x.sat):'–'}</b></div><div><small>Açık sipariş</small><b>${nf(x.gel)}</b></div></div>${x.set?`<div class="note" style="margin:6px 0 0">Satılabilir set <b>${nf(x.set.reduce((a,b)=>a+b,0))}</b> · Siyah ${nf(x.set[0])} · Beyaz ${nf(x.set[1])} · Gri ${nf(x.set[2])}${x.set[3]?` · Inox ${nf(x.set[3])}`:''}</div>`:''}${yorumHtml(yorumMag(m,k))}${KR?'<div class="dbtn"><span class="a">Detayı aç · sell-out, stok, modeller</span><span class="b">Detayı kapat</span><i>▾</i></div>':''}</summary>${detay}</details>`;
   });
   s+=grafikBolum(kod);
   s+='<h2>Personel</h2><div class="card dep"><div class="pbs">'+['MDA','VC','FOOD','FAEM'].map(k=>{const x=m.k[k];return `<div><small>${k}</small><span class="pb ${perCls(x&&x.per)}">${esc(perTxt(x&&x.per))}</span></div>`}).join('')+'</div></div>';
