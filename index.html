@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="53">
+<meta name="surum" content="54">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -464,12 +464,15 @@ function vKat(){
   const have=[...new Set(mag.satirlar.map(r=>r[bi]).filter(x=>x&&x!=='ONLINE'))].sort((p,q2)=>(ORD.indexOf(p)<0?9:ORD.indexOf(p))-(ORD.indexOf(q2)<0?9:ORD.indexOf(q2)));
   const rg=sel.rg==null?'':sel.rg, tc=s=>s.toLocaleLowerCase('tr').replace(/(^|\s)\S/g,m=>m.toLocaleUpperCase('tr'));
   const q=fold(sel.q);
-  const rows=mag.satirlar.filter(r=>isTot(r)||((!rg||r[bi]===rg)&&(!q||fold(r[name]).includes(q))));
+  const onl=mag.satirlar.filter(r=>!isTot(r)&&r[bi]==='ONLINE');
+  const rows=mag.satirlar.filter(r=>isTot(r)||(r[bi]!=='ONLINE'&&(!rg||r[bi]===rg)&&(!q||fold(r[name]).includes(q))));
   const tot=rows.filter(isTot), body=rows.filter(r=>!isTot(r));
   s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+
      chips([['','Tümü']].concat(have.map(x=>[x,tc(x)])),rg,'rg');
   s+=`<div class="row" style="margin:0 0 8px;gap:8px"><div class="note" style="margin:0">${esc(C.baslik||'')} · kartı aç: tüm kolonlar</div><button class="chip" data-sh="kat">Paylaş</button></div>`;
-  s+=cardList({kolonlar:h,satirlar:tot.concat(body)},{rank,name,sub,main,fcs:I.i.fcs,sat:I.i.sat,gel:I.i.gel,kod:ix('Kod'),prev,set:I.i.set,cats:KATVERI[k],kat:k,yk:r=>{const m=magList().map.get(r[ix('Kod')]); const y=m&&yorumMag(m,k); return y?`<span class="yr">${esc(y.d)}${y.o.length?' · '+esc(y.o[0]):''}</span>`:''}});
+  const opt={rank,name,sub,main,fcs:I.i.fcs,sat:I.i.sat,gel:I.i.gel,kod:ix('Kod'),prev,set:I.i.set,cats:KATVERI[k],kat:k,yk:r=>{const m=magList().map.get(r[ix('Kod')]); const y=m&&yorumMag(m,k); return y?`<span class="yr">${esc(y.d)}${y.o.length?' · '+esc(y.o[0]):''}</span>`:''}};
+  s+=cardList({kolonlar:h,satirlar:tot.concat(body)},opt);
+  if(onl.length)s+='<h2>Online · sıralama ve toplam dışı</h2>'+cardList({kolonlar:h,satirlar:onl.map(r=>{r=r.slice();if(rank>=0)r[rank]='';return r})},Object.assign({},opt,{yk:null}));
   return s;
 }
 async function loadImg(el,f){
