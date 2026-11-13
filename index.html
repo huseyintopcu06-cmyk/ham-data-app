@@ -1195,6 +1195,7 @@ function vDaha(){
 /* ---- Hedef takibi (aylık Hedef Kontrol dosyası): hedef · gerçekleşen · ay sonu tahmini ---- */
 const HTUR=[['ciro','MDA ciro'],['set','Ankastre set'],['yildiz','Yıldızlı'],['supurge','Süpürge'],['mum','MUM'],['faem','FAEM'],['kea','KEA'],['hava','Hava']];
 const GKAT=[2.1,1,1,1,1,1.2,1.7];   // Pazar … Cumartesi gün katsayısı
+const hgor=x=>!!(x.h||x.bn||x.bf);   // hedefi olmayan kalem yalnız kazancı varsa görünür
 const HDUR={tuttu:['t-grn','Tuttu'],tutar:['t-grn','Tempoda'],sinir:['t-yel','Sınırda'],geride:['t-red','Geride']};
 function hedefGun(){const H=D.hedef;let a=0,t=0;for(let g=1;g<=H.aygun;g++){const k=GKAT[new Date(H.yil,H.ay-1,g).getDay()];t+=k;if(g<=H.gun)a+=k}return {a,t,kalan:H.aygun-H.gun,carp:a?t/a:1}}
 const para=v=>Math.abs(v)>=1e6?(v/1e6).toFixed(2).replace('.',',')+' Mn':nf(v);
@@ -1208,7 +1209,7 @@ function hedefHesap(x,G){
 }
 function hedefSatir(x,G,baslik,alt){
   const c=hedefHesap(x,G), br=x.b==='TL'?'TL':x.b;
-  if(!x.h)return `<div class="hrow"><div class="row"><span><b>${esc(baslik)}</b></span><span style="font-size:13px"><b>${hdeg(c.g,x.b)}</b> ${br} · hedef yok${x.bn||x.bf?` · kazanç ${nf(x.bn)} → <b class="pos">${nf(x.bf)} TL</b>`:''}</span></div></div>`;
+  if(!x.h)return `<div class="hrow"><div class="row"><span><b>${esc(baslik)}</b></span><span style="font-size:13px"><b>${hdeg(c.g,x.b)}</b> ${br}${x.bn||x.bf?` · kazanç ${nf(x.bn)} → <b class="pos">${nf(x.bf)} TL</b>`:''}</span></div></div>`;
   const t=HDUR[c.d], w=v=>Math.max(0,Math.min(v,1.25))/1.25*100;
   let n=c.kal?(G.kalan>0?`Kalan ${hdeg(c.kal,x.b)} · günde <b>${hgun(c.kal/G.kalan,x.b)}</b> gerek, şu an günde ${hgun(c.g/Math.max(D.hedef.gun,1),x.b)}`:`Kalan ${hdeg(c.kal,x.b)}`):'Hedef tamam';
   if(x.p)n+=` · Dav ${nf(x.p[0])} · Fırın ${nf(x.p[1])} · Ocak ${nf(x.p[2])}`;
@@ -1221,14 +1222,14 @@ function hedefBaslik(){const H=D.hedef,G=hedefGun();return `1–${H.gun} ${AYAD[
 function hedefBolum(kod){
   const H=D.hedef, L=H&&H.m&&H.m[kod]; if(!L)return '';
   const G=hedefGun();
-  return `<h2>Hedefler · ${hedefBaslik()}</h2>`+L.map(S=>`<div class="card dep"><div class="row" style="margin:0 0 2px"><span class="note" style="margin:0;text-transform:uppercase;letter-spacing:.03em">${esc(S.s)}</span><button class="chip rs" data-hr="${kod}" data-hs="${esc(S.s)}">⇪ Resim paylaş</button></div>${S.bn!=null?`<div style="font-size:13px;margin:2px 0 4px">Toplam kazanç: şu an <b>${nf(S.bn)}</b> → tahmini <b class="${S.bf>0?'pos':''}">${nf(S.bf)} TL</b></div>`:''}${S.i.map(x=>hedefSatir(x,G,x.ad)).join('')}</div>`).join('');
+  return `<h2>Hedefler · ${hedefBaslik()}</h2>`+L.filter(S=>S.i.some(hgor)).map(S=>`<div class="card dep"><div class="row" style="margin:0 0 2px"><span class="note" style="margin:0;text-transform:uppercase;letter-spacing:.03em">${esc(S.s)}</span><button class="chip rs" data-hr="${kod}" data-hs="${esc(S.s)}">⇪ Resim paylaş</button></div>${S.bn!=null?`<div style="font-size:13px;margin:2px 0 4px">Toplam kazanç: şu an <b>${nf(S.bn)}</b> → tahmini <b class="${S.bf>0?'pos':''}">${nf(S.bf)} TL</b></div>`:''}${S.i.filter(hgor).map(x=>hedefSatir(x,G,x.ad)).join('')}</div>`).join('');
 }
 /* mağaza × departman hedef kartı: resim olarak önizle + paylaş */
 let HZ=null;
 function hedefResim(kod,sad){
   const H=D.hedef, L=H&&H.m&&H.m[kod], S=L&&L.find(s=>s.s===sad); if(!S){toast('Veri yok');return null}
   const G=hedefGun(), m=magList().map.get(kod), um=((D.urunler&&D.urunler.m)||{})[kod], ad=m?m.ad:um?um[0]:kod, bolge=m?m.bolge:um?um[1]:'', spv=m?m.spv:um?um[2]:'';
-  const hv=sad==='Hava Temizleme'?null:L.find(s=>s.s==='Hava Temizleme'), items=S.i.concat(hv?hv.i:[]);
+  const hv=sad==='Hava Temizleme'?null:L.find(s=>s.s==='Hava Temizleme'), items=S.i.concat(hv?hv.i:[]).filter(hgor);
   const css=getComputedStyle(document.documentElement), ac=css.getPropertyValue('--ac').trim()||'#3b6fc4', ad2=css.getPropertyValue('--ad').trim()||'#1F3864', ae=css.getPropertyValue('--ae').trim()||'#16294a';
   const W=1080, P=44, IW=W-2*P, X0=P+24, c=document.createElement('canvas'), g=c.getContext('2d');
   const font=(w,s)=>g.font=`${w} ${s}px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif`;
@@ -1250,7 +1251,7 @@ function hedefResim(kod,sad){
   items.forEach(x=>{
     const k=hedefHesap(x,G), br=x.b==='TL'?'TL':x.b;
     g.fillStyle='#f4f7fb'; rr(X0-8,Y,IW-32,hh(x)-16,26); g.fill();
-    if(!x.h){font(700,30); g.fillStyle=INK; g.fillText(x.ad,ix,Y+46); font(600,28); g.fillStyle=MUT; g.textAlign='right'; g.fillText(`${hdeg(k.g,x.b)} ${br} · hedef yok`+(x.bn||x.bf?` · kazanç ${nf(x.bn)} → ${nf(x.bf)} TL`:''),ix+iw,Y+46); g.textAlign='left'; Y+=hh(x); return}
+    if(!x.h){font(700,30); g.fillStyle=INK; g.fillText(x.ad,ix,Y+46); font(600,28); g.fillStyle=MUT; g.textAlign='right'; g.fillText(`${hdeg(k.g,x.b)} ${br}`+(x.bn||x.bf?` · kazanç ${nf(x.bn)} → ${nf(x.bf)} TL`:''),ix+iw,Y+46); g.textAlign='left'; Y+=hh(x); return}
     font(700,32); g.fillStyle=INK; g.fillText(x.ad,ix,Y+50);
     const dt=HDUR[k.d][1]; font(700,25); const dw=g.measureText(dt).width+40; g.fillStyle=COL[k.d]; rr(ix+iw-dw,Y+18,dw,46,23); g.fill(); g.fillStyle='#fff'; g.textAlign='center'; g.fillText(dt,ix+iw-dw/2,Y+50);
     if(x.bn!=null){font(700,26); g.fillStyle=x.bf>0?COL.tuttu:MUT; g.textAlign='right'; g.fillText(`Kazanç ${nf(x.bn)} → ${nf(x.bf)} TL`,ix+iw-dw-18,Y+50)}
