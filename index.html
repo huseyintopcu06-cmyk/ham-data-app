@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="62">
+<meta name="surum" content="63">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -460,8 +460,8 @@ function ozKart(t){
 /* ---- Özet: son rapordan bu yana ne değişti ---- */
 function bugunDegisen(){
   if(!P)return '';
-  const tr=sel.bd==='tr', A=magList(), B=magList(P);
-  const L=A.arr.filter(m=>m.bolge!=='ONLINE'&&(tr||m.bolge===GAB)).map(m=>({m,p:B.map.get(m.kod)})).filter(x=>x.p);
+  const bg=ORD.includes(sel.bd)?sel.bd:'', A=magList(), B=magList(P);
+  const L=A.arr.filter(m=>m.bolge!=='ONLINE'&&(!bg||m.bolge===bg)).map(m=>({m,p:B.map.get(m.kod)})).filter(x=>x.p);
   if(!L.length)return '';
   const tot=L.reduce((a,x)=>a+x.m.top-x.p.top,0);
   const kd=KATS.map(k=>[k,L.reduce((a,x)=>a+((x.m.k[k]?x.m.k[k].main:0)-(x.p.k[k]?x.p.k[k].main:0)),0)]).filter(x=>x[1]);
@@ -476,7 +476,7 @@ function bugunDegisen(){
   const up=rk.filter(x=>x.dr>0).sort((a,b)=>b.dr-a.dr).slice(0,4), dn=rk.filter(x=>x.dr<0).sort((a,b)=>a.dr-b.dr).slice(0,4);
   const kl=k=>KLAB[k]||k, ur=(m,sol,sag)=>`<div class="urow" data-mk="${m.kod}"><span>${sol}</span><span>${sag}</span></div>`;
   const sec=(t,rows)=>rows.length?`<div class="bdh">${t}</div>`+rows.join(''):'';
-  let s=`<h2>Bugün ne değişti</h2><div class="card dep"><div class="row" style="gap:8px;margin-bottom:6px"><span class="note" style="margin:0">${esc(P.donem||'önceki')} → ${esc(D.donem||'')}</span></div>`+chips([['ga','Güney Anadolu'],['tr','Türkiye']],tr?'tr':'ga','bd');
+  let s=`<h2>Bugün ne değişti</h2><div class="card dep"><div class="row" style="gap:8px;margin-bottom:6px"><span class="note" style="margin:0">${esc(P.donem||'önceki')} → ${esc(D.donem||'')}</span></div>`+chips([['','Türkiye']].concat(ORD.map(x=>[x,tc(x)])),bg,'bd');
   s+=`<div class="g4" style="grid-template-columns:repeat(3,1fr);margin-bottom:6px"><div><small>Satış</small><b class="${tot>0?'pos':''}">${sg(tot)}</b></div><div><small>Stoğu biten</small><b class="${bit.length?'neg':''}">${bit.length}</b></div><div><small>Satış yapmayan</small><b>${sifir.length}<span style="font-size:12px;color:var(--mut)">/${L.length}</span></b></div></div>`;
   if(kd.length)s+=`<div class="note" style="margin:0 0 4px">${kd.map(([k,v])=>`${esc(kl(k))} <b>${sg(v)}</b>`).join(' · ')}</div>`;
   s+=sec('En çok satan mağazalar',top.map(x=>ur(x.m,esc(x.m.ad),`<b class="pos">${sg(x.d)}</b>`)));
