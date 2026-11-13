@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="33">
+<meta name="surum" content="34">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -33,10 +33,11 @@ header h1,header small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis
 #upd{position:sticky;top:58px;z-index:4;background:#FFC000;color:#1a1a1a;padding:9px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;font-weight:600}
 #upd[hidden]{display:none}
 #upd button{background:#1F3864;color:#fff;border:0;border-radius:8px;padding:7px 14px;font-weight:700}
-main{padding:12px 16px calc(58px + env(safe-area-inset-bottom));max-width:900px;margin:0 auto}
+main{padding:12px 16px calc(84px + env(safe-area-inset-bottom));max-width:900px;margin:0 auto}
 nav{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
-nav button{flex:1;background:none;border:0;padding:4px 1px 3px;font-size:10px;line-height:1.1;color:var(--mut);display:flex;flex-direction:column;align-items:center;gap:0}
-nav button b{font-size:15px;line-height:1.2;font-weight:400}
+nav{overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 16.66%;min-width:60px;background:none;border:0;padding:9px 1px 8px;font-size:11px;color:var(--mut);display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button b{font-size:19px;font-weight:400}
 nav button.on{color:var(--navy);font-weight:700}
 @media(prefers-color-scheme:dark){nav button.on{color:#8db6ff}}
 .chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
@@ -132,7 +133,11 @@ tbody tr[data-mk]{cursor:pointer}
 <button data-t="mag"><b>⌂</b>Mağaza</button>
 <button data-t="urun"><b>⌕</b>Ara</button>
 <button data-t="trf"><b>⇄</b>Transfer</button>
-<button data-t="daha"><b>⋯</b>Daha</button>
+<button data-t="daha" data-s="brand"><b>▤</b>BRAND</button>
+<button data-t="daha" data-s="ihtiyac"><b>☑</b>İhtiyaç</button>
+<button data-t="daha" data-s="gid"><b>↗</b>Gidişat</button>
+<button data-t="daha" data-s="per"><b>☺</b>Personel</button>
+<button data-t="daha" data-s="img"><b>▣</b>Görseller</button>
 </nav>
 <div id="toast"></div>
 <div id="zoom"><button>Kapat ✕</button><img alt=""></div>
@@ -298,8 +303,7 @@ function vOzet(){
   }
   let dl='';
   if(P){const a=gaToplam(D),b=gaToplam(P); if(a!=null&&b!=null)dl=`Son rapordan bu yana ${sg(a-b)} satış`}
-  const kisa=`<div class="chips">${[['brand','BRAND'],['ihtiyac','İhtiyaç'],['gid','Gidişat'],['per','Personel'],['img','Görseller']].map(([k,t])=>`<button class="chip" data-dhgo="${k}">${t}</button>`).join('')}</div>`;
-  const extra=kisa+`<div class="row" style="margin:-2px 0 10px;gap:8px"><span class="note" style="margin:0">${esc(dl)}</span><button class="chip" data-sh="ozet">Paylaş</button></div>`+uyarilar().html;
+  const extra=`<div class="row" style="margin:-2px 0 10px;gap:8px"><span class="note" style="margin:0">${esc(dl)}</span><button class="chip" data-sh="ozet">Paylaş</button></div>`+uyarilar().html;
   return hero+extra+chips(short,cur,'oz')+table(T[+cur])+(D.kaynak?`<div class="note">${esc(D.kaynak)}</div>`:'');
 }
 /* FOOD Diğer: FOOD sayfasından türetilen ayrı kategori (sıralama FOOD Diğer satışına göre) */
@@ -761,7 +765,7 @@ function vBrandStore(key){
 /* ---- Daha: görseller · gidişat · personel ---- */
 function vDaha(){
   const sub=sel.dh||'';
-  const back='<div class="row" style="margin-bottom:8px"><button class="chip" data-back="dh">← Geri</button></div>';
+  const back=sel.dhnav?'':'<div class="row" style="margin-bottom:8px"><button class="chip" data-back="dh">← Geri</button></div>';
   if(sub==='img')return back+vImg();
   if(sub==='gid')return back+vGid();
   if(sub==='per')return back+vPer();
@@ -1005,7 +1009,8 @@ function vTrf(){
 /* ---------- çizim ---------- */
 function render(){
   if(!D)return;
-  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab&&(tab!=='daha'||(b.dataset.s||'')===(sel.dh||''))));
+  const on=document.querySelector('nav button.on'); if(on&&on.scrollIntoView)on.scrollIntoView({inline:'nearest',block:'nearest'});
   const y=window.scrollY;
   M.innerHTML=({ozet:vOzet,kat:vKat,mag:vMag,urun:vUrun,trf:vTrf,daha:vDaha}[tab]||vOzet)();
   bindChips();
@@ -1018,7 +1023,7 @@ function render(){
   M.querySelectorAll('[data-bf]').forEach(el=>el.onclick=()=>{sel.bf=+el.dataset.bf;sel.bs=0;sel.q='';sel.brg='';render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-bback]').forEach(el=>el.onclick=()=>{sel.bf=null;sel.q='';render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-dhgo]').forEach(el=>el.onclick=()=>{sel.dhfrom='ozet';sel.dh=el.dataset.dhgo;sel.q='';tab='daha';LS.set('tab','daha');render();window.scrollTo(0,0)});
-  M.querySelectorAll('[data-dh]').forEach(el=>el.onclick=()=>{sel.dh=el.dataset.dh;render();window.scrollTo(0,0)});
+  M.querySelectorAll('[data-dh]').forEach(el=>el.onclick=()=>{sel.dhnav=false;sel.dh=el.dataset.dh;render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-ara]').forEach(el=>el.onclick=()=>go('urun',()=>{sel.q=D.urunler.u[+el.dataset.ara];sel.urg=GAB;sel.ustk=''}));
   M.querySelectorAll('[data-tf]').forEach(el=>el.onclick=()=>{sel.tr='1';sel.ts=el.dataset.tf;sel.to='';sel.tk='';render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-go]').forEach(el=>el.onclick=()=>go(el.dataset.go));
@@ -1026,7 +1031,7 @@ function render(){
   M.querySelectorAll('.imgs img').forEach(im=>{loadImg(im,im.dataset.f);im.onclick=()=>{$('#zoom img').src=im.src;$('#zoom').style.display='block'}});
   window.scrollTo(0,y);
 }
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;LS.set('tab',tab);sel.q='';if(tab==='mag')sel.mk=null;if(tab==='daha'){sel.dh='';sel.dhfrom=''}window.scrollTo(0,0);render()});
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;LS.set('tab',tab);sel.q='';if(tab==='mag')sel.mk=null;if(tab==='daha'){sel.dh=b.dataset.s||'';sel.dhfrom='';sel.dhnav=!!b.dataset.s}window.scrollTo(0,0);render()});
 $('#zoom button').onclick=()=>{$('#zoom').style.display='none'};
 $('#rf').onclick=()=>load(true);
 $('#st').onclick=()=>{if(confirm('Çıkış yapılsın mı? (Şifre bu cihazdan silinir)')){LS.del('pw');LS.del('cache_enc');D=null;KEY=null;gate()}};
