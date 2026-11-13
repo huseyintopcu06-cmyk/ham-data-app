@@ -146,6 +146,11 @@ tbody tr[data-mk]{cursor:pointer}
 
 #zoom{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:20;display:none;overflow:auto;-webkit-overflow-scrolling:touch}
 #zoom img{width:240%;max-width:none;display:block}
+#hz{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:20;display:none;overflow:auto;-webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top) + 62px) 10px 30px}
+#hz img{width:100%;max-width:560px;display:block;margin:0 auto;border-radius:16px}
+.hzb{position:fixed;top:calc(env(safe-area-inset-top) + 10px);left:12px;right:12px;z-index:21;display:flex;gap:8px;justify-content:flex-end}
+.hzb button{background:#fff;color:#000;border:0;border-radius:999px;padding:9px 14px;font-weight:700;font-size:14px}
+#hzs{background:#25D366;color:#fff;margin-right:auto}
 #zoom button{position:fixed;top:calc(env(safe-area-inset-top) + 10px);right:12px;z-index:21;background:#fff;color:#000;border:0;border-radius:8px;padding:8px 12px;font-weight:700}
 
 /* ===== cam / sıvı görünüm (13.11.2026) ===== */
@@ -276,6 +281,7 @@ main{padding-bottom:calc(104px + env(safe-area-inset-bottom))}
 </nav>
 <div id="tp"><div class="sheet"><h3>Mod</h3><div class="modes" id="tpm"></div><h3>Renk</h3><div class="sws" id="tps"></div></div></div>
 <div id="toast"></div>
+<div id="hz"><div class="hzb"><button id="hzs">⇪ Paylaş</button><button id="hzm">Mağaza ›</button><button id="hzk">Kapat ✕</button></div><img alt=""></div>
 <div id="zoom"><button>Kapat ✕</button><img alt=""></div>
 <script>
 'use strict';
@@ -1215,7 +1221,68 @@ function hedefBaslik(){const H=D.hedef,G=hedefGun();return `1–${H.gun} ${AYAD[
 function hedefBolum(kod){
   const H=D.hedef, L=H&&H.m&&H.m[kod]; if(!L)return '';
   const G=hedefGun();
-  return `<h2>Hedefler · ${hedefBaslik()}</h2>`+L.map(S=>`<div class="card dep"><div class="note" style="margin:0 0 2px;text-transform:uppercase;letter-spacing:.03em">${esc(S.s)}</div>${S.i.map(x=>hedefSatir(x,G,x.ad)).join('')}</div>`).join('');
+  return `<h2>Hedefler · ${hedefBaslik()}</h2>`+L.map(S=>`<div class="card dep"><div class="row" style="margin:0 0 2px"><span class="note" style="margin:0;text-transform:uppercase;letter-spacing:.03em">${esc(S.s)}</span><button class="chip rs" data-hr="${kod}" data-hs="${esc(S.s)}">⇪ Resim paylaş</button></div>${S.i.map(x=>hedefSatir(x,G,x.ad)).join('')}</div>`).join('');
+}
+/* mağaza × departman hedef kartı: resim olarak önizle + paylaş */
+let HZ=null;
+function hedefResim(kod,sad){
+  const H=D.hedef, L=H&&H.m&&H.m[kod], S=L&&L.find(s=>s.s===sad); if(!S){toast('Veri yok');return null}
+  const G=hedefGun(), m=magList().map.get(kod), um=((D.urunler&&D.urunler.m)||{})[kod], ad=m?m.ad:um?um[0]:kod, bolge=m?m.bolge:um?um[1]:'', spv=m?m.spv:um?um[2]:'';
+  const hv=sad==='Hava Temizleme'?null:L.find(s=>s.s==='Hava Temizleme'), items=S.i.concat(hv?hv.i:[]);
+  const css=getComputedStyle(document.documentElement), ac=css.getPropertyValue('--ac').trim()||'#3b6fc4', ad2=css.getPropertyValue('--ad').trim()||'#1F3864', ae=css.getPropertyValue('--ae').trim()||'#16294a';
+  const W=1080, P=44, IW=W-2*P, X0=P+24, c=document.createElement('canvas'), g=c.getContext('2d');
+  const font=(w,s)=>g.font=`${w} ${s}px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif`;
+  const wrap=(t,mw)=>{const out=[];let l='';String(t).split(/\s+/).forEach(w=>{const n=l?l+' '+w:w;if(g.measureText(n).width>mw&&l){out.push(l);l=w}else l=n});if(l)out.push(l);return out};
+  const rr=(X,Y,w,hh,r)=>{g.beginPath();g.moveTo(X+r,Y);g.arcTo(X+w,Y,X+w,Y+hh,r);g.arcTo(X+w,Y+hh,X,Y+hh,r);g.arcTo(X,Y+hh,X,Y,r);g.arcTo(X,Y,X+w,Y,r);g.closePath()};
+  const hh=x=>x.h?236:88, INK='#16202e', MUT='#667085', ORG='#e07b1f', COL={tuttu:'#17803d',tutar:'#17803d',sinir:'#b58100',geride:'#c0392b'};
+  const Hh=P+250+items.reduce((a,x)=>a+hh(x),0)+96+P;
+  c.width=W; c.height=Hh;
+  const bg=g.createLinearGradient(0,0,W,Hh); bg.addColorStop(0,ac); bg.addColorStop(1,ae); g.fillStyle=bg; g.fillRect(0,0,W,Hh);
+  g.fillStyle='#ffffff'; rr(P/2,P/2,W-P,Hh-P,48); g.fill();
+  let Y=P+34;
+  font(700,34); g.fillStyle=ad2; g.fillText(('HEDEF · '+sad).toLocaleUpperCase('tr'),X0,Y+30);
+  font(500,26); g.fillStyle=MUT; g.textAlign='right'; g.fillText(`1–${H.gun} ${AYAD[H.ay-1]} ${H.yil} · ${G.kalan} gün kaldı`,W-P-24,Y+28); g.textAlign='left';
+  Y+=78; font(800,52); g.fillStyle=INK; const nl=wrap(ad,IW-48); nl.slice(0,2).forEach((t,i)=>g.fillText(t,X0,Y+i*58)); Y+=(Math.min(nl.length,2)-1)*58+44;
+  font(500,28); g.fillStyle=MUT; g.fillText([spv,tc(bolge),kod].filter(Boolean).join(' · '),X0,Y);
+  Y=P+250;
+  const ix=X0+16, iw=IW-80, sc=v=>Math.max(0,Math.min(v,1.25))/1.25;
+  items.forEach(x=>{
+    const k=hedefHesap(x,G), br=x.b==='TL'?'TL':x.b;
+    g.fillStyle='#f4f7fb'; rr(X0-8,Y,IW-32,hh(x)-16,26); g.fill();
+    if(!x.h){font(700,30); g.fillStyle=INK; g.fillText(x.ad,ix,Y+46); font(600,28); g.fillStyle=MUT; g.textAlign='right'; g.fillText(`${hdeg(k.g,x.b)} ${br} · hedef yok`,ix+iw,Y+46); g.textAlign='left'; Y+=hh(x); return}
+    font(700,32); g.fillStyle=INK; g.fillText(x.ad,ix,Y+50);
+    const dt=HDUR[k.d][1]; font(700,25); const dw=g.measureText(dt).width+40; g.fillStyle=COL[k.d]; rr(ix+iw-dw,Y+18,dw,46,23); g.fill(); g.fillStyle='#fff'; g.textAlign='center'; g.fillText(dt,ix+iw-dw/2,Y+50); g.textAlign='left';
+    font(800,46); g.fillStyle=INK; const gt=hdeg(k.g,x.b); g.fillText(gt,ix,Y+112); const gw=g.measureText(gt).width;
+    font(500,30); g.fillStyle=MUT; g.fillText(` / ${hdeg(x.h,x.b)} ${br} · %${Math.round(k.o*100)}`,ix+gw,Y+112);
+    font(700,30); g.fillStyle=ORG; g.textAlign='right'; g.fillText(`Tahmin ${hdeg(k.fc,x.b)} · %${Math.round(k.of*100)}`,ix+iw,Y+110); g.textAlign='left';
+    const by=Y+140, bh=22;
+    g.fillStyle='#dfe5ee'; rr(ix,by,iw,bh,11); g.fill();
+    if(k.g>0){g.fillStyle=COL[k.d]; rr(ix,by,Math.max(iw*sc(k.o),bh),bh,11); g.fill()}
+    g.fillStyle=INK; g.fillRect(ix+iw*sc(1)-2,by-8,4,bh+16);
+    const fx=ix+iw*sc(k.of); g.fillStyle=ORG; g.beginPath(); g.moveTo(fx-11,by-17); g.lineTo(fx+11,by-17); g.lineTo(fx,by-3); g.closePath(); g.fill();
+    let n=k.kal?(G.kalan>0?`Kalan ${hdeg(k.kal,x.b)} · günde ${hgun(k.kal/G.kalan,x.b)} gerek, şu an günde ${hgun(k.g/Math.max(H.gun,1),x.b)}`:`Kalan ${hdeg(k.kal,x.b)}`):'Hedef tamam';
+    if(x.p)n+=` · Dav ${nf(x.p[0])} · Fırın ${nf(x.p[1])} · Ocak ${nf(x.p[2])}`;
+    font(500,25); g.fillStyle=k.kal?MUT:COL.tuttu; g.fillText(n,ix,Y+200);
+    Y+=hh(x);
+  });
+  font(500,22); g.fillStyle='#98a2b3'; g.textAlign='center';
+  g.fillText('Çizgi = hedef · turuncu ok = ay sonu tahmini (şu anki tempo, gün katsayılı)',W/2,Hh-P-58);
+  g.fillText('Ham Data · BSH · Hedef Kontrol '+`1–${H.gun} ${AYAD[H.ay-1]}`,W/2,Hh-P-26); g.textAlign='left';
+  return {c,ad:(ad+'_Hedef_'+sad).replace(/[^\wÇĞİÖŞÜçğıöşü\-]+/g,'_')+'.png',t:ad+' · Hedef · '+sad};
+}
+function hedefAc(kod,sad){
+  const r=hedefResim(kod,sad); if(!r)return;
+  r.c.toBlob(b=>{
+    const im=$('#hz img'); if(HZ&&HZ.u)URL.revokeObjectURL(HZ.u);
+    HZ={b,ad:r.ad,t:r.t,kod,u:URL.createObjectURL(b)}; im.src=HZ.u;
+    $('#hzm').style.display=magList().map.has(kod)&&!(tab==='mag'&&sel.mk===kod)?'':'none';
+    $('#hz').style.display='block'; $('#hz').scrollTop=0;
+  },'image/png');
+}
+async function hedefPaylas(){
+  if(!HZ)return; const f=new File([HZ.b],HZ.ad,{type:'image/png'});
+  try{ if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:HZ.t});return} }catch(e){if(e&&e.name==='AbortError')return}
+  const a=document.createElement('a'); a.href=HZ.u; a.download=HZ.ad; document.body.appendChild(a); a.click(); a.remove(); toast('Resim indirildi');
 }
 function vHedef(){
   const H=D.hedef; if(!H||!H.m)return '<div class="msg">Bu ay için Hedef Kontrol dosyası henüz gelmedi.<br>Dosya geldiğinde hedefler burada görünecek.</div>';
@@ -1237,8 +1304,8 @@ function vHedef(){
       return `<div class="urow ${B===GAB?'gar':''}" style="grid-template-columns:1fr auto auto;cursor:pointer" data-hb="${esc(B)}"><span><b>${tc(B)}</b><br><span class="note" style="margin:0">${hdeg(t.g,b)} / ${hdeg(t.h,b)} · tutacak ${t.yol}/${t.n}</span></span><span style="text-align:right">%${Math.round(t.g/t.h*100)}</span><span style="text-align:right;color:var(--org);font-weight:700;min-width:54px">→ %${Math.round(t.fc/t.h*100)}</span></div>`}).join('')+'</div>';
   }
   s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+chips([['geri','Geride olan üstte'],['iyi','En iyi üstte']],sr,'hs');
-  s+=rows.map(r=>`<div class="card ${r.bolge===GAB?'ga':''}" ${r.var?`data-mk="${r.kod}"`:''} style="padding:3px 12px${r.var?';cursor:pointer':''}">${hedefSatir(r.x,G,r.ad,r.S)}</div>`).join('')||'<div class="msg">Mağaza bulunamadı.</div>';
-  s+=`<div class="note">Çubukta dikey çizgi = hedef, turuncu ok = ay sonu tahmini. Gerçekleşen, Hedef Kontrol dosyasındaki resmi sell-out'tur (MDA ciro = adet × TEPF; ankastre ve hava temizleme hariç). Tahmin = şu anki tempo, kalan günlerin gün katsayısıyla (Pzt–Per 1,0 · Cuma 1,2 · Cmt 1,7 · Paz 2,1). Tempoda = tahmin hedefi geçiyor · Sınırda = tahmin %85–99 · Geride = tahmin %85'in altında. KEA'da hedef ilk baremdir. Bonus tutarları gösterilmez. Kaynak: ${esc(H.kaynak)}</div>`;
+  s+=rows.map(r=>`<div class="card ${r.bolge===GAB?'ga':''}" data-hr="${r.kod}" data-hs="${esc(r.S)}" style="padding:3px 12px;cursor:pointer">${hedefSatir(r.x,G,r.ad,r.S)}</div>`).join('')||'<div class="msg">Mağaza bulunamadı.</div>';
+  s+=`<div class="note">Mağazaya dokun: o departmanın hedef kartı resim olarak açılır, Paylaş ile gönderilir. Çubukta dikey çizgi = hedef, turuncu ok = ay sonu tahmini. Gerçekleşen, Hedef Kontrol dosyasındaki resmi sell-out'tur (MDA ciro = adet × TEPF; ankastre ve hava temizleme hariç). Tahmin = şu anki tempo, kalan günlerin gün katsayısıyla (Pzt–Per 1,0 · Cuma 1,2 · Cmt 1,7 · Paz 2,1). Tempoda = tahmin hedefi geçiyor · Sınırda = tahmin %85–99 · Geride = tahmin %85'in altında. KEA'da hedef ilk baremdir. Bonus tutarları gösterilmez. Kaynak: ${esc(H.kaynak)}</div>`;
   XL=()=>({ad:'Hedef '+HTUR.find(x=>x[0]===tur)[1]+' '+(rg?tc(rg)+' ':'')+H.gun+' '+AYAD[H.ay-1],h:['Kod','Mağaza','SPV','Bölge','Hedef sayfası','Hedef','Gerçekleşen','Gerçekleşme %','Ay sonu tahmini','Tahmin %','Kalan','Günlük gereken','Durum'],
     rows:rows.map(r=>[r.kod,r.ad,r.spv,r.bolge,r.S,r.x.h,r.c.g,Math.round(r.c.o*100),r.c.fc,Math.round(r.c.of*100),r.c.kal,G.kalan>0?Math.round(r.c.kal/G.kalan*10)/10:'',HDUR[r.c.d][1]])});
   return s;
@@ -1507,6 +1574,7 @@ function render(){
   M.querySelectorAll('[data-bf]').forEach(el=>el.onclick=()=>{sel.bf=+el.dataset.bf;sel.bs=0;sel.q='';sel.brg='';render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-bback]').forEach(el=>el.onclick=()=>{sel.bf=null;sel.q='';render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-dhgo]').forEach(el=>el.onclick=()=>{sel.dhfrom='ozet';sel.dh=el.dataset.dhgo;sel.q='';tab='daha';LS.set('tab','daha');render();window.scrollTo(0,0)});
+  M.querySelectorAll('[data-hr]').forEach(el=>el.onclick=e=>{e.preventDefault();e.stopPropagation();hedefAc(el.dataset.hr,el.dataset.hs)});
   M.querySelectorAll('[data-hb]').forEach(el=>el.onclick=()=>{sel.hrg=el.dataset.hb;render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-dh]').forEach(el=>el.onclick=()=>{sel.dhnav=false;sel.dh=el.dataset.dh;render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-ara]').forEach(el=>el.onclick=()=>go('urun',()=>{sel.q=D.urunler.u[+el.dataset.ara];sel.urg=GAB;sel.ustk=''}));
@@ -1519,6 +1587,9 @@ function render(){
 }
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;LS.set('tab',tab);sel.q='';if(tab==='mag')sel.mk=null;if(tab==='daha'){sel.dh=b.dataset.s||'';sel.dhfrom='';sel.dhnav=!!b.dataset.s}window.scrollTo(0,0);render()});
 $('#zoom button').onclick=()=>{$('#zoom').style.display='none'};
+$('#hzk').onclick=()=>{$('#hz').style.display='none'};
+$('#hzs').onclick=hedefPaylas;
+$('#hzm').onclick=()=>{$('#hz').style.display='none';if(HZ){tab='mag';LS.set('tab','mag');sel.mk=HZ.kod;render();window.scrollTo(0,0)}};
 $('#rf').onclick=()=>load(true);
 $('#st').onclick=()=>{if(confirm('Çıkış yapılsın mı? (Şifre bu cihazdan silinir)')){LS.del('pw');LS.del('cache_enc');D=null;KEY=null;gate()}};
 /* tema: Otomatik (telefon ayarı) → Açık → Koyu */
