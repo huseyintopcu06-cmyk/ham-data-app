@@ -511,6 +511,12 @@ function bugunDegisen(){
   s+=`<div style="margin-top:8px"><a class="lnk" data-dhgo="gid">Tüm gidişat ›</a></div></div>`;
   return s;
 }
+/* VC İHS kırılımı: bölgeler VC Toplam adedine göre büyükten küçüğe; toplam ve online satırları altta */
+function vcSirala(t){
+  const i=t.kolonlar.indexOf('VC Toplam Adet'); if(i<0)return t;
+  const bol=t.satirlar.filter(r=>r[1]&&r[1]!=='ONLINE').sort((a,b)=>N(b[i])-N(a[i])), dig=t.satirlar.filter(r=>!bol.includes(r));
+  return {...t,satirlar:bol.concat(dig)};
+}
 function vOzet(){
   const T=D.ozet.filter(t=>t.satirlar.length);
   const cur=sel.oz!=null?sel.oz:'0';
@@ -530,7 +536,7 @@ function vOzet(){
   if(P){const a=bshToplam(D),b=bshToplam(P); if(a!=null&&b!=null)dl=`Son rapordan bu yana ${sg(a-b)} satış (BSH)`}
   const extra=`<div class="row" style="margin:-2px 0 10px;gap:8px"><span class="note" style="margin:0">${esc(dl)}</span><span style="display:flex;gap:6px"><button class="chip" data-sh="ozet">Paylaş</button>${XLB}</span></div>`+uyarilar().html+bugunDegisen();
   XL=()=>({ad:'Özet '+short[+cur][1]+' '+veriTarihi(D.donem),h:T[+cur].kolonlar,rows:T[+cur].satirlar});
-  return hero+extra+chips(short,cur,'oz')+((T[+cur].kolonlar[0]==='SPV'&&T[+cur].kolonlar[1]==='Bölge'&&T[+cur].kolonlar[2]==='Mağaza Sayısı')?ozKart(T[+cur]):table(T[+cur]))+(D.kaynak?`<div class="note">${esc(D.kaynak)}</div>`:'');
+  return hero+extra+chips(short,cur,'oz')+((T[+cur].kolonlar[0]==='SPV'&&T[+cur].kolonlar[1]==='Bölge'&&T[+cur].kolonlar[2]==='Mağaza Sayısı')?ozKart(T[+cur]):table(vcSirala(T[+cur])))+(D.kaynak?`<div class="note">${esc(D.kaynak)}</div>`:'');
 }
 /* FOOD Diğer: FOOD sayfasından türetilen ayrı kategori (sıralama FOOD Diğer satışına göre) */
 const _fdc=new WeakMap();
