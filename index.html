@@ -587,26 +587,58 @@ async function loadImg(el,f){
     const bm=await createImageBitmap(blob), c=document.createElement('canvas'); c.width=bm.width; c.height=bm.height;
     const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(bm,0,0);
     c.toBlob(pb=>{if(pb){GF[k]=new File([pb],gad(f),{type:'image/png'});gorselDurum()}},'image/png');
+    c.toBlob(jb=>{if(jb){GJ[k]={b:jb,w:c.width,h:c.height};gorselDurum()}},'image/jpeg',0.93);
   }catch(e){el.alt='Görsel yüklenemedi'}
 }
-function gorselDurum(){
-  const b=$('#gsh'); if(!b)return;
-  const g=D.gorseller||[], n=g.filter(f=>GF[gkey(f)]).length;
-  b.disabled=n<g.length; b.style.opacity=n<g.length?.55:1;
-  b.textContent=n<g.length?`Hazırlanıyor… ${n}/${g.length}`:`⇪ ${g.length} görseli birlikte paylaş`;
-  M.querySelectorAll('[data-gs],[data-gk]').forEach(x=>{x.style.visibility=GF[gkey(x.dataset.gs||x.dataset.gk)]?'visible':'hidden'});
-  const kd=$('#gkd'); if(kd){kd.disabled=n<g.length; kd.style.opacity=n<g.length?.55:1}
+/* 6 tablo tek PDF (her tablo bir sayfa): WhatsApp PDF'i belge olarak, sıkıştırmadan gönderir. Kütüphanesiz, JPEG gömülü. */
+const GJ={}; let GP=null, GPP=null;
+const GSIRA=['MDA','Ankastre','VC','FOOD','FAEM','Hava_Temizleyici'];
+const gsirali=()=>(D.gorseller||[]).slice().sort((a,b)=>{const i=x=>{const k=GSIRA.indexOf(x.replace(/\.\w+$/,''));return k<0?99:k};return i(a)-i(b)});
+async function pdfYap(list){
+  const enc=new TextEncoder(), parts=[], offs=[]; let pos=0;
+  const put=x=>{const u=typeof x==='string'?enc.encode(x):x; parts.push(u); pos+=u.length};
+  const obj=(n,body)=>{offs[n]=pos; put(n+' 0 obj\n'); body(); put('\nendobj\n')};
+  put('%PDF-1.4\n'); put(new Uint8Array([37,226,227,207,211,10]));
+  const N=list.length;
+  obj(1,()=>put('<< /Type /Catalog /Pages 2 0 R >>'));
+  obj(2,()=>put(`<< /Type /Pages /Count ${N} /Kids [${list.map((_,i)=>(3+i*3)+' 0 R').join(' ')}] >>`));
+  for(let i=0;i<N;i++){
+    const {b,w,h}=list[i], pw=+(w*0.6).toFixed(2), ph=+(h*0.6).toFixed(2), pg=3+i*3, cs=`q ${pw} 0 0 ${ph} 0 0 cm /Im0 Do Q`;
+    const jpg=new Uint8Array(await b.arrayBuffer());
+    obj(pg,()=>put(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw} ${ph}] /Resources << /XObject << /Im0 ${pg+2} 0 R >> >> /Contents ${pg+1} 0 R >>`));
+    obj(pg+1,()=>put(`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`));
+    obj(pg+2,()=>{put(`<< /Type /XObject /Subtype /Image /Width ${w} /Height ${h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpg.length} >>\nstream\n`);put(jpg);put('\nendstream')});
+  }
+  const total=2+N*3, xref=pos;
+  put(`xref\n0 ${total+1}\n0000000000 65535 f \n`);
+  for(let n=1;n<=total;n++)put(String(offs[n]).padStart(10,'0')+' 00000 n \n');
+  put(`trailer\n<< /Size ${total+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+  return new Blob(parts,{type:'application/pdf'});
 }
-async function gorselPaylas(tek){
-  const g=tek?[tek]:(D.gorseller||[]), files=g.map(f=>GF[gkey(f)]).filter(Boolean);
-  if(!files.length||files.length<g.length){toast('Görseller hazırlanıyor, birazdan dene');return}
-  const baslik='BSH · '+(D.donem||'');
-  try{
-    if(navigator.canShare&&navigator.canShare({files})){await navigator.share({files,title:baslik});return}
-    if(files.length>1&&navigator.canShare&&navigator.canShare({files:[files[0]]})){toast('Bu telefon birden çok görseli birlikte paylaşamıyor; tek tek paylaş');return}
-  }catch(e){if(e&&e.name==='AbortError')return; toast('Paylaşılamadı; görsellerin altındaki tek tek paylaş düğmesini dene');return}
-  files.forEach(f=>{const u=URL.createObjectURL(f),a=document.createElement('a');a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)});
-  toast(files.length>1?'Görseller indirildi':'Görsel indirildi');
+function pdfHazirla(){
+  const g=gsirali(), k=gkey('pdf');
+  if(!g.length||!g.every(f=>GJ[gkey(f)]))return;
+  if((GP&&GP.k===k)||(GPP&&GPP.k===k))return;
+  const p=pdfYap(g.map(f=>GJ[gkey(f)])).then(b=>{GP={k,file:new File([b],'BSH Ham Data '+(D.donem||'')+'.pdf',{type:'application/pdf'})};gorselDurum()});
+  GPP={k,p}; p.catch(()=>{GPP=null});
+}
+async function pdfPaylas(){
+  if(!GP||GP.k!==gkey('pdf')){toast('PDF hazırlanıyor, birazdan dene');return}
+  const files=[GP.file];
+  try{ if(navigator.canShare&&navigator.canShare({files})){await navigator.share({files,title:'BSH · '+(D.donem||'')});return} }
+  catch(e){if(e&&e.name==='AbortError')return}
+  excelIndir(GP.file); toast('Bu cihaz PDF\'i doğrudan paylaşamıyor; kaydedildi (İndirilenler)');
+}
+function gorselDurum(){
+  const kd=$('#gkd'), pd=$('#gpd'); if(!kd)return;
+  const g=D.gorseller||[], n=g.filter(f=>GF[gkey(f)]).length, tam=n>=g.length;
+  kd.disabled=!tam; kd.style.opacity=tam?1:.55;
+  kd.textContent=tam?`⬇ ${g.length} görseli kaydet`:`Hazırlanıyor… ${n}/${g.length}`;
+  M.querySelectorAll('[data-gk]').forEach(x=>{x.style.visibility=GF[gkey(x.dataset.gk)]?'visible':'hidden'});
+  pdfHazirla();
+  const ok=!!(GP&&GP.k===gkey('pdf'));
+  pd.disabled=!ok; pd.style.opacity=ok?1:.55;
+  pd.textContent=ok?`⇪ PDF paylaş (${(GP.file.size/1048576).toFixed(1).replace('.',',')} MB)`:'PDF hazırlanıyor…';
 }
 async function gorselKaydet(tek){
   const g=tek?[tek]:(D.gorseller||[]), files=g.map(f=>GF[gkey(f)]).filter(Boolean);
@@ -652,8 +684,8 @@ function vImg(){
   const g=D.gorseller||[];
   const xl=D.excel?`<div class="card dep" style="padding:10px 12px"><div class="row" style="gap:8px"><span style="min-width:0"><b>Excel raporu</b><div class="note" id="xdr" style="margin:2px 0 0;word-break:break-all">Hazırlanıyor…</div></span><span style="display:flex;gap:6px;flex:none"><button class="chip" id="xkd" disabled style="opacity:.55">⬇ Kaydet</button><button class="chip rs" id="xsh" disabled style="opacity:.55">⇪ Paylaş</button></span></div></div>`:'';
   if(!g.length)return xl||'<div class="msg">Bu raporda görsel yok.</div>';
-  return xl+`<div class="row" style="margin:0 0 10px;gap:8px"><span class="note" style="margin:0">Dokun: büyüt (kaydırarak oku).</span><span style="display:flex;gap:6px"><button class="chip" id="gkd">⬇ Kaydet</button><button class="chip rs" id="gsh" disabled style="opacity:.55">Hazırlanıyor…</button></span></div><div class="imgs">`+
-    g.map(f=>`<div><div class="row" style="margin-top:4px"><h2 style="margin:8px 0">${esc(f.replace('.png','').replace(/_/g,' '))}</h2><span style="display:flex;gap:6px"><button class="chip" data-gk="${esc(f)}" style="visibility:hidden">⬇ Kaydet</button><button class="chip" data-gs="${esc(f)}" style="visibility:hidden">⇪ Paylaş</button></span></div><img data-f="${esc(f)}" alt="${esc(f)}"></div>`).join('')+'</div>';
+  return xl+`<div class="row" style="margin:0 0 10px;gap:8px"><span class="note" style="margin:0">Dokun: büyüt (kaydırarak oku).</span><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="chip rs" id="gpd" disabled style="opacity:.55">PDF hazırlanıyor…</button><button class="chip" id="gkd" disabled style="opacity:.55">Hazırlanıyor…</button></span></div><div class="imgs">`+
+    g.map(f=>`<div><div class="row" style="margin-top:4px"><h2 style="margin:8px 0">${esc(f.replace('.png','').replace(/_/g,' '))}</h2><button class="chip" data-gk="${esc(f)}" style="visibility:hidden">⬇ Kaydet</button></div><img data-f="${esc(f)}" alt="${esc(f)}"></div>`).join('')+'</div>';
 }
 
 /* ===================== yeni modüller: mağaza · ürün · uyarılar · gidişat · personel · paylaş ===================== */
@@ -1664,7 +1696,7 @@ function render(){
   M.querySelectorAll('[data-xl]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();xlsxIndir(XL&&XL())});
   M.querySelectorAll('.imgs img').forEach(im=>{loadImg(im,im.dataset.f);im.onclick=()=>{$('#zoom img').src=im.src;$('#zoom').style.display='block'}});
   if($('#xkd')){$('#xkd').onclick=excelKaydet; $('#xsh').onclick=excelPaylas; excelDurum(); excelHazirla().catch(()=>{})}
-  if($('#gsh')){$('#gsh').onclick=()=>gorselPaylas(); M.querySelectorAll('[data-gs]').forEach(b=>b.onclick=()=>gorselPaylas(b.dataset.gs)); $('#gkd').onclick=()=>gorselKaydet(); M.querySelectorAll('[data-gk]').forEach(b=>b.onclick=()=>gorselKaydet(b.dataset.gk)); gorselDurum()}
+  if($('#gkd')){$('#gpd').onclick=pdfPaylas; $('#gkd').onclick=()=>gorselKaydet(); M.querySelectorAll('[data-gk]').forEach(b=>b.onclick=()=>gorselKaydet(b.dataset.gk)); gorselDurum()}
   window.scrollTo(0,y);
 }
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;LS.set('tab',tab);sel.q='';if(tab==='mag')sel.mk=null;if(tab==='daha'){sel.dh=b.dataset.s||'';sel.dhfrom='';sel.dhnav=!!b.dataset.s}window.scrollTo(0,0);render()});
