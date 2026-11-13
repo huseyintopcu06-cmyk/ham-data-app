@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="27">
+<meta name="surum" content="28">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -61,6 +61,12 @@ h2{font-size:14px;margin:16px 0 8px;color:var(--mut);text-transform:uppercase;le
 .det h4{grid-column:1/-1;margin:10px 0 2px;padding-top:8px;border-top:1px solid var(--line);font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--org)}
 .det i{font-style:normal;color:var(--mut)}
 .det b{text-align:right}
+.bt th:first-child,.bt td:first-child{position:static;text-align:right;background:inherit;z-index:0}
+.bt td:first-child{background:transparent}
+.bt th.s1,.bt td.s1{position:sticky;left:0;z-index:2;text-align:left;background:var(--card)}
+.bt th.s1{background:var(--navy)}
+.bt tr.ga td.s1{background:var(--ga)}.bt tr.tot td.s1{background:var(--chip)}
+.bt th{line-height:1.25}.bt th small{display:block;font-weight:400;opacity:.8;font-size:10.5px}
 .tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card);margin-bottom:10px}
 table{border-collapse:collapse;width:100%;font-size:12.5px}
 th,td{padding:7px 9px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
@@ -221,7 +227,7 @@ function chips(items,cur,key){
   return '<div class="chips">'+items.map(([id,label])=>`<button class="chip ${id===cur?'on':''}" data-k="${key}" data-v="${esc(id)}">${esc(label)}</button>`).join('')+'</div>';
 }
 function bindChips(){
-  M.querySelectorAll('.chip[data-k]').forEach(b=>b.onclick=()=>{sel[b.dataset.k]=b.dataset.v;render()});
+  M.querySelectorAll('.chip[data-k]').forEach(b=>b.onclick=()=>{sel[b.dataset.k]=b.dataset.v;if(b.dataset.k==='bs')sel.q='';render()});
 }
 /* kart içi kolonları başlıklı gruplara ayır: mağaza bilgisi · Sell-out · Satılabilir stok · Açık sipariş · Ay başı */
 const GRUP=[['Sell-out'],['Satılabilir stok'],['Açık sipariş'],['Ay başı stok']];
@@ -545,6 +551,69 @@ function uyarilar(){
 }
 function gaToplam(DD,i){const r=DD.ozet[0]&&DD.ozet[0].satirlar.find(isGA);return r?N(r[DD.ozet[0].kolonlar.findIndex(x=>/^Toplam/.test(x))]):null}
 
+/* ---- BRAND: aylık departman bazlı TR tabloları (şifreli, ilk açılışta yüklenir) ---- */
+let BR=null, BRHATA='';
+async function brandYukle(){
+  if(BR||BRHATA==='yukleniyor')return;
+  BRHATA='yukleniyor';
+  try{
+    const r=await fetch('brand.enc?'+Date.now(),{cache:'no-store'}); if(!r.ok)throw new Error(r.status);
+    BR=await openPack(await r.text(),LS.get('pw'),true); BRHATA='';
+  }catch(e){BRHATA='BRAND verisi alınamadı.'}
+  if(tab==='daha'&&sel.dh==='brand')render();
+}
+const brandOran=h=>/[İIÜU]HS|PAY/i.test(h||'');
+function brandFmt(v,h){
+  if(v==null||v==='')return '';
+  if(typeof v==='string')return esc(v);
+  if(brandOran(h)&&Math.abs(v)<=1.5)return (v*100).toFixed(1).replace('.',',')+'%';
+  return fmt(v,'');
+}
+function vBrand(){
+  if(!BR){
+    brandYukle();
+    return BRHATA&&BRHATA!=='yukleniyor'?`<div class="msg">${esc(BRHATA)}<br>İnterneti kontrol edip tekrar dene.</div>`:'<div class="msg">BRAND yükleniyor…</div>';
+  }
+  const F=BR.dosyalar; if(!F.length)return '<div class="msg">BRAND verisi yok.</div>';
+  const yillar=[...new Set(F.map(f=>f.yil))].sort((a,b)=>b-a);
+  const yil=yillar.includes(+sel.by)?+sel.by:yillar[0];
+  if(sel.bf==null||!F[sel.bf]){
+    let s=chips(yillar.map(y=>[String(y),String(y)]),String(yil),'by');
+    s+=`<div class="note" style="margin:0 0 8px">${yil} · ay seç · markalar ve rakip adları gizli ("Rakip N")</div>`;
+    F.forEach((f,i)=>{ if(f.yil!==yil)return;
+      s+=`<div class="card"><div class="sm" data-bf="${i}"><div class="rk">${f.ay||'–'}</div><div class="nm"><b>${esc(f.etiket)}</b><span style="white-space:normal">${esc(f.ad)} · ${f.sayfalar.length} sayfa</span></div><span class="chev">›</span></div></div>`});
+    return s;
+  }
+  const f=F[sel.bf], si=(sel.bs!=null&&f.sayfalar[sel.bs])?sel.bs:0, S=f.sayfalar[si];
+  const R=S.satirlar, bas=S.bas, n=R[0].length;
+  // başlık: üst satırı sağa doğru doldur (marka adı iki kolona yayılır)
+  const hd=[]; let last='';
+  for(let j=0;j<n;j++){let a=R[0][j]; if(a!=null&&a!=='')last=a; else if(!(bas>1&&R[1][j]!=null&&R[1][j]!==''))last=''; hd.push({a:last||'',b:bas>1&&R[1][j]!=null?String(R[1][j]):'',c:bas>2&&R[2][j]!=null?String(R[2][j]):''})}
+  const norm=x=>String(x||'').toLocaleLowerCase('tr');
+  const ci=hd.findIndex(x=>/ma[ğg]aza/.test(norm(x.a+x.b+x.c))); const sc=ci>=0?ci:0;
+  const bi=hd.findIndex(x=>/b[öo]lge/.test(norm(x.a+x.b+x.c)));
+  const body=R.slice(bas);
+  const q=fold(sel.q), rg=sel.brg||'';
+  const bol=bi>=0?[...new Set(body.map(r=>r[bi]).filter(x=>typeof x==='string'&&!/TOPLAM/i.test(x)&&x.trim()))]:[];
+  const rows=body.filter(r=>{
+    const tot=r.some(c=>typeof c==='string'&&/TOPLAM/i.test(c)); if(tot)return !q;
+    return (!rg||r[bi]===rg)&&(!q||r.some(c=>typeof c==='string'&&fold(c).includes(q)));
+  });
+  let s=`<div class="row" style="margin-bottom:8px"><button class="chip" data-bback="1">← ${esc(f.etiket)}</button></div>`;
+  s+=`<div class="note" style="margin:0 0 6px">${esc(f.ad)}</div>`;
+  if(F.filter(x=>x.etiket===f.etiket).length>1)s+=`<div class="note" style="margin:0 0 6px">Bu ayın diğer dosyaları için geri dönüp seç.</div>`;
+  s+=chips(f.sayfalar.map((x,i)=>[String(i),x.ad]),String(si),'bs');
+  s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`;
+  if(bol.length>1)s+=chips([['','Tümü']].concat(bol.map(x=>[x,x.toLocaleLowerCase('tr').replace(/(^|\s)\S/g,m=>m.toLocaleUpperCase('tr'))])),rg,'brg');
+  s+=`<div class="note" style="margin:0 0 8px">${rows.length} satır · yana kaydır</div>`;
+  const ord=[sc].concat(hd.map((_,j)=>j).filter(j=>j!==sc));   // mağaza kolonu başa
+  s+='<div class="tw bt"><table><thead><tr>'+ord.map(j=>{const x=hd[j];return `<th class="${j===sc?'s1':''}">${esc(x.a||x.b)}${x.a&&x.b?`<small>${esc(x.b)}</small>`:''}${x.c?`<small>${esc(x.c)}</small>`:''}</th>`}).join('')+'</tr></thead><tbody>';
+  rows.forEach(r=>{
+    s+=`<tr class="${isGA(r)?'ga':''} ${isTot(r)?'tot':''}">`+ord.map(j=>{const v=r[j],hh=(hd[j].a+' '+hd[j].b+' '+hd[j].c);return `<td class="${j===sc?'s1':''}">${brandFmt(v,hh)}</td>`}).join('')+'</tr>';
+  });
+  return s+'</tbody></table></div>';
+}
+
 /* ---- Daha: görseller · gidişat · personel ---- */
 function vDaha(){
   const sub=sel.dh||'';
@@ -553,7 +622,9 @@ function vDaha(){
   if(sub==='gid')return back+vGid();
   if(sub==='per')return back+vPer();
   if(sub==='ihtiyac')return back+vIht();
-  return [['ihtiyac','☰','İhtiyaç listeleri','Ankastre ve SDA: hangi mağazaya hangi modelden kaç sipariş'],
+  if(sub==='brand')return back+vBrand();
+  return [['brand','▤','BRAND','Aylık BRAND tabloları: departman bazlı TR satışları (2025–2026)'],
+          ['ihtiyac','☰','İhtiyaç listeleri','Ankastre ve SDA: hangi mağazaya hangi modelden kaç sipariş'],
           ['img','▣','Görseller','6 tablo görseli (MDA, Ankastre, VC, FOOD, FAEM, Hava)'],
           ['gid','↗','Gidişat','Önceki rapora göre günlük satış, sıra ve tahmin değişimi'],
           ['per','☺','Personel','Mağaza × departman promotör durumu']]
@@ -789,6 +860,8 @@ function render(){
   const go=(t,fn)=>{tab=t;LS.set('tab',t);if(fn)fn();render();window.scrollTo(0,0)};
   M.querySelectorAll('[data-mk]').forEach(el=>el.onclick=e=>{e.stopPropagation();const k=el.dataset.mk;go('mag',()=>{sel.mk=k})});
   M.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{if(b.dataset.back==='mk')sel.mk=null;if(b.dataset.back==='dh')sel.dh='';render();window.scrollTo(0,0)});
+  M.querySelectorAll('[data-bf]').forEach(el=>el.onclick=()=>{sel.bf=+el.dataset.bf;sel.bs=0;sel.q='';sel.brg='';render();window.scrollTo(0,0)});
+  M.querySelectorAll('[data-bback]').forEach(el=>el.onclick=()=>{sel.bf=null;sel.q='';render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-dh]').forEach(el=>el.onclick=()=>{sel.dh=el.dataset.dh;render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-ara]').forEach(el=>el.onclick=()=>go('urun',()=>{sel.q=D.urunler.u[+el.dataset.ara];sel.urg=GAB;sel.ustk=''}));
   M.querySelectorAll('[data-tf]').forEach(el=>el.onclick=()=>{sel.tr='1';sel.ts=el.dataset.tf;sel.to='';sel.tk='';render();window.scrollTo(0,0)});
