@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="54">
+<meta name="surum" content="55">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -471,8 +471,8 @@ function vKat(){
      chips([['','Tümü']].concat(have.map(x=>[x,tc(x)])),rg,'rg');
   s+=`<div class="row" style="margin:0 0 8px;gap:8px"><div class="note" style="margin:0">${esc(C.baslik||'')} · kartı aç: tüm kolonlar</div><button class="chip" data-sh="kat">Paylaş</button></div>`;
   const opt={rank,name,sub,main,fcs:I.i.fcs,sat:I.i.sat,gel:I.i.gel,kod:ix('Kod'),prev,set:I.i.set,cats:KATVERI[k],kat:k,yk:r=>{const m=magList().map.get(r[ix('Kod')]); const y=m&&yorumMag(m,k); return y?`<span class="yr">${esc(y.d)}${y.o.length?' · '+esc(y.o[0]):''}</span>`:''}};
+  if(onl.length)s+='<h2 style="margin-top:4px">Online · sıralama ve toplam dışı</h2>'+cardList({kolonlar:h,satirlar:onl.map(r=>{r=r.slice();if(rank>=0)r[rank]='';return r})},Object.assign({},opt,{yk:null}))+'<h2>Fiziksel mağazalar</h2>';
   s+=cardList({kolonlar:h,satirlar:tot.concat(body)},opt);
-  if(onl.length)s+='<h2>Online · sıralama ve toplam dışı</h2>'+cardList({kolonlar:h,satirlar:onl.map(r=>{r=r.slice();if(rank>=0)r[rank]='';return r})},Object.assign({},opt,{yk:null}));
   return s;
 }
 async function loadImg(el,f){
