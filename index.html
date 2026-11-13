@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="34">
+<meta name="surum" content="35">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -36,8 +36,9 @@ header h1,header small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis
 main{padding:12px 16px calc(84px + env(safe-area-inset-bottom));max-width:900px;margin:0 auto}
 nav{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
 nav{overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}nav::-webkit-scrollbar{display:none}
-nav button{flex:0 0 16.66%;min-width:60px;background:none;border:0;padding:9px 1px 8px;font-size:11px;color:var(--mut);display:flex;flex-direction:column;align-items:center;gap:2px}
-nav button b{font-size:19px;font-weight:400}
+nav button{flex:0 0 11.5%;min-width:44px;background:none;border:0;padding:7px 0 6px;font-size:9.5px;font-weight:600;letter-spacing:-.2px;color:var(--mut);display:flex;flex-direction:column;align-items:center;gap:1px;--c:#4F8EF7}
+nav button b{font-size:21px;line-height:1.1;font-weight:700;color:var(--c)}
+nav button.on{color:var(--ink);box-shadow:inset 0 3px 0 var(--c);background:color-mix(in srgb,var(--c) 12%,transparent)}
 nav button.on{color:var(--navy);font-weight:700}
 @media(prefers-color-scheme:dark){nav button.on{color:#8db6ff}}
 .chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
@@ -128,16 +129,16 @@ tbody tr[data-mk]{cursor:pointer}
 <div id="upd" hidden><span>Yeni sürüm var</span><button id="updgo">Yenile</button></div>
 <main id="m"></main>
 <nav id="nv">
-<button data-t="ozet" class="on"><b>▦</b>Özet</button>
-<button data-t="kat"><b>☰</b>Kategori</button>
-<button data-t="mag"><b>⌂</b>Mağaza</button>
-<button data-t="urun"><b>⌕</b>Ara</button>
-<button data-t="trf"><b>⇄</b>Transfer</button>
-<button data-t="daha" data-s="brand"><b>▤</b>BRAND</button>
-<button data-t="daha" data-s="ihtiyac"><b>☑</b>İhtiyaç</button>
-<button data-t="daha" data-s="gid"><b>↗</b>Gidişat</button>
-<button data-t="daha" data-s="per"><b>☺</b>Personel</button>
-<button data-t="daha" data-s="img"><b>▣</b>Görseller</button>
+<button style="--c:#4F8EF7" data-t="ozet" class="on"><b>▦</b>Özet</button>
+<button style="--c:#FF9800" data-t="kat"><b>☰</b>Kategori</button>
+<button style="--c:#2ECC71" data-t="mag"><b>⌂</b>Mağaza</button>
+<button style="--c:#B266E0" data-t="urun"><b>⌕</b>Ara</button>
+<button style="--c:#F0544F" data-t="trf"><b>⇄</b>Transfer</button>
+<button style="--c:#14B8A6" data-t="daha" data-s="brand"><b>▤</b>BRAND</button>
+<button style="--c:#F5C518" data-t="daha" data-s="ihtiyac"><b>☑</b>İhtiyaç</button>
+<button style="--c:#FF5FA2" data-t="daha" data-s="gid"><b>↗</b>Gidişat</button>
+<button style="--c:#22B8E6" data-t="daha" data-s="per"><b>☺</b>Personel</button>
+<button style="--c:#FB7B3C" data-t="daha" data-s="img"><b>▣</b>Görseller</button>
 </nav>
 <div id="toast"></div>
 <div id="zoom"><button>Kapat ✕</button><img alt=""></div>
