@@ -424,6 +424,14 @@ function artMap(){   // model kodu -> artikel (urunler listesinden)
 const artHtml=a=>a?`<small class="art">Artikel: ${esc(a)}</small>`:'';
 const artI=i=>{const U=D.urunler;return artHtml(U&&U.a&&U.a[i])};
 const artT=s=>{const m=artMap(); if(!m)return ''; const t=String(s||'').split(/[\s(]+/).filter(w=>w&&!/^(BOSCH|SIEMENS|PROFILO)$/i.test(w)); return artHtml(t[0]&&m.get(t[0]))};
+/* stok kaç gün yeter: günlük hız = bu ayki satış ÷ geçen gün (bu ay satış yoksa geçen ay ÷ 30). Satış yoksa hesaplanmaz. */
+function stokGun(adet,sat,gecen){
+  if(sat==null)return null; const hiz=adet>0?adet/Math.max(donemGun(),1):(gecen>0?gecen/30:0);
+  return hiz>0?Math.max(sat,0)/hiz:null;
+}
+const sgYaz=d=>d<1?'<1':d>=100?'99+':String(Math.round(d));
+const sgCls=d=>d<=7?'t-red':d<=14?'t-yel':'t-grn';
+const sgTag=d=>d==null?'':`<span class="tag ${sgCls(d)}" style="margin:0">Stok ${sgYaz(d)} gün</span>`;
 function modelTablo(kod,cats){   // tek ızgara: model × (bu ay satış, geçen ay, stok, açık sipariş)
   const ux=urunIdx(); if(!ux||!cats)return '';
   const U=D.urunler, ok=new Set(cats.map(c=>U.k.indexOf(c)).filter(i=>i>=0)), pm=oncekiAy(D), bm=buAy(D);
@@ -431,9 +439,9 @@ function modelTablo(kod,cats){   // tek ızgara: model × (bu ay satış, geçen
   if(!rows.length)return '';
   const T=[3,7,5,6].map(i=>rows.reduce((a,r)=>a+Math.max(0,r[i]),0));
   const c=(v,cl)=>v>0?`<td class="${cl}"><b>${v}</b></td>`:'<td class="z">·</td>';
-  return `<div style="grid-column:1/-1"><h4>Modeller · ${rows.length} model</h4><div class="tw mt"><table><thead><tr><th>Model</th><th class="hs">${esc(bm)}<small>satış</small></th><th>${esc(pm)}<small>satış</small></th><th class="hk">Stok<small>satılabilir</small></th><th class="hg">Açık<small>sipariş</small></th></tr></thead><tbody>`+
-    rows.map(r=>`<tr><td>${esc(U.u[r[0]])}${artI(r[0])}</td>${c(r[3],'s')}${c(r[7],'p')}${c(r[5],'k')}${c(r[6],'g')}</tr>`).join('')+
-    `<tr class="tot"><td>Toplam</td><td class="s">${nf(T[0])}</td><td class="p">${nf(T[1])}</td><td class="k">${nf(T[2])}</td><td class="g">${nf(T[3])}</td></tr></tbody></table></div></div>`;
+  return `<div style="grid-column:1/-1"><h4>Modeller · ${rows.length} model</h4><div class="tw mt"><table><thead><tr><th>Model</th><th class="hs">${esc(bm)}<small>satış</small></th><th>${esc(pm)}<small>satış</small></th><th class="hk">Stok<small>satılabilir</small></th><th class="hg">Açık<small>sipariş</small></th><th>Gün<small>stok yeter</small></th></tr></thead><tbody>`+
+    rows.map(r=>`<tr><td>${esc(U.u[r[0]])}${artI(r[0])}</td>${c(r[3],'s')}${c(r[7],'p')}${c(r[5],'k')}${c(r[6],'g')}${(d=>d==null?'<td class="z">·</td>':`<td><span class="tag ${sgCls(d)}" style="margin:0">${sgYaz(d)}</span></td>`)(r[3]>0||r[7]>0?stokGun(r[3],r[5],r[7]):null)}</tr>`).join('')+
+    `<tr class="tot"><td>Toplam</td><td class="s">${nf(T[0])}</td><td class="p">${nf(T[1])}</td><td class="k">${nf(T[2])}</td><td class="g">${nf(T[3])}</td><td>${(d=>d==null?'':sgYaz(d))(stokGun(T[0],T[2],T[1]))}</td></tr></tbody></table></div></div>`;
 }
 function cardList(t,o){
   // o: {rank,name,sub,main,fc}
@@ -968,7 +976,7 @@ function vMagDetay(kod){
     const yet=x.bas.some(v=>typeof v==='number'&&v<0);
     const KI=katInfo(k), KR=KI&&KI.rows.find(r=>r[KI.i.kod]===kod);
     const detay=KR?`<div class="det" style="border:0;padding:8px 0 0"><div style="grid-column:1/-1;display:flex;justify-content:flex-end;padding-bottom:6px"><button class="chip rs" data-kimg="${kod}" data-kk="${esc(k)}">⇪ Resim paylaş</button></div>${grupla(KI.h,KR,KI.i.name)}${modelTablo(kod,KATVERI[k])}</div>`:'';
-    s+=`<details class="card dep"><summary style="display:block;padding:0"><div class="dh2"><b>${esc(KLAB[k]||k)}</b>${x.rank?`<span>TR #${x.rank}</span>`:''}${yet?'<span class="tag t-org">Ay sonuna yetmiyor</span>':''}</div>
+    s+=`<details class="card dep"><summary style="display:block;padding:0"><div class="dh2"><b>${esc(KLAB[k]||k)}</b>${x.rank?`<span>TR #${x.rank}</span>`:''}${yet?'<span class="tag t-org">Ay sonuna yetmiyor</span>':''}${sgTag(x.main>0?stokGun(x.main,x.sat,0):null)}</div>
       <div class="g4"><div><small>Sell-out</small><b>${nf(x.main)}</b></div><div><small>Tahmin</small><b class="or">${x.fc!=null?nf(x.fc):'–'}</b></div><div><small>Satılabilir stok</small><b>${x.sat!=null?nf(x.sat):'–'}</b></div><div><small>Açık sipariş</small><b>${nf(x.gel)}</b></div></div>${x.set?`<div class="note" style="margin:6px 0 0">Satılabilir set <b>${nf(x.set.reduce((a,b)=>a+b,0))}</b> · Siyah ${nf(x.set[0])} · Beyaz ${nf(x.set[1])} · Gri ${nf(x.set[2])}${x.set[3]?` · Inox ${nf(x.set[3])}`:''}</div>`:''}${yorumHtml(yorumMag(m,k))}${KR?'<div class="dbtn"><span class="a">Detayı aç · sell-out, stok, modeller</span><span class="b">Detayı kapat</span><i>▾</i></div>':''}</summary>${detay}</details>`;
   });
   s+=hedefBolum(kod);
@@ -981,6 +989,8 @@ function vMagDetay(kod){
     const oos=rows.filter(r=>r[7]>=2&&r[5]<=0).sort((a,b)=>b[7]-a[7]).slice(0,8);
     const dead=rows.filter(r=>r[3]===0&&r[7]===0&&r[5]>0).sort((a,b)=>b[5]-a[5]).slice(0,8);
     if(oos.length)s+='<h2>Stoksuz çok satan</h2><div class="card dep">'+oos.map(r=>`<div class="urow"><span>${esc(U.u[r[0]])}${artI(r[0])}</span><span>geçen ay ${r[7]}</span></div>`).join('')+'</div>';
+    const biten=rows.map(r=>[r,r[3]>=2&&r[5]>0?stokGun(r[3],r[5],r[7]):null]).filter(z=>z[1]!=null&&z[1]<=7).sort((a,b)=>a[1]-b[1]||b[0][3]-a[0][3]).slice(0,12);
+    if(biten.length)s+='<h2>Stoğu bitmek üzere · 7 gün ve altı</h2><div class="card dep">'+biten.map(([r,d])=>`<div class="urow" style="grid-template-columns:1fr auto auto"><span>${esc(U.u[r[0]])}${artI(r[0])}<br><span class="note" style="margin:0">bu ay ${r[3]} satış · stok ${r[5]}${r[6]>0?' · açık sipariş '+r[6]:''}</span></span><span></span><span class="tag ${sgCls(d)}" style="margin:0">${sgYaz(d)} gün</span></div>`).join('')+'</div>';
     if(dead.length)s+='<h2>Satmayan stok</h2><div class="card dep">'+dead.map(r=>`<div class="urow"><span>${esc(U.u[r[0]])}${artI(r[0])}</span><span>stok ${r[5]}</span></div>`).join('')+'</div>';
   }
   const tt=D.transfer&&D.transfer.filter(t=>t.satirlar.length)[1];
@@ -1346,6 +1356,24 @@ function hedefHesap(x,G){
   const h=N(x.h), o=h?g/h:0, of=h?fc/h:0;
   return {g,fc,o,of,kal:h?Math.max(h-g,0):0,d:!h?'':g>=h?'tuttu':of>=1?'tutar':of>=.85?'sinir':'geride'};
 }
+function hedefGrafik(x,G){   // gün gün birikimli gerçekleşen · kesik çizgi = hedefe düz gidiş · noktalı = ay sonu tahmini
+  const H=D.hedef, d=x.d; if(!d||d.length<2||!x.h)return '';
+  const c=hedefHesap(x,G), W=300, Hh=66, pl=3, pr=3, pt=7, pb=13, n=H.aygun, son=d[d.length-1], mx=Math.max(x.h,c.fc,son,1)*1.06;
+  const X=g=>(pl+(g/n)*(W-pl-pr)).toFixed(1), Y=v=>(pt+(1-Math.max(v,0)/mx)*(Hh-pt-pb)).toFixed(1);
+  const col=c.d==='geride'?'var(--bad)':c.d==='sinir'?'#e0a800':'var(--ok)';
+  const yol='M'+X(0)+','+Y(0)+d.map((v,i)=>' L'+X(i+1)+','+Y(v)).join('');
+  return `<svg viewBox="0 0 ${W} ${Hh}" style="display:block;width:100%;height:auto;margin:4px 0 2px" aria-hidden="true">
+    <line x1="${X(0)}" y1="${Y(x.h)}" x2="${X(n)}" y2="${Y(x.h)}" stroke="currentColor" stroke-opacity=".35" stroke-width="1"/>
+    <line x1="${X(0)}" y1="${Y(0)}" x2="${X(n)}" y2="${Y(x.h)}" stroke="currentColor" stroke-opacity=".35" stroke-width="1" stroke-dasharray="3 3"/>
+    <line x1="${X(d.length)}" y1="${Y(son)}" x2="${X(n)}" y2="${Y(c.fc)}" stroke="var(--org)" stroke-width="1.6" stroke-dasharray="1.5 3" stroke-linecap="round"/>
+    <path d="${yol} L${X(d.length)},${Y(0)} Z" fill="${col}" fill-opacity=".13"/>
+    <path d="${yol}" fill="none" stroke="${col}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${X(d.length)}" cy="${Y(son)}" r="3" fill="${col}"/>
+    <text x="${X(0)}" y="${Hh-2}" font-size="8.5" fill="currentColor" fill-opacity=".55">1</text>
+    <text x="${X(d.length)}" y="${Hh-2}" font-size="8.5" fill="currentColor" fill-opacity=".8" text-anchor="middle" font-weight="700">${d.length}</text>
+    <text x="${X(n)}" y="${Hh-2}" font-size="8.5" fill="currentColor" fill-opacity=".55" text-anchor="end">${n}</text>
+    <text x="${X(n)}" y="${(+Y(x.h)-2.5).toFixed(1)}" font-size="8" fill="currentColor" fill-opacity=".55" text-anchor="end">hedef</text></svg>`;
+}
 function hedefSatir(x,G,baslik,alt){
   const c=hedefHesap(x,G), br=x.b==='TL'?'TL':x.b;
   if(!x.h)return `<div class="hrow"><div class="row"><span><b>${esc(baslik)}</b></span><span style="font-size:13px"><b>${hdeg(c.g,x.b)}</b> ${br}${x.bn||x.bf?` · kazanç ${nf(x.bn)} → <b class="pos">${nf(x.bf)} TL</b>`:''}</span></div></div>`;
@@ -1355,7 +1383,7 @@ function hedefSatir(x,G,baslik,alt){
   return `<div class="hrow"><div class="row"><span style="min-width:0"><b>${esc(baslik)}</b>${alt?` <span class="note" style="margin:0">${esc(alt)}</span>`:''}</span><span class="tag ${t[0]}" style="margin:0;flex:none">${t[1]}</span></div>
     <div class="row" style="font-size:13px;margin-top:3px;flex-wrap:wrap;gap:0 8px"><span><b style="font-size:15px">${hdeg(c.g,x.b)}</b> / ${hdeg(x.h,x.b)} ${br} · %${Math.round(c.o*100)}</span><span style="color:var(--org);font-weight:700">Tahmin ${hdeg(c.fc,x.b)} · %${Math.round(c.of*100)}</span></div>
     <div class="hb"><i class="${c.d}" style="width:${w(c.o)}%"></i><u style="left:${w(1)}%"></u><em style="left:${w(c.of)}%"></em></div>
-    <div class="note" style="margin:0">${n}</div>${x.bn!=null?`<div class="row" style="font-size:12.5px;margin-top:3px"><span style="color:var(--mut)">Kazanç (brüt)</span><span>şu an <b>${nf(x.bn)}</b> → tahmini <b class="${x.bf>0?'pos':''}">${nf(x.bf)} TL</b></span></div>`:''}</div>`;
+    ${hedefGrafik(x,G)}<div class="note" style="margin:0">${n}</div>${x.bn!=null?`<div class="row" style="font-size:12.5px;margin-top:3px"><span style="color:var(--mut)">Kazanç (brüt)</span><span>şu an <b>${nf(x.bn)}</b> → tahmini <b class="${x.bf>0?'pos':''}">${nf(x.bf)} TL</b></span></div>`:''}</div>`;
 }
 function hedefBaslik(){const H=D.hedef,G=hedefGun();return `1–${H.gun} ${AYAD[H.ay-1]} · ${G.kalan} gün kaldı`}
 function hedefBolum(kod){
@@ -1534,7 +1562,7 @@ function vHedef(){
   }
   s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+chips([['iyi','En iyi üstte'],['geri','Geride olan üstte']],sr,'hs');
   s+=rows.map(r=>`<div class="card ${r.bolge===GAB?'ga':''}" data-hr="${r.kod}" data-hs="${esc(r.S)}" style="padding:3px 12px;cursor:pointer">${hedefSatir(r.x,G,r.ad,r.S)}</div>`).join('')||'<div class="msg">Mağaza bulunamadı.</div>';
-  s+=`<div class="note">Mağazaya dokun: o departmanın hedef kartı resim olarak açılır, Paylaş ile gönderilir. Çubukta dikey çizgi = hedef, turuncu ok = ay sonu tahmini. Gerçekleşen, Hedef Kontrol dosyasındaki resmi sell-out'tur (MDA ciro = adet × TEPF; ankastre ve hava temizleme hariç). ${H.yontem==='kart'?`Tahmin (Hedef Gerçekleştirme Kartı formülü) = mağazanın ${esc(H.ortad||'')} aylık ortalaması × kategori TR tahmin endeksi; MDA ciro tahmini = tahmini adet × mağazanın bu ayki ortalama TEPF'i; tahmin gerçekleşenin altına inmez. TR endeksleri: MDA ${ek('MDA')} · Ankastre ${ek('DAV')} · Süpürge ${ek('BU')} · Robot ${ek('ROBOT')} · KEA ${ek('FD')} · MUM ${ek('MUM')} · FAEM ${ek('FAEM')} · Hava ${ek('HAVA')}.`:'Tahmin = şu anki tempo, kalan günlerin gün katsayısıyla (Pzt–Per 1,0 · Cuma 1,2 · Cmt 1,7 · Paz 2,1).'} Tempoda = tahmin hedefi geçiyor · Sınırda = tahmin %85–99 · Geride = tahmin %85'in altında. KEA'da hedef ilk baremdir. Kazanç = brüt bonus, Hedef Kontrol dosyasındaki kurallarla hesaplanır: "şu an" bugünkü satışla hak edilen, "tahmini" ay sonu tahmini tutarsa hak edilecek tutardır. Hava temizleme kazancı kişi başıdır. Kaynak: ${esc(H.kaynak)}</div>`;
+  s+=`<div class="note">Mağazaya dokun: o departmanın hedef kartı resim olarak açılır, Paylaş ile gönderilir. Küçük grafik: gün gün birikimli gerçekleşen; kesik çizgi hedefe düz gidiş, turuncu noktalı çizgi ay sonu tahmini. Çubukta dikey çizgi = hedef, turuncu ok = ay sonu tahmini. Gerçekleşen, Hedef Kontrol dosyasındaki resmi sell-out'tur (MDA ciro = adet × TEPF; ankastre ve hava temizleme hariç). ${H.yontem==='kart'?`Tahmin (Hedef Gerçekleştirme Kartı formülü) = mağazanın ${esc(H.ortad||'')} aylık ortalaması × kategori TR tahmin endeksi; MDA ciro tahmini = tahmini adet × mağazanın bu ayki ortalama TEPF'i; tahmin gerçekleşenin altına inmez. TR endeksleri: MDA ${ek('MDA')} · Ankastre ${ek('DAV')} · Süpürge ${ek('BU')} · Robot ${ek('ROBOT')} · KEA ${ek('FD')} · MUM ${ek('MUM')} · FAEM ${ek('FAEM')} · Hava ${ek('HAVA')}.`:'Tahmin = şu anki tempo, kalan günlerin gün katsayısıyla (Pzt–Per 1,0 · Cuma 1,2 · Cmt 1,7 · Paz 2,1).'} Tempoda = tahmin hedefi geçiyor · Sınırda = tahmin %85–99 · Geride = tahmin %85'in altında. KEA'da hedef ilk baremdir. Kazanç = brüt bonus, Hedef Kontrol dosyasındaki kurallarla hesaplanır: "şu an" bugünkü satışla hak edilen, "tahmini" ay sonu tahmini tutarsa hak edilecek tutardır. Hava temizleme kazancı kişi başıdır. Kaynak: ${esc(H.kaynak)}</div>`;
   XL=()=>({ad:'Hedef '+HTUR.find(x=>x[0]===tur)[1]+' '+(rg?tc(rg)+' ':'')+H.gun+' '+AYAD[H.ay-1],h:['Kod','Mağaza','SPV','Bölge','Hedef sayfası','Hedef','Gerçekleşen','Gerçekleşme %','Ay sonu tahmini','Tahmin %','Kalan','Günlük gereken','Durum','Kazanç şu an (TL)','Kazanç tahmini (TL)'],
     rows:rows.map(r=>[r.kod,r.ad,r.spv,r.bolge,r.S,r.x.h,r.c.g,Math.round(r.c.o*100),r.c.fc,Math.round(r.c.of*100),r.c.kal,G.kalan>0?Math.round(r.c.kal/G.kalan*10)/10:'',HDUR[r.c.d][1],r.x.bn!=null?r.x.bn:'',r.x.bf!=null?r.x.bf:''])});
   return s;
