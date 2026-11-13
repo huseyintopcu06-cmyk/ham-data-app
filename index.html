@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="56">
+<meta name="surum" content="57">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -720,7 +720,7 @@ function vUrun(){
   const ux=urunIdx(), q=fold(sel.q).trim(), rg=sel.urg||'', ust=sel.ustk==='yok';
   let s=`<input type="search" id="q" placeholder="Mağaza, ürün, model veya artikel ara… (ör. Van, BCS71)" value="${esc(sel.q||'')}">`+bolgeChips('urg',rg)+chips([['','Tümü'],['yok','Stoksuz mağazalar']],sel.ustk||'','ustk');
   const toks=q.split(/\s+/).filter(Boolean);
-  if(q.length<2){
+  if(q.length===1){
     s+='<div class="note" style="margin:0 0 8px">En az 2 harf yaz: mağaza adı, ürün adı, model kodu ya da artikel numarasının bir kısmı.</div>';
     const z=stoksuzCokSatan(rg||GAB);
     if(z&&z.liste.length){
@@ -739,7 +739,7 @@ function vUrun(){
     a.adet+=r[3];a.stok+=r[4];a.sat+=r[5];a.gel+=r[6];a.gec+=r[7];a.rows.push(r);
   });
   const list=[...hit.values()].sort((a,b)=>ust?(b.rows.length-a.rows.length||b.gec-a.gec):(b.adet-a.adet||b.sat-a.sat));
-  const stm=ust?[]:magList().arr.filter(m=>(!rg||m.bolge===rg)&&toks.every(t=>fold(m.ad+' '+m.spv).includes(t))).slice(0,8);
+  const stm=(ust||!q)?[]:magList().arr.filter(m=>(!rg||m.bolge===rg)&&toks.every(t=>fold(m.ad+' '+m.spv).includes(t))).slice(0,8);
   const stHtml=stm.length?'<h2>Mağazalar</h2>'+stm.map(m=>`<div class="card ${m.bolge===GAB?'ga':''}" data-mk="${m.kod}"><div class="sm"><div class="nm"><b>${esc(m.ad)}</b><span>${esc(m.spv)} · ${tc(m.bolge)}</span></div><div class="kv"><small>Sell-out</small><b>${nf(m.top)}</b></div><span class="chev">›</span></div></div>`).join(''):'';
   s+=stHtml+(stHtml&&list.length?'<h2>Ürünler</h2>':'');
   s+=`<div class="note" style="margin:0 0 8px">${list.length} ürün${list.length>40?' (ilk 40 gösteriliyor)':''} · kartı aç: mağaza dağılımı</div>`;
