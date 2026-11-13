@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="55">
+<meta name="surum" content="56">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -447,7 +447,7 @@ function fdKategori(DD){
     });
     return {baslik:t.baslik,kolonlar:keep.map(i=>h[i]).concat(['FOOD Diğer Satılabilir Stok Adeti']),satirlar:all};
   };
-  const v={baslik:'FOOD Diğer · '+(DD.donem||'')+' Satış Sıralaması',tablolar:src.tablolar.filter(t=>t.satirlar.length).map(mk)};
+  const v={baslik:'FOOD Diğer · '+(DD.donem||'')+' Satış Sıralaması',tablolar:src.tablolar.filter(t=>t.satirlar.length).slice(0,2).map(mk)};
   _fdc.set(DD,v); return v;
 }
 function vKat(){
@@ -464,7 +464,7 @@ function vKat(){
   const have=[...new Set(mag.satirlar.map(r=>r[bi]).filter(x=>x&&x!=='ONLINE'))].sort((p,q2)=>(ORD.indexOf(p)<0?9:ORD.indexOf(p))-(ORD.indexOf(q2)<0?9:ORD.indexOf(q2)));
   const rg=sel.rg==null?'':sel.rg, tc=s=>s.toLocaleLowerCase('tr').replace(/(^|\s)\S/g,m=>m.toLocaleUpperCase('tr'));
   const q=fold(sel.q);
-  const onl=mag.satirlar.filter(r=>!isTot(r)&&r[bi]==='ONLINE');
+  const onl=(T[2]?T[2].satirlar:[]).concat(mag.satirlar.filter(r=>!isTot(r)&&r[bi]==='ONLINE'));
   const rows=mag.satirlar.filter(r=>isTot(r)||(r[bi]!=='ONLINE'&&(!rg||r[bi]===rg)&&(!q||fold(r[name]).includes(q))));
   const tot=rows.filter(isTot), body=rows.filter(r=>!isTot(r));
   s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+
