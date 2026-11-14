@@ -1415,9 +1415,13 @@ function bugunVeri(rg,n){
   const L=hedefHepsi(rg);
   return Object.assign({ms,biten,yet,sifir,L},yakinRiskli(L,n||8));
 }
+/* mağazanın Hedef Kontrol dosyasında hedefi var mı (kartın sağ üstünde etiket) */
+let _hv=null, _hvD=null;
+function hedefVar(kod){const H=D.hedef; if(!H||!H.m)return null; if(_hvD!==D){_hv=new Set(Object.keys(H.m).filter(k=>H.m[k].some(S=>S.i.some(x=>x.h)))); _hvD=D} return _hv.has(kod)}
+const hvTag=kod=>{const v=hedefVar(kod); return v==null?'':v?'<span class="tag t-grn" style="margin:0">Hedefi var</span>':'<span class="tag" style="margin:0;background:var(--line);color:var(--mut)">Hedefi yok</span>'};
 const stokEks=(m,k)=>{const ng=m.k[k].bas.filter(v=>typeof v==='number'&&v<0); return ng.length?-Math.min(...ng):0};
 const stokTag=(k,q)=>`<span class="tag t-org" style="margin:0 0 0 3px">${esc(KLAB[k]||k)}${q?' −'+nf(q):''}</span>`;
-const stokUr=(m,k,q)=>`<div class="urow" data-mk="${m.kod}"><span>${esc(m.ad)}</span><span style="text-align:right">${k.map(x=>{const c=m.k[x]; return `<div style="margin:1px 0">${stokTag(x,q?stokEks(m,x):0)} <small style="color:var(--mut)">stok ${nf(c.sat)} + sipariş ${nf(c.gel)}</small></div>`}).join('')}</span></div>`;
+const stokUr=(m,k,q)=>`<div class="urow" data-mk="${m.kod}"><span>${esc(m.ad)}</span><span style="text-align:right"><div style="margin-bottom:2px">${hvTag(m.kod)}</div>${k.map(x=>{const c=m.k[x]; return `<div style="margin:1px 0">${stokTag(x,q?stokEks(m,x):0)} <small style="color:var(--mut)">stok ${nf(c.sat)} + sipariş ${nf(c.gel)}</small></div>`}).join('')}</span></div>`;
 const stokCnt=n=>`<span style="color:var(--mut);font-weight:400">· ${n}</span>`;
 const stokSec=(t,tot,rows)=>tot?`<div class="card dep"><div class="bdh">${t} ${stokCnt(tot)}</div>${rows.join('')}</div>`:'';
 function urunMag(u,sag,st){   // ürün satırı + altında mağaza adları (yanlarında küçük not)
@@ -1481,7 +1485,7 @@ function vBugun(){
   s+=sec('Stoğu biten (açık sipariş dahil, bu ay satış yapmış)',V.biten.length,V.biten.map(x=>stokUr(x.m,x.k,false)));
   const yt=V.yet.map(x=>({m:x.m,k:x.k,t:x.k.reduce((a,k)=>a+stokEks(x.m,k),0)})).sort((a,b)=>b.t-a.t);
   s+=sec('Ay sonuna yetmeyen stok (eksik adet)',yt.length,yt.map(x=>stokUr(x.m,x.k,true)));
-  if(V.sifir)s+=sec('Son rapordan beri satış yapmayan',V.sifir.length,V.sifir.map(m=>`<div class="urow" data-mk="${m.kod}"><span>${esc(m.ad)}</span><span style="color:var(--mut)">${esc(tc(m.bolge))}</span></div>`));
+  if(V.sifir)s+=sec('Son rapordan beri satış yapmayan',V.sifir.length,V.sifir.map(m=>`<div class="urow" data-mk="${m.kod}"><span>${esc(m.ad)}</span><span style="text-align:right">${hvTag(m.kod)} <span style="color:var(--mut)">${esc(tc(m.bolge))}</span></span></div>`));
   const z=stoksuzCokSatan(rg||'');
   if(z&&z.liste.length)s+=sec('Stoksuz çok satan ürün (stok + açık sipariş 0; mağazanın geçen ay adedi yanında)',z.liste.length,z.liste.map(stoksuzSatir));
   if(s.length===n0)s+='<div class="msg">Bugün acil görünen bir şey yok.</div>';
