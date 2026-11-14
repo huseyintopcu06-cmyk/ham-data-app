@@ -141,7 +141,7 @@ details .urow{grid-template-columns:1fr 54px 64px 54px}
 details .urow span+span{text-align:right}
 .urow.h{font-size:11px;color:var(--mut);text-transform:uppercase}
 .urow[data-mk]{cursor:pointer}.urow.gar{background:var(--ga)}
-.urow.al-r{background:rgba(224,49,49,.13);border-left:4px solid #E03131;padding-left:8px;border-radius:8px;margin:3px 0}.urow.al-s{background:rgba(245,159,0,.2);border-left:4px solid #F59F00;padding-left:8px;border-radius:8px;margin:3px 0}
+.urow.al-r{background:rgba(224,49,49,.13);border-left:4px solid #E03131;padding-left:8px;border-radius:8px;margin:3px 0}.urow.al-g{background:rgba(43,138,62,.13);border-left:4px solid #2B8A3E;padding-left:8px;border-radius:8px;margin:3px 0}.urow.al-s{background:rgba(245,159,0,.2);border-left:4px solid #F59F00;padding-left:8px;border-radius:8px;margin:3px 0}
 .pbs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
 .pbs small{display:block;font-size:10px;color:var(--mut);margin-bottom:3px}
 .pb{display:inline-block;border-radius:6px;padding:2px 8px;font-size:12px;font-weight:700;white-space:nowrap}
@@ -1397,12 +1397,12 @@ function hedefNeden(r){   // durum satırı: promotör · tempo (ilk günlerin h
   }
   return out;
 }
-function hrSatir(r,kalan,sev){   // sev: tutmayacak (kırmızı) / kritik (sarı) vurgusu + durum satırları
+function hrSatir(r,kalan,sev){   // sev: true = tutmayacak (kırmızı) / kritik (sarı) · 'g' = kontrol (yeşil: tuttu / tempoda) + durum satırları
   let nd='';
   if(sev){const G=hedefGun(), b=r.x.b;
-    nd=`<span class="note" style="margin:0">İlk ${D.hedef.gun} günde ${hdeg(r.c.g,b)} ${esc(b)} · kalan ${G.kalan} günde ${hdeg(r.c.kal,b)} ${esc(b)} gerekiyor</span><br>`+
+    nd=(sev==='g'&&r.c.d==='tuttu'?`<span class="note" style="margin:0">Hedef tamam · ay sonu tahmini %${Math.round(r.c.of*100)}</span><br>`:`<span class="note" style="margin:0">İlk ${D.hedef.gun} günde ${hdeg(r.c.g,b)} ${esc(b)} · kalan ${G.kalan} günde ${hdeg(r.c.kal,b)} ${esc(b)} gerekiyor${sev==='g'?` · ay sonu tahmini %${Math.round(r.c.of*100)}`:''}</span><br>`)+
       hedefNeden(r).map(o=>`<span style="color:${o.c};font-weight:700;font-size:12.5px">${esc(o.t)}</span>${o.s?` <span style="color:var(--mut);font-size:12px">${esc(o.s)}</span>`:''}`).join('<br>')}
-  const x=r.x, b=x.b, dz=hedefDz(r), cl=sev?(dz==='k'?' al-r':dz==='s'?' al-s':''):'', tg=sev?(dz==='k'?'<span class="tag t-red" style="margin:0 6px 0 0">Tutmayacak</span>':dz==='s'?'<span class="tag t-yel" style="margin:0 6px 0 0">Kritik</span>':''):'';
+  const x=r.x, b=x.b, dz=hedefDz(r), cl=sev==='g'?' al-g':sev?(dz==='k'?' al-r':dz==='s'?' al-s':''):'', tg=sev==='g'?`<span class="tag t-grn" style="margin:0 6px 0 0">${r.c.d==='tuttu'?'Tuttu':'Tempoda'}</span>`:sev?(dz==='k'?'<span class="tag t-red" style="margin:0 6px 0 0">Tutmayacak</span>':dz==='s'?'<span class="tag t-yel" style="margin:0 6px 0 0">Kritik</span>':''):'';
   return `<div class="urow${cl}" data-hr="${r.kod}" data-hs="${esc(r.S)}" style="grid-template-columns:1fr auto;gap:8px;cursor:pointer"><span style="min-width:0">${tg}<b>${esc(r.ad)}</b><br><span class="note" style="margin:0">${esc(x.ad)} · ${hdeg(r.c.g,b)} / ${hdeg(x.h,b)} ${esc(b)}${kalan?` · kalan ${hdeg(r.c.kal,b)}`:''}</span>${nd?'<br>'+nd:''}</span><span style="text-align:right"><b>%${Math.round(r.c.o*100)}</b><br><span style="color:var(--org);font-weight:700;font-size:12.5px">→ %${Math.round(r.c.of*100)}</span></span></div>`;
 }
 function bugunVeri(rg,n){
@@ -1436,33 +1436,48 @@ function kampGrup(r){   // [bölüm, 1 = Kampanya 1 (ana hedef) · 2 = Kampanya 
   return ['Hava',0];
 }
 function vBugun(){
-  const rg=BLG||sel.bgrg||'', V=bugunVeri(rg,1e6), ad=rg?tc(rg):'Türkiye', MLm=magList().map;
-  const eks=stokEks, ur=stokUr, cnt=stokCnt, sec=stokSec;
+  const rg=BLG||sel.bgrg||'', V=bugunVeri(rg,1e6), ad=rg?tc(rg):'Türkiye', cnt=stokCnt, sec=stokSec;
   const zor=V.L.filter(r=>hedefDz(r)), nr=zor.filter(r=>hedefDz(r)==='k').length, ns=zor.length-nr;
-  let s=bolgeChips('bgrg',rg)+`<div class="row" style="margin:0 0 8px;gap:8px"><span class="note" style="margin:0">Bugün ne yapmalı · ${esc(ad)} · ${esc(veriTarihi(D.donem)||'')}</span><button class="chip rs" id="knb" data-rg="${esc(rg)}">⇪ Bölge karnesi</button></div>`;
+  const yes=V.L.filter(r=>!hedefDz(r)), nt=yes.filter(r=>r.c.d==='tuttu').length;
+  const bk=sel.bsk==='kontrol'?'kontrol':'acil';
+  // iki düğme: Acil müdahale (kırmızı/sarı + stok sorunları) · Kontrol (yapanlar: tuttu / tempoda)
+  let s=`<div class="chips">`+[['acil','Acil müdahale',zor.length+V.biten.length+V.yet.length],['kontrol','Kontrol · yapanlar',yes.length]].map(([id,l,n])=>`<button class="chip ${id===bk?'on':''}" data-k="bsk" data-v="${id}" style="flex:1;text-align:center">${l} · ${n}</button>`).join('')+`</div>`;
+  s+=bolgeChips('bgrg',rg)+`<div class="row" style="margin:0 0 8px;gap:8px"><span class="note" style="margin:0">Bugün · ${esc(ad)} · ${esc(veriTarihi(D.donem)||'')}</span><button class="chip rs" id="knb" data-rg="${esc(rg)}">⇪ Bölge karnesi</button></div>`;
+  // hedef kalemlerini Kampanya 1 / 2 / Hava ve Hedef Kontrol sayfa adı + kategori başlıklarıyla grupla
+  const SIRA=['MDA','MDA (çift promo)','MDA + Süpürge','Süpürge + KEA','Süpürge + KEA (çift promo)','Süpürge + FAEM','KEA','FAEM + KEA','Hava Temizleme'], DS=['MDA','VC','FOOD','FAEM','Hava'];
+  const grupla=(list,srt,sv)=>{
+    let o='';
+    [[1,'Kampanya 1 hedefleri'],[2,'Kampanya 2 ve sonrası'],[0,'Hava temizleme · mağaza hedefi']].forEach(([n,bs])=>{
+      const gl=list.filter(r=>kampGrup(r)[1]===n); if(!gl.length)return;
+      o+=`<h2 style="margin:12px 0 4px">${bs} ${cnt(gl.length)}</h2>`;
+      const kt=[]; gl.forEach(r=>{const dp=kampGrup(r)[0], key=r.S+'|'+dp; if(!kt.some(x=>x.key===key))kt.push({key,sn:r.S,dp})});
+      kt.sort((a,b)=>(DS.indexOf(a.dp)-DS.indexOf(b.dp))||((SIRA.indexOf(a.sn)<0?99:SIRA.indexOf(a.sn))-(SIRA.indexOf(b.sn)<0?99:SIRA.indexOf(b.sn))));
+      kt.forEach(({sn,dp})=>{const l=gl.filter(r=>r.S===sn&&kampGrup(r)[0]===dp).sort(srt); o+=sec(`${esc(sn)} · ${dp}${/çift promo/.test(sn)?' çift':''} kategorisi`,l.length,l.map(r=>hrSatir(r,false,sv)))});
+    });
+    return o;
+  };
+  if(bk==='kontrol'){
+    const risk=yes.filter(r=>hedefNeden(r).some(o=>/Stok yetersiz|Stok yok/.test(o.t))).length;
+    s+=`<div class="card dep"><div class="g4"><div><small>Tuttu</small><b class="pos">${nt}</b></div><div><small>Tempoda</small><b class="pos">${yes.length-nt}</b></div><div><small>Stok riski var</small><b class="${risk?'or':''}">${risk}</b></div><div><small>Toplam kalem</small><b>${V.L.length}</b></div></div></div>`;
+    if(!yes.length)return s+'<div class="msg">Bu görünümde hedefi tutan ya da tempoda olan kalem yok.</div>';
+    s+=`<div class="note" style="margin:0 0 4px"><span class="tag t-grn" style="margin:0 4px 0 0">Tuttu</span>hedef tamam · <span class="tag t-grn" style="margin:0 4px 0 2px">Tempoda</span>kart formülü ve bu ayki hız hedefi tutuyor · turuncu "Stok yetersiz" = tutuyor ama stok ay sonuna yetmeyebilir</div>`;
+    s+=grupla(yes,(a,b)=>((a.c.d==='tuttu'?1:0)-(b.c.d==='tuttu'?1:0))||b.c.of-a.c.of,'g');
+    s+='<div class="note">Tempoda: ay sonu tahmini hedefin %100 ve üstü · satırlara dokun: hedef kartı</div>';
+    return s;
+  }
   s+=`<div class="card dep"><div class="g4"><div><small>Tutmayacak</small><b class="${nr?'neg':''}">${nr}</b></div><div><small>Kritik</small><b class="${ns?'or':''}">${ns}</b></div><div><small>Stoğu biten</small><b class="${V.biten.length?'neg':''}">${V.biten.length}</b></div><div><small>Satış yapmayan</small><b>${V.sifir?V.sifir.length:'–'}<span style="font-size:12px;color:var(--mut)">/${V.ms.length}</span></b></div></div></div>`;
   const n0=s.length;
   // hedefi tutması zor: önce Kampanya 1 (MDA, VC, FOOD, FAEM), sonra Kampanya 2 ve sonrası, sonra Hava; kırmızı = tutmayacak, sarı = kritik
   if(zor.length){
     s+=`<h2 style="margin:14px 0 2px">Hedefi tutması zor ${cnt(zor.length)}</h2><div class="note" style="margin:0 0 4px"><span class="tag t-red" style="margin:0 4px 0 0">Tutmayacak</span>kart formülü de bu ayki hız da hedefin %85'inin altında · <span class="tag t-yel" style="margin:0 4px 0 2px">Kritik</span>biri hedefi tutuyor ya da sınırda (örn. hız yeterli ama formül düşük)</div>`;
-    const srt=(a,b)=>((hedefDz(a)==='k'?0:1)-(hedefDz(b)==='k'?0:1))||a.c.of-b.c.of;
-    [[1,'Kampanya 1 hedefleri'],[2,'Kampanya 2 ve sonrası'],[0,'Hava temizleme · mağaza hedefi']].forEach(([n,bs])=>{
-      const gl=zor.filter(r=>kampGrup(r)[1]===n); if(!gl.length)return;
-      s+=`<h2 style="margin:12px 0 4px">${bs} ${cnt(gl.length)}</h2>`;
-      // başlık: Hedef Kontrol dosyasındaki sayfa adı + kategorisi (çift promo sayfaları "çift kategorisi")
-      const SIRA=['MDA','MDA (çift promo)','MDA + Süpürge','Süpürge + KEA','Süpürge + KEA (çift promo)','Süpürge + FAEM','KEA','FAEM + KEA','Hava Temizleme'], DS=['MDA','VC','FOOD','FAEM','Hava'], kt=[];
-      gl.forEach(r=>{const dp=kampGrup(r)[0], key=r.S+'|'+dp; if(!kt.some(x=>x.key===key))kt.push({key,sn:r.S,dp})});
-      kt.sort((a,b)=>(DS.indexOf(a.dp)-DS.indexOf(b.dp))||((SIRA.indexOf(a.sn)<0?99:SIRA.indexOf(a.sn))-(SIRA.indexOf(b.sn)<0?99:SIRA.indexOf(b.sn))));
-      kt.forEach(({sn,dp})=>{const l=gl.filter(r=>r.S===sn&&kampGrup(r)[0]===dp).sort(srt); s+=sec(`${esc(sn)} · ${dp}${/çift promo/.test(sn)?' çift':''} kategorisi`,l.length,l.map(r=>hrSatir(r,false,true)))});
-    });
+    s+=grupla(zor,(a,b)=>((hedefDz(a)==='k'?0:1)-(hedefDz(b)==='k'?0:1))||a.c.of-b.c.of,true);
   }
-  s+=sec('Stoğu biten (açık sipariş dahil, bu ay satış yapmış)',V.biten.length,V.biten.map(x=>ur(x.m,x.k,false)));
-  const yt=V.yet.map(x=>({m:x.m,k:x.k,t:x.k.reduce((a,k)=>a+eks(x.m,k),0)})).sort((a,b)=>b.t-a.t);
-  s+=sec('Ay sonuna yetmeyen stok (eksik adet)',yt.length,yt.map(x=>ur(x.m,x.k,true)));
+  s+=sec('Stoğu biten (açık sipariş dahil, bu ay satış yapmış)',V.biten.length,V.biten.map(x=>stokUr(x.m,x.k,false)));
+  const yt=V.yet.map(x=>({m:x.m,k:x.k,t:x.k.reduce((a,k)=>a+stokEks(x.m,k),0)})).sort((a,b)=>b.t-a.t);
+  s+=sec('Ay sonuna yetmeyen stok (eksik adet)',yt.length,yt.map(x=>stokUr(x.m,x.k,true)));
   if(V.sifir)s+=sec('Son rapordan beri satış yapmayan',V.sifir.length,V.sifir.map(m=>`<div class="urow" data-mk="${m.kod}"><span>${esc(m.ad)}</span><span style="color:var(--mut)">${esc(tc(m.bolge))}</span></div>`));
   const z=stoksuzCokSatan(rg||'');
   if(z&&z.liste.length)s+=sec('Stoksuz çok satan ürün (stok + açık sipariş 0; mağazanın geçen ay adedi yanında)',z.liste.length,z.liste.map(stoksuzSatir));
-  s+=sec('Hedefe en yakın',V.nyak,V.yakin.map(r=>hrSatir(r,true,false)));
   if(s.length===n0)s+='<div class="msg">Bugün acil görünen bir şey yok.</div>';
   s+='<div class="note">Stoğu biten: satılabilir stok + açık sipariş 0 ya da altı ve bu ay satış var · Ay sonuna yetmeyen stok: stok + açık sipariş − kalan tahmini satış · Hedef durumu Hedef Kontrol dosyasına göre (tahmin: kart formülü) · satırlara dokun: kart / mağaza</div>';
   return s;
