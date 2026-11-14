@@ -278,6 +278,7 @@ main{padding-bottom:calc(160px + env(safe-area-inset-bottom))}
 <main id="m"></main>
 <nav id="nv">
 <button style="--c:#4F8EF7" data-t="ozet" class="on"><b>▦</b>Özet</button>
+<button style="--c:#5C6BC0" data-t="daha" data-s="bugun"><b>✔</b>Bugün</button>
 <button style="--c:#FF9800" data-t="kat"><b>☰</b>Kategori</button>
 <button style="--c:#2ECC71" data-t="mag"><b>⌂</b>Mağaza</button>
 <button style="--c:#B266E0" data-t="urun"><b>⌕</b>Ara</button>
@@ -396,7 +397,7 @@ function table(t,opts){
 }
 /* Bölgem: başlıktaki seçim. Seçiliyse sayfalardaki bölge filtreleri o bölgeye kilitlenir ve bölge düğmeleri gizlenir (Kategori sıralaması hariç: orada varsayılan olur, kıyas için değiştirilebilir). Boş = Key Account, her şey. */
 let BLG=LS.get('bolgem')||'';
-const BKEYS=['bd','mrg','urg','brg2','hrg','grg','prg','irg'];
+const BKEYS=['bgrg','bd','mrg','urg','brg2','hrg','grg','prg','irg'];
 function chips(items,cur,key,wrap){
   if(BLG&&BKEYS.includes(key))return '';
   return '<div class="chips'+(wrap?' wrap':'')+'">'+items.map(([id,label])=>`<button class="chip ${id===cur?'on':''}" data-k="${key}" data-v="${esc(id)}">${esc(label)}</button>`).join('')+'</div>';
@@ -569,9 +570,7 @@ function vOzet(){
   // Güney Anadolu özet kartı
   const bshSatir=t=>t&&(t.satirlar.find(r=>/^GENEL TOPLAM/.test(r[0]||''))||t.satirlar.find(r=>/FİZİKSEL/.test(r[0]||'')));
   // üst kart: bölge seçiliyse o bölgenin SPV satırları toplamı, değilse BSH genel toplamı
-  const topl=t=>{if(!t)return null; const i=t.kolonlar.findIndex(x=>/^Toplam/.test(x)); if(i<0)return null;
-    if(BLG){if(t.kolonlar[1]!=='Bölge')return null; const L=t.satirlar.filter(r=>r[1]===BLG); return L.length?L.reduce((a,r)=>a+N(r[i]),0):null}
-    const r=bshSatir(t); return r?N(r[i]):null};
+  const topl=t=>ozTop(t,BLG);
   const bshToplam=DD=>topl(DD.ozet&&DD.ozet[0]), HAD=BLG?tc(BLG):'BSH';
   let hero='';
   const ft=T.find(t=>/TAHM/i.test(t.baslik)&&!/VC/.test(t.baslik));
@@ -1347,16 +1346,161 @@ function vBrandStore(key){
 }
 
 /* ---- Daha: görseller · gidişat · personel ---- */
+/* ---- Bugün ne yapmalı + bölge karnesi ---- */
+const KS=KATS.filter(k=>k!=='FOOD Diğer');
+function ozTop(t,rg){   // özet tablosunun "Toplam" kolonu: bölge seçiliyse o bölgenin SPV satırları toplamı, değilse BSH genel toplamı
+  if(!t)return null; const i=t.kolonlar.findIndex(x=>/^Toplam/.test(x)); if(i<0)return null;
+  if(rg){if(t.kolonlar[1]!=='Bölge')return null; const L=t.satirlar.filter(r=>r[1]===rg); return L.length?L.reduce((a,r)=>a+N(r[i]),0):null}
+  const r=t.satirlar.find(r=>/^GENEL TOPLAM/.test(r[0]||''))||t.satirlar.find(r=>/FİZİKSEL/.test(r[0]||'')); return r?N(r[i]):null;
+}
+function hedefHepsi(rg){   // tüm hedef kalemleri (mağaza × sayfa × kalem), bölgeye göre süzülmüş
+  const H=D.hedef; if(!H||!H.m)return [];
+  const G=hedefGun(), ML=magList().map, UM=(D.urunler&&D.urunler.m)||{}, out=[];
+  Object.keys(H.m).forEach(kod=>{const m=ML.get(kod), um=UM[kod], bolge=m?m.bolge:um?um[1]:''; if(bolge==='ONLINE'||(rg&&bolge!==rg))return;
+    const ad=m?m.ad:um?um[0]:kod;
+    H.m[kod].forEach(S=>S.i.forEach(x=>{if(x.h)out.push({kod,ad,bolge,S:S.s,x,c:hedefHesap(x,G)})}))});
+  return out;
+}
+function yakinRiskli(L,n){   // yakın: tutmadı ama tempoda/sınırda, kalan oranı en az olanlar · zor: tahmini %85 altı, en düşük tahmin üstte
+  const yakin=L.filter(r=>r.c.d==='tutar'||r.c.d==='sinir').sort((a,b)=>(1-a.c.o)-(1-b.c.o)||b.c.of-a.c.of);
+  const riskli=L.filter(r=>r.c.d==='geride').sort((a,b)=>a.c.of-b.c.of);
+  return {yakin:yakin.slice(0,n),nyak:yakin.length,riskli:riskli.slice(0,n),nrisk:riskli.length};
+}
+function hrSatir(r,kalan){
+  const x=r.x, b=x.b;
+  return `<div class="urow" data-hr="${r.kod}" data-hs="${esc(r.S)}" style="grid-template-columns:1fr auto;gap:8px;cursor:pointer"><span style="min-width:0"><b>${esc(r.ad)}</b><br><span class="note" style="margin:0">${esc(x.ad)} · ${hdeg(r.c.g,b)} / ${hdeg(x.h,b)} ${esc(b)}${kalan?` · kalan ${hdeg(r.c.kal,b)}`:''}</span></span><span style="text-align:right"><b>%${Math.round(r.c.o*100)}</b><br><span style="color:var(--org);font-weight:700;font-size:12.5px">→ %${Math.round(r.c.of*100)}</span></span></div>`;
+}
+function bugunVeri(rg){
+  const ms=magList().arr.filter(m=>m.bolge!=='ONLINE'&&(!rg||m.bolge===rg)), biten=[], yet=[];
+  ms.forEach(m=>{const b=[], y=[];
+    KS.forEach(k=>{const x=m.k[k]; if(!x)return; if(x.sat!=null&&x.sat<=0&&x.main>0)b.push(k); if(x.bas.some(v=>typeof v==='number'&&v<0))y.push(k)});
+    if(b.length)biten.push({m,k:b}); if(y.length)yet.push({m,k:y})});
+  biten.sort((a,b)=>b.m.top-a.m.top); yet.sort((a,b)=>b.m.top-a.m.top);
+  let sifir=null; if(P){const B=magList(P).map; sifir=ms.filter(m=>{const p=B.get(m.kod); return p&&m.top-p.top<=0})}
+  const L=hedefHepsi(rg);
+  return Object.assign({ms,biten,yet,sifir,L},yakinRiskli(L,8));
+}
+function vBugun(){
+  const rg=BLG||sel.bgrg||'', V=bugunVeri(rg), ad=rg?tc(rg):'Türkiye';
+  const tag=k=>`<span class="tag t-org" style="margin:0 0 0 3px">${esc(KLAB[k]||k)}</span>`;
+  const ur=(m,k)=>`<div class="urow" data-mk="${m.kod}"><span>${esc(m.ad)}</span><span>${k.map(tag).join('')}</span></div>`;
+  const sec=(t,tot,rows,gos)=>tot?`<div class="card dep"><div class="bdh">${t} <span style="color:var(--mut);font-weight:400">· ${tot}</span></div>${rows.slice(0,gos).join('')}${tot>gos?`<div class="note" style="margin:4px 0 0">+${tot-gos} daha</div>`:''}</div>`:'';
+  let s=bolgeChips('bgrg',rg)+`<div class="row" style="margin:0 0 8px;gap:8px"><span class="note" style="margin:0">Bugün ne yapmalı · ${esc(ad)} · ${esc(veriTarihi(D.donem)||'')}</span><button class="chip rs" id="knb" data-rg="${esc(rg)}">⇪ Bölge karnesi</button></div>`;
+  s+=`<div class="card dep"><div class="g4" style="grid-template-columns:repeat(3,1fr)"><div><small>Hedefi tutması zor</small><b class="${V.nrisk?'neg':''}">${V.nrisk}</b></div><div><small>Stoğu biten mağaza</small><b class="${V.biten.length?'neg':''}">${V.biten.length}</b></div><div><small>Satış yapmayan</small><b>${V.sifir?V.sifir.length:'–'}<span style="font-size:12px;color:var(--mut)">/${V.ms.length}</span></b></div></div></div>`;
+  let n0=s.length;
+  s+=sec('Hedefi tutması zor',V.nrisk,V.riskli.map(r=>hrSatir(r,false)),8);
+  s+=sec('Hedefe en yakın',V.nyak,V.yakin.map(r=>hrSatir(r,true)),5);
+  s+=sec('Stoğu biten (bu ay satış yapmış)',V.biten.length,V.biten.map(x=>ur(x.m,x.k)),10);
+  s+=sec('Ay sonuna yetmeyen stok',V.yet.length,V.yet.map(x=>ur(x.m,x.k)),10);
+  if(V.sifir)s+=sec('Son rapordan beri satış yapmayan',V.sifir.length,V.sifir.map(m=>`<div class="urow" data-mk="${m.kod}"><span>${esc(m.ad)}</span><span style="color:var(--mut)">${esc(tc(m.bolge))}</span></div>`),10);
+  const z=stoksuzCokSatan(rg||'');
+  if(z&&z.liste.length)s+=sec('Stoksuz çok satan ürün',z.liste.length,z.liste.map(a=>`<div class="urow" data-ara="${a.u}"><span>${esc(D.urunler.u[a.u])}</span><span style="color:var(--mut)">${a.n} mağaza · geçen ay ${a.g}</span></div>`),6);
+  if(s.length===n0)s+='<div class="msg">Bugün acil görünen bir şey yok.</div>';
+  s+='<div class="note">Stoğu biten: satılabilir stok 0 ya da altı ve bu ay satış var · Hedef durumu Hedef Kontrol dosyasına göre (tahmin: kart formülü) · satırlara dokun: kart / mağaza</div>';
+  return s;
+}
+/* bölge karnesi: tek resim (Hedef Gerçekleştirme Kartı ile aynı görsel dil), paylaşım #hz katmanından */
+function karneResim(rg){
+  const T0=D.ozet.filter(t=>t.satirlar.length), ft=T0.find(t=>/TAHM/i.test(t.baslik)&&!/VC/.test(t.baslik));
+  const V=bugunVeri(rg), ad=rg?tc(rg):'Türkiye', vt=veriTarihi(D.donem)||'';
+  const gv=ozTop(T0[0],rg), fv=ozTop(ft,rg), mAll=magList().arr.filter(m=>m.bolge!=='ONLINE');
+  const sum=(L,k,f)=>L.reduce((a,m)=>a+(m.k[k]?N(m.k[k][f]):0),0);
+  const dep=['MDA','Ankastre','VC','FOOD','FAEM','Hava Temizleyici'].map(k=>{const tr=sum(mAll,k,'main'), g=sum(V.ms,k,'main'); return {k,g,f:Math.max(sum(V.ms,k,'fc'),g),ihs:tr?g/tr:0}}).filter(d=>d.g||d.f);
+  let sira=null; if(rg&&T0[0]){const a=ORD.map(B=>[B,ozTop(T0[0],B)]).filter(x=>x[1]!=null).sort((p,q)=>q[1]-p[1]), i=a.findIndex(x=>x[0]===rg); if(i>=0)sira=[i+1,a.length]}
+  const H=D.hedef;
+  const HR=H&&H.m?HTUR.map(([k,lab])=>{const L=V.L.filter(r=>r.x.k===k); if(!L.length)return null;
+    return {lab,b:L[0].x.b,h:L.reduce((a,r)=>a+N(r.x.h),0),g:L.reduce((a,r)=>a+r.c.g,0),fc:L.reduce((a,r)=>a+r.c.fc,0),yol:L.filter(r=>r.c.d==='tuttu'||r.c.d==='tutar').length,n:L.length}}).filter(Boolean):[];
+  const U=120, W=11, Mg=.35, IW=W-2*Mg;
+  const NAVY='#16294D',NAVY2='#24407A',YEL='#FFD60A',ORG='#E8590C',GRN='#2B8A3E',RED='#E03131',AMB='#F59F00',BG='#EEF2F7',INK='#111827',MUT='#4B5563',LINE='#D0D7E2',TRK='#E3E8EF';
+  const pc=v=>'%'+Math.round(v*100), up=t=>String(t).toLocaleUpperCase('tr'), pcol=v=>v>=1?GRN:v>=.85?AMB:RED;
+  const nl=Math.max(1,V.yakin.length,V.riskli.length), LH=nl*.62+.85;
+  const hD=.65+.45+dep.length*.42+.2, hH=HR.length?.65+.45+HR.length*.42+.2:0;
+  const HT=.35+2.05+1.75+hD+.25+(hH?hH+.25:0)+1.35+(V.L.length?LH+.25:0)+.75;
+  const c=document.createElement('canvas'), g=c.getContext('2d'); c.width=W*U; c.height=Math.round(HT*U);
+  const FW={SemiBold:600,Bold:700,ExtraBold:800,Black:900};
+  const font=(pt,w)=>{g.font=`${FW[w||'ExtraBold']} ${pt/72*U}px Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif`};
+  const rb=(x,y,w,h,fc,ec,r)=>{r=Math.min(r==null?.18:r,w/2,h/2);g.beginPath();const X=x*U,Y=y*U,Wd=w*U,Hh=h*U,R=r*U;g.moveTo(X+R,Y);g.arcTo(X+Wd,Y,X+Wd,Y+Hh,R);g.arcTo(X+Wd,Y+Hh,X,Y+Hh,R);g.arcTo(X,Y+Hh,X,Y,R);g.arcTo(X,Y,X+Wd,Y,R);g.closePath();if(fc){g.fillStyle=fc;g.fill()}if(ec){g.strokeStyle=ec;g.lineWidth=1.2*U/72;g.stroke()}};
+  const T=(x,y,s,pt,col,ha,w,va)=>{font(pt,w);g.fillStyle=col||INK;g.textAlign=ha||'left';const ls=String(s).split('\n'),lh=pt/72*1.3;
+    if(va==='top'){g.textBaseline='top';ls.forEach((t,i)=>g.fillText(t,x*U,(y+i*lh)*U))}
+    else{g.textBaseline='middle';ls.forEach((t,i)=>g.fillText(t,x*U,(y+(i-(ls.length-1)/2)*lh)*U))}};
+  const tw=(s,pt,w)=>{font(pt,w);return g.measureText(s).width/U};
+  const cut=(s,pt,w,max)=>{s=String(s); if(tw(s,pt,w)<=max)return s; while(s.length>2&&tw(s+'…',pt,w)>max)s=s.slice(0,-1); return s+'…'};
+  g.fillStyle=BG; g.fillRect(0,0,c.width,c.height);
+  let y=.35;
+  // başlık
+  rb(Mg,y,IW,1.75,NAVY,null,.28);
+  rb(Mg+.3,y+.32,1.3,.5,YEL,null,.12); T(Mg+.95,y+.57,'KARNE',15,NAVY,'center','Black');
+  T(Mg+1.85,y+.57,up(ad),24,'#ffffff','left','Black');
+  T(Mg+.32,y+1.2,`${vt} · ${V.ms.length} mağaza`,13,'#C9D6EE','left','Bold');
+  T(W-Mg-.32,y+.57,'BSH · MEDIAMARKT',12,YEL,'right','Bold');
+  y+=2.05;
+  // 3 KPI
+  const KP=[['GERÇEKLEŞEN',gv!=null?nf(gv):'–','adet · sell-out',NAVY2],['AY SONU TAHMİNİ',fv!=null?nf(fv):'–','adet · ham data tahmini',ORG],
+    sira?['TÜRKİYE SIRASI',`${sira[0]} / ${sira[1]}`,'bölge toplam satışına göre',GRN]:['MAĞAZA',String(V.ms.length),'fiziksel mağaza',GRN]];
+  const kw=(IW-.4)/3;
+  KP.forEach(([a,b,s3,col],i)=>{const x=Mg+i*(kw+.2); rb(x,y,kw,1.45,'#ffffff',LINE,.2); rb(x+.25,y+.1,kw-.5,.09,col,null,.045);
+    T(x+kw/2,y+.42,a,11.5,MUT,'center'); T(x+kw/2,y+.85,b,21,col,'center','Black'); T(x+kw/2,y+1.2,s3,11,MUT,'center','Bold')});
+  y+=1.75;
+  // departman
+  rb(Mg,y,IW,hD,'#ffffff',LINE,.22); T(Mg+.35,y+.42,'DEPARTMAN BAZINDA',15,NAVY,'left','Black');
+  const cx=[Mg+.35,Mg+5.2,Mg+7.4,W-Mg-.35];
+  ['Departman','Gerçekleşen','Ay sonu tahmini','İHS'].forEach((t,i)=>T(cx[i],y+.88,t,10.5,MUT,i?'right':'left','Bold'));
+  dep.forEach((d,i)=>{const yy=y+1.3+i*.42; if(i%2===0)rb(Mg+.15,yy-.19,IW-.3,.38,'#F6F8FB',null,.1);
+    T(cx[0],yy,up(KLAB[d.k]||d.k),12.5,INK,'left','Black'); T(cx[1],yy,nf(d.g),13,INK,'right','Black'); T(cx[2],yy,nf(d.f),13,ORG,'right','Black'); T(cx[3],yy,(d.ihs*100).toFixed(1).replace('.',',')+'%',13,NAVY2,'right','Black')});
+  y+=hD+.25;
+  // hedef durumu
+  if(HR.length){
+    rb(Mg,y,IW,hH,'#ffffff',LINE,.22); T(Mg+.35,y+.42,`HEDEF DURUMU · 1–${H.gun} ${AYAD[H.ay-1].toLocaleUpperCase('tr')}`,15,NAVY,'left','Black');
+    const hx=[Mg+.35,Mg+5.0,Mg+6.2,Mg+7.7,W-Mg-.35];
+    ['Hedef türü','Gerçekleşen / hedef','Gerçekleşen','Tahmin','Tutacak'].forEach((t,i)=>T(hx[i],y+.88,t,10.5,MUT,i?'right':'left','Bold'));
+    HR.forEach((r,i)=>{const yy=y+1.3+i*.42; if(i%2===0)rb(Mg+.15,yy-.19,IW-.3,.38,'#F6F8FB',null,.1);
+      T(hx[0],yy,up(r.lab),12.5,INK,'left','Black'); T(hx[1],yy,`${hdeg(r.g,r.b)} / ${hdeg(r.h,r.b)}`,12,INK,'right','Bold');
+      T(hx[2],yy,pc(r.g/r.h),13,INK,'right','Black'); T(hx[3],yy,pc(r.fc/r.h),13,pcol(r.fc/r.h),'right','Black'); T(hx[4],yy,`${r.yol} / ${r.n}`,13,NAVY2,'right','Black')});
+    y+=hH+.25;
+  }
+  // stok / hedef uyarı kutuları
+  const SB=[['STOĞU BİTEN',V.biten.length,'mağaza',RED],['AY SONUNA YETMEYEN STOK',V.yet.length,'mağaza',AMB],['HEDEFİ TUTMASI ZOR',V.nrisk,'kalem',RED]], bw=(IW-.4)/3;
+  SB.forEach(([a,b,s3,col],i)=>{const x=Mg+i*(bw+.2); rb(x,y,bw,1.1,'#ffffff',LINE,.2); rb(x+.25,y+.1,bw-.5,.09,col,null,.045);
+    T(x+bw/2,y+.38,a,11,MUT,'center'); T(x+bw/2,y+.7,String(b),24,col,'center','Black'); T(x+bw/2,y+.99,s3,10,MUT,'center','Bold')});
+  y+=1.35;
+  // en yakın / zor listeleri
+  if(V.L.length){
+    const cw=(IW-.25)/2;
+    [['HEDEFE EN YAKIN',V.yakin,V.nyak,GRN],['HEDEFİ TUTMASI ZOR',V.riskli,V.nrisk,RED]].forEach(([t,L,n,col],j)=>{
+      const x=Mg+j*(cw+.25); rb(x,y,cw,LH,'#ffffff',LINE,.22); rb(x+.25,y+.12,cw-.5,.08,col,null,.04);
+      T(x+.3,y+.5,t+(n?` · ${n}`:''),13.5,NAVY,'left','Black');
+      if(!L.length)T(x+.3,y+1.0,'Yok',12,MUT,'left','Bold');
+      L.forEach((r,i)=>{const yy=y+1.0+i*.62, b=r.x.b;
+        T(x+.3,yy-.1,cut(r.ad,12.5,'Black',cw-1.9),12.5,INK,'left','Black');
+        T(x+.3,yy+.15,cut(`${r.x.ad} · ${hdeg(r.c.g,b)}/${hdeg(r.x.h,b)} ${b}`,10,'Bold',cw-1.9),10,MUT,'left','Bold');
+        T(x+cw-.3,yy-.1,pc(r.c.o),12.5,INK,'right','Black'); T(x+cw-.3,yy+.15,'→ '+pc(r.c.of),11,ORG,'right','Black')});
+    });
+    y+=LH+.25;
+  }
+  T(Mg,y,`Kaynak: MediaMarkt sell-out · ${D.donem||''}. İHS = bölgenin Türkiye fiziksel satışındaki payı. Hedef tahmini: kart formülü, gerçekleşenin altına inmez.\nStoğu biten: satılabilir stok 0 ya da altı ve bu ay satışı olan mağaza.`,9,MUT,'left','SemiBold','top');
+  const dt=vt.slice(0,5);
+  return {c,ad:`${ad} Karne${dt?' '+dt:''}.png`,t:`${ad} · Bölge karnesi · ${vt}`};
+}
+function karneAc(rg){
+  let r; try{r=karneResim(rg)}catch(e){toast('Karne hazırlanamadı');return}
+  r.c.toBlob(b=>{
+    const im=$('#hz img'); if(HZ&&HZ.u)URL.revokeObjectURL(HZ.u);
+    HZ={b,ad:r.ad,t:r.t,kod:null,u:URL.createObjectURL(b)}; im.src=HZ.u;
+    $('#hzm').style.display='none'; $('#hz').style.display='block'; $('#hz').scrollTop=0;
+  },'image/png');
+}
 function vDaha(){
   const sub=sel.dh||'';
   const back=sel.dhnav?'':'<div class="row" style="margin-bottom:8px"><button class="chip" data-back="dh">← Geri</button></div>';
+  if(sub==='bugun')return back+vBugun();
   if(sub==='img')return back+vImg();
   if(sub==='gid')return back+vGid();
   if(sub==='hedef')return back+vHedef();
   if(sub==='per')return back+vPer();
   if(sub==='ihtiyac')return back+vIht();
   if(sub==='brand')return back+vBrand();
-  return [['brand','▤','BRAND','Aylık BRAND tabloları: departman bazlı TR satışları (2025–2026)'],
+  return [['bugun','✔','Bugün ne yapmalı','Seçili bölge için: tutması zor hedefler, biten stoklar, satış yapmayanlar; bölge karnesi görseli'],
+          ['brand','▤','BRAND','Aylık BRAND tabloları: departman bazlı TR satışları (2025–2026)'],
           ['ihtiyac','☰','İhtiyaç listeleri','Ankastre ve SDA: hangi mağazaya hangi modelden kaç sipariş'],
           ['img','▣','Sıralama Görsel','6 sıralama tablosu görseli (MDA, Ankastre, VC, FOOD, FAEM, Hava)'],
           ['gid','↗','Gidişat','Önceki rapora göre günlük satış, sıra ve tahmin değişimi'],
@@ -1579,6 +1723,11 @@ function vHedef(){
   if(!T.n)return s+'<div class="msg">Bu bölgede bu hedef türü yok.</div>';
   s+=`<div class="card dep"><div class="g4"><div><small>Hedef</small><b>${hdeg(T.h,b)}</b></div><div><small>Gerçekleşen</small><b>${hdeg(T.g,b)}</b><small style="text-transform:none;min-height:0">%${Math.round(T.g/T.h*100)}</small></div><div><small>Ay sonu tahmini</small><b class="or">${hdeg(T.fc,b)}</b><small style="text-transform:none;min-height:0">%${Math.round(T.fc/T.h*100)}</small></div><div><small>Hedefi tutacak</small><b>${T.yol}<span style="font-size:12px;color:var(--mut)"> / ${T.n}</span></b><small style="text-transform:none;min-height:0">${T.tut} tuttu</small></div></div>
     <div class="note" style="margin:8px 0 0">${tc(rg||'Türkiye')} · ${HTUR.find(x=>x[0]===tur)[1]} (${br}) · ay ilerlemesi %${Math.round(G.a/G.t*100)} (gün katsayılı)${KZ.var?`<br>Bu kalemden kazanç (brüt): şu an <b>${nf(KZ.n)}</b> → tahmini <b>${nf(KZ.f)} TL</b>`:''}</div></div>`;
+  if(!q){
+    const LL=all.filter(r=>!rg||r.bolge===rg), YR=yakinRiskli(LL,6);
+    const lst=(t,L,n,yk)=>L.length?`<details class="card" open><summary style="padding:10px 12px;font-weight:600;cursor:pointer">${t} · ${n}</summary><div style="padding:0 12px 8px">${L.map(r=>hrSatir(r,yk)).join('')}</div></details>`:'';
+    s+=lst('Hedefe en yakın',YR.yakin,YR.nyak,true)+lst('Hedefi tutması zor',YR.riskli,YR.nrisk,false);
+  }
   if(!rg){
     s+='<h2>Bölgeler</h2><div class="card dep">'+ORD.map(B=>{const L=all.filter(r=>r.bolge===B); if(!L.length)return ''; const t=top(L);
       return `<div class="urow ${B===GAB?'gar':''}" style="grid-template-columns:1fr auto auto;cursor:pointer" data-hb="${esc(B)}"><span><b>${tc(B)}</b><br><span class="note" style="margin:0">${hdeg(t.g,b)} / ${hdeg(t.h,b)} · tutacak ${t.yol}/${t.n}</span></span><span style="text-align:right">%${Math.round(t.g/t.h*100)}</span><span style="text-align:right;color:var(--org);font-weight:700;min-width:54px">→ %${Math.round(t.fc/t.h*100)}</span></div>`}).join('')+'</div>';
@@ -1860,6 +2009,7 @@ function render(){
   M.querySelectorAll('[data-bback]').forEach(el=>el.onclick=()=>{sel.bf=null;sel.q='';render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-dhgo]').forEach(el=>el.onclick=()=>{sel.dhfrom='ozet';sel.dh=el.dataset.dhgo;sel.q='';tab='daha';LS.set('tab','daha');render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-hr]').forEach(el=>el.onclick=e=>{e.preventDefault();e.stopPropagation();hedefAc(el.dataset.hr,el.dataset.hs)});
+  if($('#knb'))$('#knb').onclick=()=>karneAc($('#knb').dataset.rg||'');
   if($('#hspv'))$('#hspv').onclick=()=>{sel.hspv=!sel.hspv;render()};
   M.querySelectorAll('[data-hb]').forEach(el=>el.onclick=()=>{sel.hrg=el.dataset.hb;render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-dh]').forEach(el=>el.onclick=()=>{sel.dhnav=false;sel.dh=el.dataset.dh;render();window.scrollTo(0,0)});
