@@ -1423,7 +1423,7 @@ const stokEks=(m,k)=>{const ng=m.k[k].bas.filter(v=>typeof v==='number'&&v<0); r
 const stokTag=(k,q)=>`<span class="tag t-org" style="margin:0 0 0 3px">${esc(KLAB[k]||k)}${q?' −'+nf(q):''}</span>`;
 const stokUr=(m,k,q)=>`<div class="urow" data-mk="${m.kod}"><span>${esc(m.ad)}</span><span style="text-align:right"><div style="margin-bottom:2px">${hvTag(m.kod)}</div>${k.map(x=>{const c=m.k[x]; return `<div style="margin:1px 0">${stokTag(x,q?stokEks(m,x):0)} <small style="color:var(--mut)">stok ${nf(c.sat)} + sipariş ${nf(c.gel)}</small></div>`}).join('')}</span></div>`;
 const stokCnt=n=>`<span style="color:var(--mut);font-weight:400">· ${n}</span>`;
-const stokSec=(t,tot,rows)=>tot?`<div class="card dep"><div class="bdh">${t} ${stokCnt(tot)}</div>${rows.join('')}</div>`:'';
+const stokSec=(t,tot,rows,id)=>tot?`<div class="card dep"${id?` id="${id}" style="scroll-margin-top:84px"`:''}><div class="bdh">${t} ${stokCnt(tot)}</div>${rows.join('')}</div>`:'';
 function urunMag(u,sag,st){   // ürün satırı + altında mağaza adları (yanlarında küçük not)
   const ML=magList().map;
   return `<div style="border-top:1px solid var(--line);padding:7px 0 6px"><div class="urow" data-ara="${u}" style="border-top:0;padding:0;cursor:pointer"><span><b>${esc(D.urunler.u[u])}</b>${artI(u)}</span><span style="color:var(--mut)">${sag}</span></div><div class="note" style="margin:3px 0 0">${st.map(([k,g])=>{const m=ML.get(k);return `<a class="lnk" data-mk="${k}">${esc(m?m.ad:k)}</a> <small>${g}</small>`}).join(' · ')}</div></div>`;
@@ -1449,6 +1449,7 @@ function vBugun(){
   s+=bolgeChips('bgrg',rg)+`<div class="row" style="margin:0 0 8px;gap:8px"><span class="note" style="margin:0">Bugün · ${esc(ad)} · ${esc(veriTarihi(D.donem)||'')}</span><button class="chip rs" id="knb" data-rg="${esc(rg)}">⇪ Bölge karnesi</button></div>`;
   // hedef kalemlerini Kampanya 1 / 2 / Hava ve Hedef Kontrol sayfa adı + kategori başlıklarıyla grupla
   const SIRA=['MDA','MDA (çift promo)','MDA + Süpürge','Süpürge + KEA','Süpürge + KEA (çift promo)','Süpürge + FAEM','KEA','FAEM + KEA','Hava Temizleme'], DS=['MDA','VC','FOOD','FAEM','Hava'];
+  const gid=(n,sn,dp)=>'bg'+n+'_'+SIRA.indexOf(sn)+'_'+DS.indexOf(dp);   // kutudan listeye atlamak için
   const grupla=(list,srt,sv)=>{
     let o='';
     [[1,'Kampanya 1 hedefleri'],[2,'Kampanya 2 ve sonrası'],[0,'Hava temizleme · mağaza hedefi']].forEach(([n,bs])=>{
@@ -1456,7 +1457,7 @@ function vBugun(){
       o+=`<h2 style="margin:12px 0 4px">${bs} ${cnt(gl.length)}</h2>`;
       const kt=[]; gl.forEach(r=>{const dp=kampGrup(r)[0], key=r.S+'|'+dp; if(!kt.some(x=>x.key===key))kt.push({key,sn:r.S,dp})});
       kt.sort((a,b)=>(DS.indexOf(a.dp)-DS.indexOf(b.dp))||((SIRA.indexOf(a.sn)<0?99:SIRA.indexOf(a.sn))-(SIRA.indexOf(b.sn)<0?99:SIRA.indexOf(b.sn))));
-      kt.forEach(({sn,dp})=>{const l=gl.filter(r=>r.S===sn&&kampGrup(r)[0]===dp).sort(srt); o+=sec(`${esc(sn)} · ${dp}${/çift promo/.test(sn)?' çift':''} kategorisi`,l.length,l.map(r=>hrSatir(r,false,sv)))});
+      kt.forEach(({sn,dp})=>{const l=gl.filter(r=>r.S===sn&&kampGrup(r)[0]===dp).sort(srt); o+=sec(`${esc(sn)} · ${dp}${/çift promo/.test(sn)?' çift':''} kategorisi`,l.length,l.map(r=>hrSatir(r,false,sv)),gid(n,sn,dp))});
     });
     return o;
   };
@@ -1471,7 +1472,7 @@ function vBugun(){
       kk.forEach(({sn,dp})=>{
         const st=new Map(); gl.filter(r=>r.S===sn&&kampGrup(r)[0]===dp).forEach(r=>{st.set(r.kod,(st.get(r.kod)||false)||!!hedefDz(r))});
         const tot=st.size, yap=[...st.values()].filter(a=>!a).length, yok=tot-yap, cf=/çift promo/.test(sn);
-        bx.push(`<div style="background:${yok?'rgba(245,159,0,.16)':'rgba(43,138,62,.14)'};border-radius:12px;padding:6px 8px;min-width:0;text-align:center"><small style="display:block;font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${kp?kp+' · ':''}${dp==='Hava'?'Hava':dp}${cf?' çift':''}</small><b style="font-size:19px;color:${yok?'var(--org)':'var(--ok)'}">${yap}/${tot}</b><small style="display:block;font-size:10px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(sn)}</small></div>`);
+        bx.push(`<div data-bgo="${gid(n,sn,dp)}" style="cursor:pointer;background:${yok?'rgba(245,159,0,.16)':'rgba(43,138,62,.14)'};border-radius:12px;padding:6px 8px;min-width:0;text-align:center"><small style="display:block;font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${kp?kp+' · ':''}${dp==='Hava'?'Hava':dp}${cf?' çift':''}</small><b style="font-size:19px;color:${yok?'var(--org)':'var(--ok)'}">${yap}/${tot}</b><small style="display:block;font-size:10px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(sn)}</small></div>`);
       });
     });
     bar=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px;margin:0 0 8px">${bx.join('')}</div><div class="note" style="margin:-2px 0 8px">Yapan / toplam mağaza · Kamp. 1 = Kampanya 1, Kamp. 2 = Kampanya 2 ve sonrası · yapan: o kategorideki tüm kalemleri tuttu ya da tempoda</div>`;
@@ -2176,6 +2177,7 @@ function render(){
   M.querySelectorAll('[data-dhgo]').forEach(el=>el.onclick=()=>{sel.dhfrom='ozet';sel.dh=el.dataset.dhgo;sel.q='';tab='daha';LS.set('tab','daha');render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-hr]').forEach(el=>el.onclick=e=>{e.preventDefault();e.stopPropagation();hedefAc(el.dataset.hr,el.dataset.hs)});
   if($('#knb'))$('#knb').onclick=()=>karneAc($('#knb').dataset.rg||'');
+  M.querySelectorAll('[data-bgo]').forEach(el=>el.onclick=()=>{const t=document.getElementById(el.dataset.bgo); if(!t){toast(sel.bsk==='kontrol'?'Bu kategoride henüz yapan mağaza yok':'Bu kategoride acil satır yok');return} const y0=scrollY; t.scrollIntoView({behavior:'smooth',block:'start'}); setTimeout(()=>{if(Math.abs(scrollY-y0)<5)t.scrollIntoView({block:'start'})},700); try{t.animate([{boxShadow:'0 0 0 3px var(--ac)'},{boxShadow:'0 0 0 0 transparent'}],{duration:1400})}catch(e){}});
   if($('#hspv'))$('#hspv').onclick=()=>{sel.hspv=!sel.hspv;render()};
   M.querySelectorAll('[data-hb]').forEach(el=>el.onclick=()=>{sel.hrg=el.dataset.hb;render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-dh]').forEach(el=>el.onclick=()=>{sel.dhnav=false;sel.dh=el.dataset.dh;render();window.scrollTo(0,0)});
