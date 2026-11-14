@@ -1463,6 +1463,22 @@ function vBugun(){
   if(bk==='kontrol'){
     const risk=yes.filter(r=>hedefNeden(r).some(o=>/Stok yetersiz|Stok yok/.test(o.t))).length;
     s+=`<div class="card dep"><div class="g4"><div><small>Tuttu</small><b class="pos">${nt}</b></div><div><small>Tempoda</small><b class="pos">${yes.length-nt}</b></div><div><small>Stok riski var</small><b class="${risk?'or':''}">${risk}</b></div><div><small>Toplam kalem</small><b>${V.L.length}</b></div></div></div>`;
+    // hedef kategorileri özeti: her kategoride kaç mağaza var, kaçı yapıyor (tuttu / tempoda), kaçı yapmıyor (kırmızı/sarı)
+    if(V.L.length){
+      let o=`<div class="card dep"><div class="bdh" style="margin-top:0;border-top:0;padding-top:0">Hedef kategorileri · yapan / toplam mağaza</div>`;
+      [[1,'Kampanya 1 hedefleri'],[2,'Kampanya 2 ve sonrası'],[0,'Hava temizleme · mağaza hedefi']].forEach(([n,bs])=>{
+        const gl=V.L.filter(r=>kampGrup(r)[1]===n); if(!gl.length)return;
+        const kk=[]; gl.forEach(r=>{const dp=kampGrup(r)[0], key=r.S+'|'+dp; if(!kk.some(x=>x.key===key))kk.push({key,sn:r.S,dp})});
+        kk.sort((a,b)=>(DS.indexOf(a.dp)-DS.indexOf(b.dp))||((SIRA.indexOf(a.sn)<0?99:SIRA.indexOf(a.sn))-(SIRA.indexOf(b.sn)<0?99:SIRA.indexOf(b.sn))));
+        o+=`<div class="note" style="margin:8px 0 2px;font-weight:700">${bs}</div>`;
+        kk.forEach(({sn,dp})=>{
+          const st=new Map(); gl.filter(r=>r.S===sn&&kampGrup(r)[0]===dp).forEach(r=>{st.set(r.kod,(st.get(r.kod)||false)||!!hedefDz(r))});
+          const tot=st.size, yap=[...st.values()].filter(a=>!a).length, yok=tot-yap;
+          o+=`<div class="urow" style="grid-template-columns:1fr auto"><span>${esc(sn)} · ${dp}${/çift promo/.test(sn)?' çift':''} kategorisi</span><span style="text-align:right"><b style="color:${yok?'var(--org)':'var(--ok)'}">${yap}/${tot}</b>${yok?`<br><span style="color:var(--bad);font-size:12px">${yok} mağaza yapmıyor</span>`:''}</span></div>`;
+        });
+      });
+      s+=o+`<div class="note" style="margin:8px 0 0">Yapan = o kategorideki tüm kalemleri tuttu ya da tempoda olan mağaza · yapmıyor = en az bir kalemi kırmızı/sarı (Acil müdahale'de)</div></div>`;
+    }
     if(!yes.length)return s+'<div class="msg">Bu görünümde hedefi tutan ya da tempoda olan kalem yok.</div>';
     s+=`<div class="note" style="margin:0 0 4px"><span class="tag t-grn" style="margin:0 4px 0 0">Tuttu</span>hedef tamam · <span class="tag t-grn" style="margin:0 4px 0 2px">Tempoda</span>kart formülü ve bu ayki hız hedefi tutuyor · turuncu "Stok yetersiz" = tutuyor ama stok ay sonuna yetmeyebilir</div>`;
     s+=grupla(yes,(a,b)=>((a.c.d==='tuttu'?1:0)-(b.c.d==='tuttu'?1:0))||b.c.of-a.c.of,'g');
