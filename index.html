@@ -397,7 +397,7 @@ function table(t,opts){
 }
 /* Bölgem: başlıktaki seçim. Seçiliyse sayfalardaki bölge filtreleri o bölgeye kilitlenir ve bölge düğmeleri gizlenir (Kategori sıralaması hariç: orada varsayılan olur, kıyas için değiştirilebilir). Boş = Key Account, her şey. */
 let BLG=LS.get('bolgem')||'';
-const BKEYS=['bgrg','bd','mrg','urg','brg2','hrg','grg','prg','irg'];
+const BKEYS=['dkg','bgrg','bd','mrg','urg','brg2','hrg','grg','prg','irg'];
 function chips(items,cur,key,wrap){
   if(BLG&&BKEYS.includes(key))return '';
   return '<div class="chips'+(wrap?' wrap':'')+'">'+items.map(([id,label])=>`<button class="chip ${id===cur?'on':''}" data-k="${key}" data-v="${esc(id)}">${esc(label)}</button>`).join('')+'</div>';
@@ -1088,8 +1088,9 @@ function vUrun(){
 }
 
 /* ---- Özet: uyarılar ---- */
-function uyarilar(){
-  const ga=magList().arr.filter(m=>m.bolge===(BLG||GAB)); if(!ga.length)return {html:'',metin:''};
+function uyarilar(rg){   // rg: bölge adı; '' = Türkiye (Key Account). Verilmezse seçili bölge ya da Dikkat kartındaki seçim
+  if(rg==null)rg=BLG||sel.dkg||'';
+  const ga=magList().arr.filter(m=>m.bolge!=='ONLINE'&&(!rg||m.bolge===rg)); if(!ga.length)return {html:'',metin:''};
   const it=[], tx=[];
   // 1) ay sonuna yetmeyen stok
   const yet=[]; KATS.forEach(k=>{const l=ga.filter(m=>m.k[k]&&m.k[k].bas.some(v=>typeof v==='number'&&v<0)); if(l.length)yet.push([k,l])});
@@ -1100,7 +1101,7 @@ function uyarilar(){
     tx.push('• Ay sonuna yetmeyen stok → '+oz+' mağaza');
   }
   // 2) stoksuz çok satan
-  const z=stoksuzCokSatan(GAB);
+  const z=stoksuzCokSatan(rg);
   if(z&&z.cift){
     it.push(`<details><summary><span class="dot red"></span><span class="dt">Stoksuz çok satan ürün<small>${z.liste.length} ürün · ${z.cift} mağaza-ürün</small></span></summary><div class="dl">`+
       z.liste.slice(0,8).map(a=>`<div class="dk"><a class="lnk" data-ara="${a.u}">${esc(D.urunler.u[a.u])}</a> <small>${a.n} mağaza · geçen ay ${a.g}</small></div>`).join('')+'</div></details>');
@@ -1115,9 +1116,10 @@ function uyarilar(){
   }
   // 4) transfer
   const t0=D.transfer&&D.transfer.filter(t=>t.satirlar.length)[0];
-  if(t0){const h=t0.kolonlar,a=h.indexOf('Stoksuz model'),b=h.indexOf('Karşılanamayan');let sa=0,sb=0;t0.satirlar.forEach(r=>{sa+=N(r[a]);sb+=N(r[b])});
-    if(sa||sb){it.push(`<div class="dsat" data-go="trf"><span class="dot org"></span><span class="dt">Transfer<small>${nf(sa)} stoksuz model · ${nf(sb)} adet karşılanamıyor</small></span><span class="chev">›</span></div>`);tx.push(`• Transfer: ${nf(sa)} stoksuz model, ${nf(sb)} adet karşılanamıyor`)}}
-  return {html:it.length?`<div class="card dik"><div class="dhd">Dikkat · Güney Anadolu</div>${it.join('')}</div>`:'',metin:tx.join('\n')};
+  if(t0&&(!rg||rg===GAB)){const h=t0.kolonlar,a=h.indexOf('Stoksuz model'),b=h.indexOf('Karşılanamayan');let sa=0,sb=0;t0.satirlar.forEach(r=>{sa+=N(r[a]);sb+=N(r[b])});
+    if(sa||sb){it.push(`<div class="dsat" data-go="trf"><span class="dot org"></span><span class="dt">Transfer${rg?'':' (Güney Anadolu)'}<small>${nf(sa)} stoksuz model · ${nf(sb)} adet karşılanamıyor</small></span><span class="chev">›</span></div>`);tx.push(`• Transfer: ${nf(sa)} stoksuz model, ${nf(sb)} adet karşılanamıyor`)}}
+  const ck=bolgeChips('dkg',rg);
+  return {html:(it.length||ck)?`<div class="card dik"><div class="dhd">Dikkat · ${rg?tc(rg):'Türkiye'}</div>${ck}${it.length?it.join(''):'<div class="dsat"><span class="dt">Dikkat çeken bir şey yok<small>Bu bölgede uyarı görünmüyor</small></span></div>'}</div>`:'',metin:tx.join('\n')};
 }
 function gaToplam(DD,i){const r=DD.ozet[0]&&DD.ozet[0].satirlar.find(isGA);return r?N(r[DD.ozet[0].kolonlar.findIndex(x=>/^Toplam/.test(x))]):null}
 
@@ -1793,7 +1795,7 @@ function paylasMetin(kind,arg){
     const a=BB===GAB?gaToplam(D):ga.reduce((x,m)=>x+m.top,0);
     if(a!=null)t+=`Toplam sell-out: ${nf(a)}\n`;
     KATS.forEach(k=>{const s1=ga.reduce((x,m)=>x+(m.k[k]?m.k[k].main:0),0),s2=ga.reduce((x,m)=>x+(m.k[k]&&m.k[k].fc?m.k[k].fc:0),0);if(s1||s2)t+=`${KLAB[k]||k}: ${nf(s1)} (tahmin ${nf(s2)})\n`});
-    const u=uyarilar().metin; if(u)t+='\n'+u;
+    const u=uyarilar(BB).metin; if(u)t+='\n'+u;
     return t.trim();
   }
   if(kind==='mag'){
