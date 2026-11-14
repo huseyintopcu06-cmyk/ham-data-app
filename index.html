@@ -32,6 +32,7 @@ header .row>div:last-child{flex:none;display:flex;gap:4px}
 header h1,header small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
 #upd{position:sticky;top:58px;z-index:4;background:#FFC000;color:#1a1a1a;padding:9px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;font-weight:600}
 #upd[hidden]{display:none}
+#blg{max-width:100%;font-size:12.5px;font-weight:600;-webkit-appearance:none;appearance:none;padding-right:12px}#blg option{color:#111;background:#fff}
 #byt{margin:8px 12px 0;border-radius:16px;padding:9px 14px;font-size:13.5px;font-weight:600;line-height:1.35}#byt[hidden]{display:none}
 #byt.s{background:#FFE9B8;color:#5c3d00}#byt.k{background:#F8CBAD;color:#7a1810}
 #upd button{background:#1F3864;color:#fff;border:0;border-radius:8px;padding:7px 14px;font-weight:700}
@@ -271,7 +272,7 @@ main{padding-bottom:calc(160px + env(safe-area-inset-bottom))}
 </style>
 </head>
 <body>
-<header><div class="row"><div><h1 id="ttl">Ham Data</h1><small id="sub">yükleniyor…</small></div><div><button class="ib" id="rf" title="Veriyi yenile">↻</button> <button class="ib" id="th" title="Tema">◐</button> <button class="ib" id="gn" title="Uygulamayı güncelle (yeni sürümü al)">⬆</button> <button class="ib" id="st" title="Çıkış yap (şifreyi bu cihazdan sil)">Çıkış</button></div></div></header>
+<header><div class="row"><div><h1 id="ttl">Ham Data</h1><small id="sub">yükleniyor…</small></div><div><button class="ib" id="rf" title="Veriyi yenile">↻</button> <button class="ib" id="th" title="Tema">◐</button> <button class="ib" id="gn" title="Uygulamayı güncelle (yeni sürümü al)">⬆</button> <button class="ib" id="st" title="Çıkış yap (şifreyi bu cihazdan sil)">Çıkış</button></div></div><div class="row" style="justify-content:flex-end;margin-top:6px"><select id="blg" class="ib" title="Bölge seçimi: yalnız seçilen bölge görünür"></select></div></header>
 <div id="byt" hidden></div>
 <div id="upd" hidden><span>Yeni sürüm var</span><button id="updgo">Yenile</button></div>
 <main id="m"></main>
@@ -393,7 +394,11 @@ function table(t,opts){
   }
   return s+'</tbody></table></div>';
 }
+/* Bölgem: başlıktaki seçim. Seçiliyse sayfalardaki bölge filtreleri o bölgeye kilitlenir ve bölge düğmeleri gizlenir (Kategori sıralaması hariç: orada varsayılan olur, kıyas için değiştirilebilir). Boş = Key Account, her şey. */
+let BLG=LS.get('bolgem')||'';
+const BKEYS=['bd','mrg','urg','brg2','hrg','grg','prg','irg'];
 function chips(items,cur,key,wrap){
+  if(BLG&&BKEYS.includes(key))return '';
   return '<div class="chips'+(wrap?' wrap':'')+'">'+items.map(([id,label])=>`<button class="chip ${id===cur?'on':''}" data-k="${key}" data-v="${esc(id)}">${esc(label)}</button>`).join('')+'</div>';
 }
 function bindChips(){
@@ -487,14 +492,14 @@ function ozKart(t){
   let cm=(sel.om!=null&&mi.includes(+sel.om))?+sel.om:h.findIndex(x=>/^Toplam/.test(x)); if(cm<0)cm=mi[0];
   const lab=x=>/^Toplam/.test(x)?'Toplam':x.replace(/ Satış Adeti$/,'');
   const val=r=>fmt(r[cm],h[cm]+' '+(r[0]||'')), tc=s=>String(s||'').toLocaleLowerCase('tr').replace(/(^|\s)\S/g,m=>m.toLocaleUpperCase('tr'));
-  const reg=t.satirlar.filter(r=>r[1]&&r[1]!=='ONLINE').sort((a,b)=>N(b[cm])-N(a[cm]));
-  const rest=t.satirlar.filter(r=>!reg.includes(r)), tot=rest.filter(r=>/TOPLAM|Online/i.test(r[0])), oth=rest.filter(r=>!tot.includes(r));
+  const regT=t.satirlar.filter(r=>r[1]&&r[1]!=='ONLINE'), reg=regT.filter(r=>!BLG||r[1]===BLG).sort((a,b)=>N(b[cm])-N(a[cm]));
+  const rest=t.satirlar.filter(r=>!regT.includes(r)), tot=rest.filter(r=>/TOPLAM|Online/i.test(r[0])), oth=rest.filter(r=>!tot.includes(r));
   const mx=Math.max(1,...reg.map(r=>N(r[cm])));
   // seçili kolonun departmanı (personel sayısı ona göre) ve İHS = bölge ÷ fiziksel toplam
   const kol=h[cm], dep=/^Toplam|Hava/.test(kol)?'':/^(MDA|Ankastre)/.test(kol)?'MDA':/VC|Bagless|Unlimited|Robot/.test(kol)?'VC':/MUM|FOOD/.test(kol)?'FOOD':/FAEM/.test(kol)?'FAEM':'';
   const pks=v=>{v=String(v||'');const m=v.match(/^(\d+)x$/);return m?+m[1]:/^Var$/.test(v)?1:0};
   const ML=dep?magList().arr:[], pers=r=>dep?ML.filter(m=>m.bolge===r[1]).reduce((a,m)=>a+pks(m.k[dep]&&m.k[dep].per),0):N(r[3]);
-  const fz=t.satirlar.find(r=>/FİZİKSEL/.test(r[0]||'')), ftop=fz?N(fz[cm]):reg.reduce((a,r)=>a+N(r[cm]),0);
+  const fz=t.satirlar.find(r=>/FİZİKSEL/.test(r[0]||'')), ftop=fz?N(fz[cm]):regT.reduce((a,r)=>a+N(r[cm]),0);
   const ihs=r=>ftop>0?(N(r[cm])/ftop*100).toFixed(1).replace('.',',')+'%':'';
   const line=r=>`<div class="ozt ${/GENEL|FİZİKSEL/.test(r[0])?'b':''}"><span>${esc(r[0])}</span><b>${val(r)}</b></div>`;
   let s=chips(mi.map(i=>[String(i),lab(h[i])]),String(cm),'om',true);
@@ -548,7 +553,7 @@ function vcSirala(t){
 function vcIhsKart(t){
   const h=t.kolonlar, gr=h.filter(x=>/ Adet$/.test(x)).map(x=>x.replace(/ Adet$/,'')).sort((a,b)=>(b==='VC Toplam')-(a==='VC Toplam'));
   const cg=gr.includes(sel.vg)?sel.vg:gr[0], ia=h.indexOf(cg+' Adet'), ii=h.indexOf(cg+' İHS'), is=h.indexOf(cg+' Stok');
-  const reg=t.satirlar.filter(r=>r[1]&&r[1]!=='ONLINE').sort((a,b)=>N(b[ia])-N(a[ia])), dig=t.satirlar.filter(r=>!reg.includes(r));
+  const regT=t.satirlar.filter(r=>r[1]&&r[1]!=='ONLINE'), reg=regT.filter(r=>!BLG||r[1]===BLG).sort((a,b)=>N(b[ia])-N(a[ia])), dig=t.satirlar.filter(r=>!regT.includes(r));
   const mx=Math.max(1,...reg.map(r=>N(r[ia]))), yz=v=>typeof v==='number'?(v*100).toFixed(1).replace('.',',')+'%':'–', stk=r=>is>=0&&r[is]!=null?nf(r[is]):'–';
   let s=chips(gr.map(x=>[x,x]),cg,'vg',true);
   s+='<div class="card oz">'+reg.map((r,i)=>`<div class="ozr ${isGA(r)?'ga':''}"><div class="rk">${i+1}</div><div class="nm"><b>${esc(tc(r[0]))}</b><span>${esc(tc(r[1]))} · stok ${stk(r)}</span></div><div class="kv"><b>${nf(r[ia])}</b><small style="margin:2px 0 0;text-transform:none">İHS ${ii>=0?yz(r[ii]):'–'}</small></div><div class="bar"><i style="width:${Math.max(2,Math.round(N(r[ia])/mx*100))}%"></i></div></div>`).join('')+'</div>';
@@ -563,17 +568,20 @@ function vOzet(){
   const short=T.map((t,i)=>[String(i),t.baslik.replace(/·.*$/,'').replace(/ORTALAMASI.*/,'ORTALAMA').trim()]);
   // Güney Anadolu özet kartı
   const bshSatir=t=>t&&(t.satirlar.find(r=>/^GENEL TOPLAM/.test(r[0]||''))||t.satirlar.find(r=>/FİZİKSEL/.test(r[0]||'')));
-  const bshToplam=DD=>{const t0=DD.ozet&&DD.ozet[0], r=bshSatir(t0), i=t0?t0.kolonlar.findIndex(x=>/^Toplam/.test(x)):-1; return r&&i>=0?N(r[i]):null};
-  const g=bshSatir(T[0]), th=T[0]&&T[0].kolonlar;
+  // üst kart: bölge seçiliyse o bölgenin SPV satırları toplamı, değilse BSH genel toplamı
+  const topl=t=>{if(!t)return null; const i=t.kolonlar.findIndex(x=>/^Toplam/.test(x)); if(i<0)return null;
+    if(BLG){if(t.kolonlar[1]!=='Bölge')return null; const L=t.satirlar.filter(r=>r[1]===BLG); return L.length?L.reduce((a,r)=>a+N(r[i]),0):null}
+    const r=bshSatir(t); return r?N(r[i]):null};
+  const bshToplam=DD=>topl(DD.ozet&&DD.ozet[0]), HAD=BLG?tc(BLG):'BSH';
   let hero='';
   const ft=T.find(t=>/TAHM/i.test(t.baslik)&&!/VC/.test(t.baslik));
-  if(g){
-    const gi=bshSatir(ft), ti=th.findIndex(x=>/^Toplam/.test(x)), fi=ft?ft.kolonlar.findIndex(x=>/^Toplam/.test(x)):-1;
-    hero=`<div class="card ga" style="padding:12px 14px"><div class="row"><div><span style="font-size:12px;color:var(--mut)">BSH · gerçekleşen</span><br><b style="font-size:26px">${ti>=0?fmt(g[ti],''):''}</b></div>
-    ${gi&&fi>=0?`<div style="text-align:right"><span style="font-size:12px;color:var(--mut)">ay sonu tahmini</span><br><b style="font-size:26px;color:var(--org)">${fmt(gi[fi],'')}</b></div>`:''}</div></div>`;
+  const hv=topl(T[0]), fv=topl(ft);
+  if(hv!=null){
+    hero=`<div class="card ga" style="padding:12px 14px"><div class="row"><div><span style="font-size:12px;color:var(--mut)">${esc(HAD)} · gerçekleşen</span><br><b style="font-size:26px">${fmt(hv,'')}</b></div>
+    ${fv!=null?`<div style="text-align:right"><span style="font-size:12px;color:var(--mut)">ay sonu tahmini</span><br><b style="font-size:26px;color:var(--org)">${fmt(fv,'')}</b></div>`:''}</div></div>`;
   }
   let dl='';
-  if(P){const a=bshToplam(D),b=bshToplam(P); if(a!=null&&b!=null)dl=`Son rapordan bu yana ${sg(a-b)} satış (BSH)`}
+  if(P){const a=bshToplam(D),b=bshToplam(P); if(a!=null&&b!=null)dl=`Son rapordan bu yana ${sg(a-b)} satış (${HAD})`}
   const extra=`<div class="row" style="margin:-2px 0 10px;gap:8px"><span class="note" style="margin:0">${esc(dl)}</span><span style="display:flex;gap:6px"><button class="chip" data-sh="ozet">Paylaş</button>${XLB}</span></div>`+uyarilar().html+bugunDegisen();
   XL=()=>({ad:'Özet '+short[+cur][1]+' '+veriTarihi(D.donem),h:T[+cur].kolonlar,rows:T[+cur].satirlar});
   return hero+extra+chips(short,cur,'oz')+((T[+cur].kolonlar[0]==='SPV'&&T[+cur].kolonlar[1]==='Bölge'&&T[+cur].kolonlar[2]==='Mağaza Sayısı')?ozKart(T[+cur]):T[+cur].kolonlar.includes('VC Toplam Adet')?vcIhsKart(T[+cur]):table(T[+cur]))+(D.kaynak?`<div class="note">${esc(D.kaynak)}</div>`:'');
@@ -1082,7 +1090,7 @@ function vUrun(){
 
 /* ---- Özet: uyarılar ---- */
 function uyarilar(){
-  const ga=magList().arr.filter(m=>m.bolge===GAB); if(!ga.length)return {html:'',metin:''};
+  const ga=magList().arr.filter(m=>m.bolge===(BLG||GAB)); if(!ga.length)return {html:'',metin:''};
   const it=[], tx=[];
   // 1) ay sonuna yetmeyen stok
   const yet=[]; KATS.forEach(k=>{const l=ga.filter(m=>m.k[k]&&m.k[k].bas.some(v=>typeof v==='number'&&v<0)); if(l.length)yet.push([k,l])});
@@ -1631,9 +1639,9 @@ function vPer(){
 function paylasMetin(kind,arg){
   const vt=veriTarihi(D.donem);
   if(kind==='ozet'){
-    const ga=magList().arr.filter(m=>m.bolge===GAB);
-    let t=`BSH · Güney Anadolu · ${vt} (${D.donem})\n`;
-    const a=gaToplam(D);
+    const BB=BLG||GAB, ga=magList().arr.filter(m=>m.bolge===BB);
+    let t=`BSH · ${tc(BB)} · ${vt} (${D.donem})\n`;
+    const a=BB===GAB?gaToplam(D):ga.reduce((x,m)=>x+m.top,0);
     if(a!=null)t+=`Toplam sell-out: ${nf(a)}\n`;
     KATS.forEach(k=>{const s1=ga.reduce((x,m)=>x+(m.k[k]?m.k[k].main:0),0),s2=ga.reduce((x,m)=>x+(m.k[k]&&m.k[k].fc?m.k[k].fc:0),0);if(s1||s2)t+=`${KLAB[k]||k}: ${nf(s1)} (tahmin ${nf(s2)})\n`});
     const u=uyarilar().metin; if(u)t+='\n'+u;
@@ -1779,6 +1787,7 @@ function kaynakHtml(s,adet){
 function vTrf(){
   const T=D.transfer.filter(t=>t.satirlar.length);
   if(!T.length)return '<div class="msg">Transfer verisi yok.</div>';
+  if(BLG&&BLG!==GAB)return '<div class="msg">Transfer önerileri şu an yalnız Güney Anadolu için hazırlanıyor.<br>Seçili bölge: '+esc(tc(BLG))+'</div>';
   const cur=sel.tr!=null?sel.tr:'0';
   let s=chips([['0','Mağaza özeti'],['1','İhtiyaç / kaynak'],['2','Satmayan stok']],cur,'tr');
   const t=T[+cur]; if(!t)return s;
@@ -1836,6 +1845,7 @@ function render(){
   if(!D)return;
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab&&(tab!=='daha'||(b.dataset.s||'')===(sel.dh||''))));
   const on=document.querySelector('nav button.on'); if(on&&on.scrollIntoView)on.scrollIntoView({inline:'nearest',block:'nearest'});
+  if(BLG){BKEYS.forEach(k=>{sel[k]=BLG}); if(sel.rg==null)sel.rg=BLG}
   const y=window.scrollY; XL=null;
   M.innerHTML=({ozet:vOzet,kat:vKat,mag:vMag,urun:vUrun,trf:vTrf,daha:vDaha}[tab]||vOzet)();
   bindChips();
@@ -1869,6 +1879,10 @@ $('#hzk').onclick=()=>{$('#hz').style.display='none'};
 $('#hzs').onclick=hedefPaylas;
 $('#hzm').onclick=()=>{$('#hz').style.display='none';if(HZ){tab='mag';LS.set('tab','mag');sel.mk=HZ.kod;render();window.scrollTo(0,0)}};
 $('#rf').onclick=()=>load(true);
+(function(){const e=$('#blg'); if(!ORD.includes(BLG))BLG='';
+  e.innerHTML='<option value="">Key Account · tüm bölgeler</option>'+ORD.map(x=>`<option value="${x}">${tc(x)}</option>`).join(''); e.value=BLG;
+  e.onchange=()=>{BLG=e.value; LS.set('bolgem',BLG); BKEYS.forEach(k=>{delete sel[k]}); sel.rg=null; sel.q=''; sel.mk=null; render(); window.scrollTo(0,0)};
+})();
 $('#st').onclick=()=>{if(confirm('Çıkış yapılsın mı? (Şifre bu cihazdan silinir)')){LS.del('pw');LS.del('cache_enc');D=null;KEY=null;gate()}};
 /* tema: Otomatik (telefon ayarı) → Açık → Koyu */
 const TEMA=['auto','light','dark'], TIC={auto:'◐',light:'☀',dark:'☾'}, TAD={auto:'Otomatik',light:'Açık',dark:'Koyu'};
