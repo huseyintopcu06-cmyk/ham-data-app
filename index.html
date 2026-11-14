@@ -1472,10 +1472,11 @@ function vBugun(){
       kk.forEach(({sn,dp})=>{
         const st=new Map(); gl.filter(r=>r.S===sn&&kampGrup(r)[0]===dp).forEach(r=>{st.set(r.kod,(st.get(r.kod)||false)||!!hedefDz(r))});
         const tot=st.size, yap=[...st.values()].filter(a=>!a).length, yok=tot-yap, cf=/çift promo/.test(sn);
+        if(bk==='acil'&&!yok)return;   // Acil müdahalede yalnız acil satırı olan kategoriler
         bx.push(`<div data-bgo="${gid(n,sn,dp)}" style="cursor:pointer;background:${yok?'rgba(245,159,0,.16)':'rgba(43,138,62,.14)'};border-radius:12px;padding:6px 8px;min-width:0;text-align:center"><small style="display:block;font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${kp?kp+' · ':''}${dp==='Hava'?'Hava':dp}${cf?' çift':''}</small><b style="font-size:19px;color:${yok?'var(--org)':'var(--ok)'}">${yap}/${tot}</b><small style="display:block;font-size:10px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(sn)}</small></div>`);
       });
     });
-    bar=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px;margin:0 0 8px">${bx.join('')}</div><div class="note" style="margin:-2px 0 8px">Yapan / toplam mağaza · Kamp. 1 = Kampanya 1, Kamp. 2 = Kampanya 2 ve sonrası · yapan: o kategorideki tüm kalemleri tuttu ya da tempoda</div>`;
+    bar=!bx.length?'':`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px;margin:0 0 8px">${bx.join('')}</div><div class="note" style="margin:-2px 0 8px">Yapan / toplam mağaza · Kamp. 1 = Kampanya 1, Kamp. 2 = Kampanya 2 ve sonrası · yapan: o kategorideki tüm kalemleri tuttu ya da tempoda</div>`;
   }
   if(bk==='kontrol'){
     const risk=yes.filter(r=>hedefNeden(r).some(o=>/Stok yetersiz|Stok yok/.test(o.t))).length;
