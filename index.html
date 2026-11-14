@@ -1370,20 +1370,30 @@ function yakinRiskli(L,n){   // yakın: tutmadı ama tempoda/sınırda, kalan or
   const riskli=L.filter(r=>r.c.d==='geride').sort((a,b)=>a.c.of-b.c.of);
   return {yakin:yakin.slice(0,n),nyak:yakin.length,riskli:riskli.slice(0,n),nrisk:riskli.length};
 }
-function hedefNeden(r){   // hedefi tutmama nedenleri: promotör yok · stok yok/yetersiz · satış yok · düşük tempo
-  const x=r.x, m=magList().map.get(r.kod), out=[], G=hedefGun(), dep=kampGrup(r)[0];
+function hedefNeden(r){   // durum satırı: promotör · tempo (ilk günlerin hızı ↔ kalan günlerde gereken hız) · stok (açık sipariş dahil)
+  const x=r.x, m=magList().map.get(r.kod), out=[], G=hedefGun(), dep=kampGrup(r)[0], b=x.b;
   const cat={ciro:'MDA',yildiz:'MDA',set:'Ankastre',supurge:'VC',robot:'VC',mum:'FOOD',kea:'FOOD Diğer',faem:'FAEM',hava:'Hava Temizleyici'}[x.k];
-  if(m&&dep!=='Hava'){const pr=m.k[dep]&&m.k[dep].per; if(/Açık|Yok/.test(String(pr||'')))out.push(['Promotör yok','t-red'])}
-  const c=m&&cat&&m.k[cat];
-  if(c){if(c.sat!=null&&c.sat+N(c.gel)<=0)out.push(['Stok yok','t-red']); else{const ng=c.bas.filter(v=>typeof v==='number'&&v<0); if(ng.length)out.push(['Stok yetersiz −'+nf(-Math.min(...ng)),'t-org'])}}
+  const KR='var(--bad)', KA='#e0a800', KO='var(--org)', KY='var(--ok)';
+  if(m&&dep!=='Hava'){const pr=m.k[dep]&&m.k[dep].per; if(/Açık|Yok/.test(String(pr||'')))out.push({t:'Promotör yok',c:KR})}
   const cur=r.c.g/Math.max(D.hedef.gun,1), need=G.kalan>0?r.c.kal/G.kalan:0;
-  if(r.c.g<=0)out.push(['Satış yok','t-red']);
-  else if(need>0&&cur<need*.6)out.push(['Düşük tempo · günde '+hgun(cur,x.b)+' / gereken '+hgun(need,x.b),'t-org']);
-  else if(need>0&&cur<need)out.push(['Tempo yetmiyor · günde '+hgun(cur,x.b)+' / gereken '+hgun(need,x.b),'t-yel']);
+  if(r.c.g<=0)out.push({t:'Satış yok',c:KR});
+  else if(need>0){   // tempo: kalan günlerde beklenen hız (tahmin − gerçekleşen) ↔ hedef için gereken hız
+    const ex=Math.max(r.c.fc-r.c.g,0)/G.kalan, q=ex<need*.6?['Tempo düşük',KR]:ex<need?['Tempo yetmiyor',KA]:['Tempo yeterli',KY];
+    out.push({t:q[0],c:q[1],s:`ilk ${D.hedef.gun} günde günde ${hgun(cur,b)} · kalan günlerde günde ${hgun(ex,b)} bekleniyor, ${hgun(need,b)} gerekiyor`})}
+  const c=m&&cat&&m.k[cat];
+  if(c&&c.sat!=null){
+    const ng=c.bas.filter(v=>typeof v==='number'&&v<0);
+    if(c.sat+N(c.gel)<=0)out.push({t:'Stok yok',c:KR});
+    else if(ng.length)out.push({t:'Stok yetersiz',c:KO,s:`−${nf(-Math.min(...ng))} adet eksik (açık sipariş dahil)`});
+    else out.push({t:'Stok yeterli',c:KY,s:`${nf(c.sat)} adet satılabilir${N(c.gel)>0?' + '+nf(c.gel)+' açık sipariş':''}`});
+  }
   return out;
 }
-function hrSatir(r,kalan,sev){   // sev: tutmayacak (kırmızı) / kritik (sarı) vurgusu + nedenler
-  const nd=sev?hedefNeden(r).map(([t,c])=>`<span class="tag ${c}" style="margin:3px 4px 0 0">${esc(t)}</span>`).join(''):'';
+function hrSatir(r,kalan,sev){   // sev: tutmayacak (kırmızı) / kritik (sarı) vurgusu + durum satırları
+  let nd='';
+  if(sev){const G=hedefGun(), b=r.x.b;
+    nd=`<span class="note" style="margin:0">İlk ${D.hedef.gun} günde ${hdeg(r.c.g,b)} ${esc(b)} · kalan ${G.kalan} günde ${hdeg(r.c.kal,b)} ${esc(b)} gerekiyor</span><br>`+
+      hedefNeden(r).map(o=>`<span style="color:${o.c};font-weight:700;font-size:12.5px">${esc(o.t)}</span>${o.s?` <span style="color:var(--mut);font-size:12px">${esc(o.s)}</span>`:''}`).join('<br>')}
   const x=r.x, b=x.b, cl=sev?(r.c.d==='geride'?' al-r':r.c.d==='sinir'?' al-s':''):'', tg=sev?(r.c.d==='geride'?'<span class="tag t-red" style="margin:0 6px 0 0">Tutmayacak</span>':r.c.d==='sinir'?'<span class="tag t-yel" style="margin:0 6px 0 0">Kritik</span>':''):'';
   return `<div class="urow${cl}" data-hr="${r.kod}" data-hs="${esc(r.S)}" style="grid-template-columns:1fr auto;gap:8px;cursor:pointer"><span style="min-width:0">${tg}<b>${esc(r.ad)}</b><br><span class="note" style="margin:0">${esc(x.ad)} · ${hdeg(r.c.g,b)} / ${hdeg(x.h,b)} ${esc(b)}${kalan?` · kalan ${hdeg(r.c.kal,b)}`:''}</span>${nd?'<br>'+nd:''}</span><span style="text-align:right"><b>%${Math.round(r.c.o*100)}</b><br><span style="color:var(--org);font-weight:700;font-size:12.5px">→ %${Math.round(r.c.of*100)}</span></span></div>`;
 }
