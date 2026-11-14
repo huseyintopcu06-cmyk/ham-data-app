@@ -1470,7 +1470,13 @@ function vBugun(){
   // hedefi tutması zor: önce Kampanya 1 (MDA, VC, FOOD, FAEM), sonra Kampanya 2 ve sonrası, sonra Hava; kırmızı = tutmayacak, sarı = kritik
   if(zor.length){
     s+=`<h2 style="margin:14px 0 2px">Hedefi tutması zor ${cnt(zor.length)}</h2><div class="note" style="margin:0 0 4px"><span class="tag t-red" style="margin:0 4px 0 0">Tutmayacak</span>kart formülü de bu ayki hız da hedefin %85'inin altında · <span class="tag t-yel" style="margin:0 4px 0 2px">Kritik</span>biri hedefi tutuyor ya da sınırda (örn. hız yeterli ama formül düşük)</div>`;
-    s+=grupla(zor,(a,b)=>((hedefDz(a)==='k'?0:1)-(hedefDz(b)==='k'?0:1))||a.c.of-b.c.of,true);
+    // neden etiketleri (filtre): Tümü · Düşük tempo · Stok yetersiz · Satış yok · Promotör yok
+    const nd=new Map(zor.map(r=>[r,hedefNeden(r).map(o=>o.t)]));
+    const FT=[['','Tümü',()=>true],['tempo','Düşük tempo',t=>t.some(x=>/^Tempo (düşük|yetmiyor)/.test(x))],['stok','Stok yetersiz',t=>t.some(x=>/^Stok (yetersiz|yok)/.test(x))],['satis','Satış yok',t=>t.includes('Satış yok')],['prom','Promotör yok',t=>t.includes('Promotör yok')]];
+    const cf=FT.find(f=>f[0]===sel.bzf)||FT[0], sy=f=>zor.filter(r=>f[2](nd.get(r))).length;
+    s+=chips(FT.filter(f=>f[0]===''||sy(f)||f[0]===cf[0]).map(f=>[f[0],`${f[1]} · ${sy(f)}`]),cf[0],'bzf',true);
+    const zf=zor.filter(r=>cf[2](nd.get(r)));
+    s+=zf.length?grupla(zf,(a,b)=>((hedefDz(a)==='k'?0:1)-(hedefDz(b)==='k'?0:1))||a.c.of-b.c.of,true):'<div class="msg">Bu etikette satır yok.</div>';
   }
   s+=sec('Stoğu biten (açık sipariş dahil, bu ay satış yapmış)',V.biten.length,V.biten.map(x=>stokUr(x.m,x.k,false)));
   const yt=V.yet.map(x=>({m:x.m,k:x.k,t:x.k.reduce((a,k)=>a+stokEks(x.m,k),0)})).sort((a,b)=>b.t-a.t);
