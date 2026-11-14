@@ -1409,7 +1409,7 @@ function bugunVeri(rg,n){
 }
 const stokEks=(m,k)=>{const ng=m.k[k].bas.filter(v=>typeof v==='number'&&v<0); return ng.length?-Math.min(...ng):0};
 const stokTag=(k,q)=>`<span class="tag t-org" style="margin:0 0 0 3px">${esc(KLAB[k]||k)}${q?' −'+nf(q):''}</span>`;
-const stokUr=(m,k,q)=>`<div class="urow" data-mk="${m.kod}"><span>${esc(m.ad)}</span><span>${k.map(x=>stokTag(x,q?stokEks(m,x):0)).join('')}</span></div>`;
+const stokUr=(m,k,q)=>`<div class="urow" data-mk="${m.kod}"><span>${esc(m.ad)}</span><span style="text-align:right">${k.map(x=>{const c=m.k[x]; return `<div style="margin:1px 0">${stokTag(x,q?stokEks(m,x):0)} <small style="color:var(--mut)">stok ${nf(c.sat)} + sipariş ${nf(c.gel)}</small></div>`}).join('')}</span></div>`;
 const stokCnt=n=>`<span style="color:var(--mut);font-weight:400">· ${n}</span>`;
 const stokSec=(t,tot,rows)=>tot?`<div class="card dep"><div class="bdh">${t} ${stokCnt(tot)}</div>${rows.join('')}</div>`:'';
 function urunMag(u,sag,st){   // ürün satırı + altında mağaza adları (yanlarında küçük not)
