@@ -875,7 +875,7 @@ function yorumMag(m,k){
   if(ux){
     const cats=(KATVERI[k]||[]).map(c=>U.k.indexOf(c)).filter(i=>i>=0);
     const rows=(ux.byKod.get(m.kod)||[]).filter(r=>cats.includes(r[2]));
-    const oos=rows.filter(r=>r[7]>=2&&r[5]<=0).sort((a,b)=>b[7]-a[7]);
+    const oos=rows.filter(r=>r[7]>=2&&r[5]+r[6]<=0).sort((a,b)=>b[7]-a[7]);
     if(oos.length)o.push(`Stoksuz çok satan: ${oos.slice(0,2).map(r=>modelAd(U.u[r[0]])).join(', ')}${oos.length>2?' +'+(oos.length-2):''}: sipariş/transfer`);
     const dead=rows.filter(r=>r[3]===0&&r[7]===0&&r[5]>0).reduce((s,r)=>s+r[5],0);
     if(dead>=5)o.push(`${dead} adet satmayan stok: teşhir/fiyat`);
@@ -975,7 +975,7 @@ function urunIdx(){
 function stoksuzCokSatan(bolge){   // geçen ay ≥2 satan ama satılabilir stoğu olmayan (ürün × mağaza)
   const U=D.urunler; if(!U)return null;
   const agg=new Map(); let cift=0;
-  U.r.forEach(r=>{const m=U.m[r[1]]; if(!m||m[1]==='ONLINE'||(bolge&&m[1]!==bolge))return; if(r[7]>=2&&r[5]<=0){cift++;const a=agg.get(r[0])||{u:r[0],g:0,n:0,kod:[],st:[]};a.g+=r[7];a.n++;a.kod.push(r[1]);a.st.push([r[1],r[7]]);agg.set(r[0],a)}});
+  U.r.forEach(r=>{const m=U.m[r[1]]; if(!m||m[1]==='ONLINE'||(bolge&&m[1]!==bolge))return; if(r[7]>=2&&r[5]+r[6]<=0){cift++;const a=agg.get(r[0])||{u:r[0],g:0,n:0,kod:[],st:[]};a.g+=r[7];a.n++;a.kod.push(r[1]);a.st.push([r[1],r[7]]);agg.set(r[0],a)}});
   return {cift,liste:[...agg.values()].sort((a,b)=>b.g-a.g)};
 }
 
@@ -1009,7 +1009,7 @@ function vMagDetay(kod){
   const ux=urunIdx();
   if(ux){
     const rows=ux.byKod.get(kod)||[], U=D.urunler;
-    const oos=rows.filter(r=>r[7]>=2&&r[5]<=0).sort((a,b)=>b[7]-a[7]).slice(0,8);
+    const oos=rows.filter(r=>r[7]>=2&&r[5]+r[6]<=0).sort((a,b)=>b[7]-a[7]).slice(0,8);
     const dead=rows.filter(r=>r[3]===0&&r[7]===0&&r[5]>0).sort((a,b)=>b[5]-a[5]).slice(0,8);
     if(oos.length)s+='<h2>Stoksuz çok satan</h2><div class="card dep">'+oos.map(r=>`<div class="urow"><span>${esc(U.u[r[0]])}${artI(r[0])}</span><span>geçen ay ${r[7]}</span></div>`).join('')+'</div>';
     const biten=rows.map(r=>[r,r[3]>=2&&r[5]>0?stokGun(r[3],r[5],r[7]):null]).filter(z=>z[1]!=null&&z[1]<=7).sort((a,b)=>a[1]-b[1]||b[0][3]-a[0][3]).slice(0,12);
@@ -1376,7 +1376,7 @@ function hrSatir(r,kalan,sev){   // sev: tutmayacak (kırmızı) / kritik (sarı
 function bugunVeri(rg,n){
   const ms=magList().arr.filter(m=>m.bolge!=='ONLINE'&&(!rg||m.bolge===rg)), biten=[], yet=[];
   ms.forEach(m=>{const b=[], y=[];
-    KS.forEach(k=>{const x=m.k[k]; if(!x)return; if(x.sat!=null&&x.sat<=0&&x.main>0)b.push(k); if(x.bas.some(v=>typeof v==='number'&&v<0))y.push(k)});
+    KS.forEach(k=>{const x=m.k[k]; if(!x)return; if(x.sat!=null&&x.sat+N(x.gel)<=0&&x.main>0)b.push(k); if(x.bas.some(v=>typeof v==='number'&&v<0))y.push(k)});
     if(b.length)biten.push({m,k:b}); if(y.length)yet.push({m,k:y})});
   biten.sort((a,b)=>b.m.top-a.m.top); yet.sort((a,b)=>b.m.top-a.m.top);
   let sifir=null; if(P){const B=magList(P).map; sifir=ms.filter(m=>{const p=B.get(m.kod); return p&&m.top-p.top<=0})}
@@ -1414,15 +1414,15 @@ function vBugun(){
       ['MDA','VC','FOOD','FAEM','Hava'].forEach(dp=>{const l=gl.filter(r=>kampGrup(r)[0]===dp).sort(srt); if(l.length)s+=sec(dp==='Hava'?'Hava temizleme':dp,l.length,l.map(r=>hrSatir(r,false,true)))});
     });
   }
-  s+=sec('Stoğu biten (bu ay satış yapmış)',V.biten.length,V.biten.map(x=>ur(x.m,x.k,false)));
+  s+=sec('Stoğu biten (açık sipariş dahil, bu ay satış yapmış)',V.biten.length,V.biten.map(x=>ur(x.m,x.k,false)));
   const yt=V.yet.map(x=>({m:x.m,k:x.k,t:x.k.reduce((a,k)=>a+eks(x.m,k),0)})).sort((a,b)=>b.t-a.t);
   s+=sec('Ay sonuna yetmeyen stok (eksik adet)',yt.length,yt.map(x=>ur(x.m,x.k,true)));
   if(V.sifir)s+=sec('Son rapordan beri satış yapmayan',V.sifir.length,V.sifir.map(m=>`<div class="urow" data-mk="${m.kod}"><span>${esc(m.ad)}</span><span style="color:var(--mut)">${esc(tc(m.bolge))}</span></div>`));
   const z=stoksuzCokSatan(rg||'');
-  if(z&&z.liste.length)s+=sec('Stoksuz çok satan ürün (mağazanın geçen ay adedi yanında)',z.liste.length,z.liste.map(a=>`<div style="border-top:1px solid var(--line);padding:7px 0 6px"><div class="urow" data-ara="${a.u}" style="border-top:0;padding:0;cursor:pointer"><span><b>${esc(D.urunler.u[a.u])}</b></span><span style="color:var(--mut)">${a.n} mağaza · geçen ay ${a.g} adet</span></div><div class="note" style="margin:3px 0 0">${a.st.slice().sort((p,q)=>q[1]-p[1]).map(([k,g])=>{const m=MLm.get(k);return `<a class="lnk" data-mk="${k}">${esc(m?m.ad:k)}</a> <small>${g}</small>`}).join(' · ')}</div></div>`));
+  if(z&&z.liste.length)s+=sec('Stoksuz çok satan ürün (stok + açık sipariş 0; mağazanın geçen ay adedi yanında)',z.liste.length,z.liste.map(a=>`<div style="border-top:1px solid var(--line);padding:7px 0 6px"><div class="urow" data-ara="${a.u}" style="border-top:0;padding:0;cursor:pointer"><span><b>${esc(D.urunler.u[a.u])}</b></span><span style="color:var(--mut)">${a.n} mağaza · geçen ay ${a.g} adet</span></div><div class="note" style="margin:3px 0 0">${a.st.slice().sort((p,q)=>q[1]-p[1]).map(([k,g])=>{const m=MLm.get(k);return `<a class="lnk" data-mk="${k}">${esc(m?m.ad:k)}</a> <small>${g}</small>`}).join(' · ')}</div></div>`));
   s+=sec('Hedefe en yakın',V.nyak,V.yakin.map(r=>hrSatir(r,true,false)));
   if(s.length===n0)s+='<div class="msg">Bugün acil görünen bir şey yok.</div>';
-  s+='<div class="note">Stoğu biten: satılabilir stok 0 ya da altı ve bu ay satış var · Hedef durumu Hedef Kontrol dosyasına göre (tahmin: kart formülü) · satırlara dokun: kart / mağaza</div>';
+  s+='<div class="note">Stoğu biten: satılabilir stok + açık sipariş 0 ya da altı ve bu ay satış var · Ay sonuna yetmeyen stok: stok + açık sipariş − kalan tahmini satış · Hedef durumu Hedef Kontrol dosyasına göre (tahmin: kart formülü) · satırlara dokun: kart / mağaza</div>';
   return s;
 }
 /* bölge karnesi: tek resim (Hedef Gerçekleştirme Kartı ile aynı görsel dil), paylaşım #hz katmanından */
@@ -1503,7 +1503,7 @@ function karneResim(rg){
     });
     y+=LH+.25;
   }
-  T(Mg,y,`Kaynak: MediaMarkt sell-out · ${D.donem||''}. İHS = bölgenin Türkiye fiziksel satışındaki payı. Hedef tahmini: kart formülü, gerçekleşenin altına inmez.\nStoğu biten: satılabilir stok 0 ya da altı ve bu ay satışı olan mağaza.`,9,MUT,'left','SemiBold','top');
+  T(Mg,y,`Kaynak: MediaMarkt sell-out · ${D.donem||''}. İHS = bölgenin Türkiye fiziksel satışındaki payı. Hedef tahmini: kart formülü, gerçekleşenin altına inmez.\nStoğu biten: satılabilir stok + açık sipariş 0 ya da altı ve bu ay satışı olan mağaza.`,9,MUT,'left','SemiBold','top');
   const dt=vt.slice(0,5);
   return {c,ad:`${ad} Karne${dt?' '+dt:''}.png`,t:`${ad} · Bölge karnesi · ${vt}`};
 }
@@ -1832,7 +1832,7 @@ function paylasMetin(kind,arg){
     const m=magList().map.get(arg); if(!m)return '';
     const U=D.urunler, ux=urunIdx(); let t='';
     if(ux){
-      const oos=(ux.byKod.get(arg)||[]).filter(r=>r[7]>=2&&r[5]<=0).sort((a,b)=>b[7]-a[7]).slice(0,25);
+      const oos=(ux.byKod.get(arg)||[]).filter(r=>r[7]>=2&&r[5]+r[6]<=0).sort((a,b)=>b[7]-a[7]).slice(0,25);
       if(oos.length)t+='\nStoksuz çok satan (geçen ay satışı):\n'+oos.map(r=>`• ${U.u[r[0]]}${U.a&&U.a[r[0]]?' · Artikel: '+U.a[r[0]]:''} · ${r[7]} adet${r[6]>0?' · açık sipariş '+r[6]:''}`).join('\n')+'\n';
     }
     Object.keys(IHT).forEach(tip=>{
