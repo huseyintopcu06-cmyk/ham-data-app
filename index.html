@@ -1468,11 +1468,24 @@ function vBugun(){
   return s;
 }
 /* Stok sayfası: mağaza satırı yerinde açılır (kategori bazında stok, açık sipariş, modeller); mağaza sayfasına gitmek isteğe bağlı */
-function stokDet(m,ks,q){
-  const tags=ks.map(x=>stokTag(x,q?stokEks(m,x):0)).join('');
-  const body=ks.map(k=>{const x=m.k[k], e=stokEks(m,k);
-    return `<div class="bdh" style="margin-top:8px">${esc(KLAB[k]||k)}${e?` · <span class="neg">ay sonuna ${nf(e)} adet eksik</span>`:''}</div><div class="g4"><div><small>Sell-out</small><b>${nf(x.main)}</b></div><div><small>Tahmin</small><b class="or">${x.fc!=null?nf(x.fc):'–'}</b></div><div><small>Satılabilir stok</small><b>${x.sat!=null?nf(x.sat):'–'}</b></div><div><small>Açık sipariş</small><b>${nf(x.gel)}</b></div></div>${modelTablo(m.kod,KATVERI[k])}`}).join('');
-  return `<details style="border-top:1px solid var(--line)"><summary style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;font-size:13px;cursor:pointer;list-style:none"><span>${esc(m.ad)}</span><span>${tags} <span style="color:var(--mut)">▾</span></span></summary><div style="padding:0 0 8px">${body}<div style="margin-top:6px"><a class="lnk" data-mk="${m.kod}">Mağaza sayfasını aç ›</a></div></div></details>`;
+/* Stok projeksiyonu: açık sipariş en geç ayın 17'sinde mağazada varsayılır.
+   ay sonu stok = satılabilir + açık sipariş − kalan tahmini satış · 17'ye kadar eksik = (günlük beklenen satış × 17'ye kalan gün) − satılabilir stok */
+function ayGun(){
+  const m=String(D.donem||'').match(/(\d+)(?:\s*-\s*(\d+))?\s+(\S+)\s+(\d{4})/), ay=m?AYNO[m[3].toLocaleLowerCase('tr')]:0;
+  return {gun:donemGun(),top:ay?new Date(+m[4],ay,0).getDate():30};
+}
+function stokProj(x){
+  const {gun,top}=ayGun(), kal=Math.max(top-gun,1), ks=x.fc!=null?Math.max(x.fc-x.main,0):0, r=ks/kal, sat=Math.max(N(x.sat),0), gel=N(x.gel), d17=Math.max(17-gun,0);
+  return {son:sat+gel-ks, ks, r, d17, ek17:d17>0?Math.ceil(Math.max(r*d17-sat,0)):0, biter:r>0?gun+sat/r:null, top};
+}
+/* Stok sayfası: mağaza satırı yerinde açılır (kategori bazında stok, açık sipariş, projeksiyon, modeller); mağaza sayfasına gitmek isteğe bağlı */
+function stokDet(m,ks,q,fn){
+  fn=fn||stokEks;
+  const tags=ks.map(x=>stokTag(x,q?fn(m,x):0)).join('');
+  const body=ks.map(k=>{const x=m.k[k], e=stokEks(m,k), pj=stokProj(x);
+    return `<div class="bdh" style="margin-top:8px">${esc(KLAB[k]||k)}${e?` · <span class="neg">ay sonuna ${nf(e)} adet eksik</span>`:''}</div><div class="g4"><div><small>Sell-out</small><b>${nf(x.main)}</b></div><div><small>Tahmin</small><b class="or">${x.fc!=null?nf(x.fc):'–'}</b></div><div><small>Satılabilir stok</small><b>${x.sat!=null?nf(x.sat):'–'}</b></div><div><small>Açık sipariş</small><b>${nf(x.gel)}</b></div></div>
+      <div class="g4" style="margin-top:6px"><div><small>Ay sonu stok (tahmini)</small><b class="${pj.son<0?'neg':''}">${nf(pj.son)}</b></div><div><small>Ayın 17'sine kadar</small><b class="${pj.ek17>0?'or':''}">${pj.d17>0?(pj.ek17>0?'−'+nf(pj.ek17)+' eksik':'yeter'):'–'}</b></div><div><small>Stok biter</small><b>${pj.biter==null?'–':pj.biter>pj.top?'ay sonrası':'ayın '+Math.round(pj.biter)+'. günü'}</b></div><div><small>Kalan tah. satış</small><b>${nf(pj.ks)}</b></div></div>${modelTablo(m.kod,KATVERI[k])}`}).join('');
+  return `<details style="border-top:1px solid var(--line)"><summary style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;font-size:13px;cursor:pointer;list-style:none"><span>${esc(m.ad)}</span><span>${tags} <span style="color:var(--mut)">▾</span></span></summary><div style="padding:0 0 8px">${body}<div class="note" style="margin:6px 0 0">Açık sipariş en geç ayın 17'sinde mağazada varsayıldı. Ay sonu stok = satılabilir + açık sipariş − kalan tahmini satış. "Stok biter": satılabilir stok beklenen günlük satışla ne zaman tükenir (siparişsiz).</div><div style="margin-top:6px"><a class="lnk" data-mk="${m.kod}">Mağaza sayfasını aç ›</a></div></div></details>`;
 }
 function vStok(){
   const U=D.urunler, rg=BLG||sel.stg||'', kt=KS.includes(sel.stk)?sel.stk:'', KK=kt?[kt]:KS, ad=rg?tc(rg):'Türkiye';
@@ -1485,9 +1498,11 @@ function vStok(){
   biten.sort((a,b)=>b.m.top-a.m.top); yet.sort((a,b)=>b.t-a.t);
   let s=bolgeChips('stg',rg)+chips([['','Tümü']].concat(KS.map(k=>[k,KLAB[k]||k])),kt,'stk',true);
   s+=`<div class="note" style="margin:0 0 8px">Stok · ${esc(ad)} · ${esc(kt?(KLAB[kt]||kt):'tüm departmanlar')} · ${esc(veriTarihi(D.donem)||'')}</div>`;
-  s+=`<div class="card dep"><div class="g4"><div><small>Satılabilir stok</small><b>${nf(sat)}</b></div><div><small>Açık sipariş</small><b>${nf(gel)}</b></div><div><small>Stok + sipariş</small><b>${nf(sat+gel)}</b></div><div><small>Ay sonuna yetmeyen</small><b class="${yet.length?'neg':''}">${yet.length}<span style="font-size:12px;color:var(--mut)">/${ms.length}</span></b></div></div></div>`;
+  s+=`<div class="card dep"><div class="g4"><div><small>Satılabilir stok</small><b>${nf(sat)}</b></div><div><small>Açık sipariş</small><b>${nf(gel)}</b></div><div><small>Stok + sipariş</small><b>${nf(sat+gel)}</b></div><div><small>Ay sonuna yetmeyen</small><b class="${yet.length?'neg':''}">${yet.length}<span style="font-size:12px;color:var(--mut)">/${ms.length}</span></b></div></div><div class="note" style="margin:8px 0 0">Ay sonu stoğu (tahmini): <b>${nf(ms.reduce((a,m)=>a+KK.reduce((b,k)=>b+(m.k[k]?stokProj(m.k[k]).son:0),0),0))}</b> adet · açık sipariş en geç ayın 17'sinde mağazada varsayıldı</div></div>`;
   const n0=s.length;
   s+=stokSec('Ay sonuna yetmeyen stok (eksik adet)',yet.length,yet.map(x=>stokDet(x.m,x.k,true)));
+  const e17=ms.map(m=>{const k=KK.filter(c=>m.k[c]&&stokProj(m.k[c]).ek17>0); return k.length?{m,k,t:k.reduce((a,c)=>a+stokProj(m.k[c]).ek17,0)}:null}).filter(Boolean).sort((a,b)=>b.t-a.t);
+  s+=stokSec("Ayın 17'sine kadar stoğu yetmeyen (sipariş gelmeden biter, eksik adet)",e17.length,e17.map(x=>stokDet(x.m,x.k,true,(m,k)=>stokProj(m.k[k]).ek17)));
   s+=stokSec('Stoğu biten (açık sipariş dahil, bu ay satış yapmış)',biten.length,biten.map(x=>stokDet(x.m,x.k,false)));
   if(U){
     const cats=new Set(KK.flatMap(k=>KATVERI[k]||[]).map(c=>U.k.indexOf(c)).filter(i=>i>=0)), km=new Set(ms.map(m=>m.kod));
