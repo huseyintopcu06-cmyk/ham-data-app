@@ -1391,7 +1391,7 @@ function hedefNeden(r){   // durum satırı: promotör · tempo (ilk günlerin h
   const c=m&&cat&&m.k[cat];
   if(c&&c.sat!=null){
     const ng=c.bas.filter(v=>typeof v==='number'&&v<0);
-    if(c.sat+N(c.gel)<=0)out.push({t:'Stok yok',c:KR});
+    if(c.sat<=0)out.push({t:'Stok yok',c:N(c.gel)>0?KO:KR,s:`satılabilir stok ${nf(c.sat)} adet${N(c.gel)>0?' · '+nf(c.gel)+' açık sipariş yolda':' · açık sipariş yok'}`});
     else if(ng.length)out.push({t:'Stok yetersiz',c:KO,s:`−${nf(-Math.min(...ng))} adet eksik (açık sipariş dahil)`});
     else out.push({t:'Stok yeterli',c:KY,s:`${nf(c.sat)} adet satılabilir${N(c.gel)>0?' + '+nf(c.gel)+' açık sipariş':''}`});
   }
