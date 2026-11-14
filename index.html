@@ -1449,7 +1449,11 @@ function vBugun(){
     [[1,'Kampanya 1 hedefleri'],[2,'Kampanya 2 ve sonrası'],[0,'Hava temizleme · mağaza hedefi']].forEach(([n,bs])=>{
       const gl=zor.filter(r=>kampGrup(r)[1]===n); if(!gl.length)return;
       s+=`<h2 style="margin:12px 0 4px">${bs} ${cnt(gl.length)}</h2>`;
-      ['MDA','VC','FOOD','FAEM','Hava'].forEach(dp=>{const l=gl.filter(r=>kampGrup(r)[0]===dp).sort(srt); if(l.length)s+=sec(dp==='Hava'?'Hava temizleme':dp,l.length,l.map(r=>hrSatir(r,false,true)))});
+      // başlık: Hedef Kontrol dosyasındaki sayfa adı + kategorisi (çift promo sayfaları "çift kategorisi")
+      const SIRA=['MDA','MDA (çift promo)','MDA + Süpürge','Süpürge + KEA','Süpürge + KEA (çift promo)','Süpürge + FAEM','KEA','FAEM + KEA','Hava Temizleme'], DS=['MDA','VC','FOOD','FAEM','Hava'], kt=[];
+      gl.forEach(r=>{const dp=kampGrup(r)[0], key=r.S+'|'+dp; if(!kt.some(x=>x.key===key))kt.push({key,sn:r.S,dp})});
+      kt.sort((a,b)=>(DS.indexOf(a.dp)-DS.indexOf(b.dp))||((SIRA.indexOf(a.sn)<0?99:SIRA.indexOf(a.sn))-(SIRA.indexOf(b.sn)<0?99:SIRA.indexOf(b.sn))));
+      kt.forEach(({sn,dp})=>{const l=gl.filter(r=>r.S===sn&&kampGrup(r)[0]===dp).sort(srt); s+=sec(`${esc(sn)} · ${dp}${/çift promo/.test(sn)?' çift':''} kategorisi`,l.length,l.map(r=>hrSatir(r,false,true)))});
     });
   }
   s+=sec('Stoğu biten (açık sipariş dahil, bu ay satış yapmış)',V.biten.length,V.biten.map(x=>ur(x.m,x.k,false)));
