@@ -1445,6 +1445,13 @@ function vBugun(){
   s+='<div class="note">Stoğu biten: satılabilir stok + açık sipariş 0 ya da altı ve bu ay satış var · Ay sonuna yetmeyen stok: stok + açık sipariş − kalan tahmini satış · Hedef durumu Hedef Kontrol dosyasına göre (tahmin: kart formülü) · satırlara dokun: kart / mağaza</div>';
   return s;
 }
+/* Stok sayfası: mağaza satırı yerinde açılır (kategori bazında stok, açık sipariş, modeller); mağaza sayfasına gitmek isteğe bağlı */
+function stokDet(m,ks,q){
+  const tags=ks.map(x=>stokTag(x,q?stokEks(m,x):0)).join('');
+  const body=ks.map(k=>{const x=m.k[k], e=stokEks(m,k);
+    return `<div class="bdh" style="margin-top:8px">${esc(KLAB[k]||k)}${e?` · <span class="neg">ay sonuna ${nf(e)} adet eksik</span>`:''}</div><div class="g4"><div><small>Sell-out</small><b>${nf(x.main)}</b></div><div><small>Tahmin</small><b class="or">${x.fc!=null?nf(x.fc):'–'}</b></div><div><small>Satılabilir stok</small><b>${x.sat!=null?nf(x.sat):'–'}</b></div><div><small>Açık sipariş</small><b>${nf(x.gel)}</b></div></div>${modelTablo(m.kod,KATVERI[k])}`}).join('');
+  return `<details style="border-top:1px solid var(--line)"><summary style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;font-size:13px;cursor:pointer;list-style:none"><span>${esc(m.ad)}</span><span>${tags} <span style="color:var(--mut)">▾</span></span></summary><div style="padding:0 0 8px">${body}<div style="margin-top:6px"><a class="lnk" data-mk="${m.kod}">Mağaza sayfasını aç ›</a></div></div></details>`;
+}
 function vStok(){
   const U=D.urunler, rg=BLG||sel.stg||'', kt=KS.includes(sel.stk)?sel.stk:'', KK=kt?[kt]:KS, ad=rg?tc(rg):'Türkiye';
   const ms=magList().arr.filter(m=>m.bolge!=='ONLINE'&&(!rg||m.bolge===rg));
@@ -1458,8 +1465,8 @@ function vStok(){
   s+=`<div class="note" style="margin:0 0 8px">Stok · ${esc(ad)} · ${esc(kt?(KLAB[kt]||kt):'tüm departmanlar')} · ${esc(veriTarihi(D.donem)||'')}</div>`;
   s+=`<div class="card dep"><div class="g4"><div><small>Satılabilir stok</small><b>${nf(sat)}</b></div><div><small>Açık sipariş</small><b>${nf(gel)}</b></div><div><small>Stok + sipariş</small><b>${nf(sat+gel)}</b></div><div><small>Ay sonuna yetmeyen</small><b class="${yet.length?'neg':''}">${yet.length}<span style="font-size:12px;color:var(--mut)">/${ms.length}</span></b></div></div></div>`;
   const n0=s.length;
-  s+=stokSec('Ay sonuna yetmeyen stok (eksik adet)',yet.length,yet.map(x=>stokUr(x.m,x.k,true)));
-  s+=stokSec('Stoğu biten (açık sipariş dahil, bu ay satış yapmış)',biten.length,biten.map(x=>stokUr(x.m,x.k,false)));
+  s+=stokSec('Ay sonuna yetmeyen stok (eksik adet)',yet.length,yet.map(x=>stokDet(x.m,x.k,true)));
+  s+=stokSec('Stoğu biten (açık sipariş dahil, bu ay satış yapmış)',biten.length,biten.map(x=>stokDet(x.m,x.k,false)));
   if(U){
     const cats=new Set(KK.flatMap(k=>KATVERI[k]||[]).map(c=>U.k.indexOf(c)).filter(i=>i>=0)), km=new Set(ms.map(m=>m.kod));
     const R=U.r.filter(r=>km.has(r[1])&&cats.has(r[2]));
