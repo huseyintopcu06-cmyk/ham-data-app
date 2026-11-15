@@ -975,7 +975,7 @@ function magList(DD){
     });
   });
   const dpo=DD.urunler&&DD.urunler.depo;
-  if(dpo)dpo.c.forEach(ci=>{   // Ankara mağazaları: MDA/Ankastre stoğu = ortak depo, kalan tahmini satış payına göre bölünür
+  if(dpo&&!dpo.ok)dpo.c.forEach(ci=>{   // Ankara mağazaları: MDA/Ankastre stoğu = ortak depo, kalan tahmini satış payına göre bölünür
     const cn=DD.urunler.k[ci]; let S=0, G=0; dpo.r.forEach(d=>{if(d[1]===ci){S+=d[3];G+=d[4]}});
     const L=dpo.k.map(k=>mp.get(k)).filter(m=>m&&m.k[cn]); if(!L.length)return;
     const ks=L.map(m=>{const x=m.k[cn]; return x.fc!=null?Math.max(x.fc-x.main,0):0}), F=ks.reduce((a,b)=>a+b,0);
