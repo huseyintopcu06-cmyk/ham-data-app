@@ -41,6 +41,7 @@ nav{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;background:var
 nav{overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}nav::-webkit-scrollbar{display:none}
 nav button{flex:0 0 11.5%;min-width:44px;background:none;border:0;padding:7px 0 6px;font-size:9.5px;font-weight:600;letter-spacing:-.2px;color:var(--mut);display:flex;flex-direction:column;align-items:center;gap:1px;--c:#4F8EF7}
 nav button b{font-size:21px;line-height:1.1;font-weight:700;color:var(--c)}
+nav button.al{position:relative}nav button.al::after{content:'';position:absolute;top:5px;right:calc(50% - 20px);width:9px;height:9px;border-radius:50%;background:#e5484d;box-shadow:0 0 0 2px var(--card)}
 nav button.on{color:var(--ink);box-shadow:inset 0 3px 0 var(--c);background:color-mix(in srgb,var(--c) 12%,transparent)}
 nav button.on{color:var(--navy);font-weight:700}
 @media(prefers-color-scheme:dark){nav button.on{color:#8db6ff}}
@@ -291,6 +292,7 @@ main{padding-bottom:calc(160px + env(safe-area-inset-bottom))}
 <button style="--c:#8BC34A" data-t="daha" data-s="hedef"><b>◎</b>Hedef</button>
 <button style="--c:#22B8E6" data-t="daha" data-s="per"><b>☺</b>Personel</button>
 <button style="--c:#FB7B3C" data-t="daha" data-s="img"><b>▣</b>Sıralama Görsel</button>
+<button style="--c:#94A3B8" data-t="daha" data-s="gunluk" id="navgun"><b>⟳</b>Güncelleme</button>
 </nav>
 <div id="tp"><div class="sheet"><h3>Mod</h3><div class="modes" id="tpm"></div><h3>Renk</h3><div class="sws" id="tps"></div></div></div>
 <div id="toast"></div>
@@ -1805,6 +1807,20 @@ function karneAc(rg){
     $('#hzm').style.display='none'; $('#hz').style.display='block'; $('#hz').scrollTop=0;
   },'image/png');
 }
+/* ---- Güncelleme günlüğü: veri ne zaman, nasıl güncellendi; hata varsa nedeni (ham-data-raporlari/_guncelleme_gunlugu.json) ---- */
+function vGunluk(){
+  const G=(D.gunluk||[]);
+  const SM={ok:['#2b9a5a','Tamam'],bilgi:['#4F8EF7','Bilgi'],uyari:['#e8a317','Uyarı'],hata:['#e5484d','Hata']};
+  const ay=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+  const tf=t=>{const m=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(t||'');return m?`${+m[3]} ${ay[+m[2]-1]} ${m[1]} · ${m[4]}:${m[5]}`:esc(t||'')};
+  let s=`<div class="note" style="margin:0 0 8px">Verinin ne zaman güncellendiği, rapor üretilemediyse nedeni. En yeni üstte · saatler Türkiye saati</div>`;
+  const son=G.find(e=>e.tur==='ok'||(e.tur==='bilgi'&&/yayınlandı/.test(e.baslik)));
+  s+=`<div class="card dep"><div class="g4" style="grid-template-columns:repeat(2,1fr)"><div><small>Uygulamadaki rapor</small><b>${esc(D.donem||'')}</b></div><div><small>Son güncelleme</small><b style="font-size:15px">${son?tf(son.t):'–'}</b></div></div></div>`;
+  if(!G.length)return s+'<div class="msg">Henüz kayıt yok. Bir sonraki güncellemeden itibaren burada görünecek.</div>';
+  s+=G.map(e=>{const c=(SM[e.tur]||SM.bilgi);
+    return `<div class="card dep" style="border-left:5px solid ${c[0]}"><div class="row" style="justify-content:space-between;gap:8px;align-items:baseline"><b>${esc(e.baslik)}</b><small style="color:${c[0]};font-weight:700;flex:none">${c[1]}</small></div><div class="note" style="margin:2px 0 6px">${tf(e.t)}</div>${(e.satirlar||[]).map(x=>`<div style="font-size:13px;line-height:1.4;padding:3px 0;border-top:1px solid var(--line)">${esc(x)}</div>`).join('')}</div>`}).join('');
+  return s;
+}
 function vDaha(){
   const sub=sel.dh||'';
   const back=sel.dhnav?'':'<div class="row" style="margin-bottom:8px"><button class="chip" data-back="dh">← Geri</button></div>';
@@ -1816,6 +1832,7 @@ function vDaha(){
   if(sub==='per')return back+vPer();
   if(sub==='ihtiyac')return back+vIht();
   if(sub==='brand')return back+vBrand();
+  if(sub==='gunluk')return back+vGunluk();
   return [['stok','▥','Stok','Ay sonuna yetmeyen, biten ve bitmek üzere olan stoklar; stoksuz çok satan ve satmayan ürünler'],
           ['bugun','✔','Bugün ne yapmalı','Seçili bölge için: tutması zor hedefler, biten stoklar, satış yapmayanlar; bölge karnesi görseli'],
           ['brand','▤','BRAND','Aylık BRAND tabloları: departman bazlı TR satışları (2025–2026)'],
@@ -2312,6 +2329,7 @@ function vTrf(){
 function render(){
   if(!D)return;
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab&&(tab!=='daha'||(b.dataset.s||'')===(sel.dh||''))));
+  const ng=$('#navgun'); if(ng){const g0=D.gunluk&&D.gunluk[0]; ng.classList.toggle('al',!!(g0&&/^(hata|uyari)$/.test(g0.tur)))}
   const on=document.querySelector('nav button.on'); if(on&&on.scrollIntoView)on.scrollIntoView({inline:'nearest',block:'nearest'});
   if(BLG){BKEYS.forEach(k=>{sel[k]=BLG}); if(sel.rg==null)sel.rg=BLG}
   const y=window.scrollY; XL=null;
