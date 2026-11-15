@@ -1552,7 +1552,24 @@ function stokDet(m,ks,q,fn){
       <div class="g4" style="margin-top:6px"><div><small>Ay sonu stok (tahmini)</small><b class="${pj.son<0?'neg':''}">${nf(pj.son)}</b></div><div><small>Ayın 17'sine kadar</small><b class="${pj.ek17>0?'or':''}">${pj.d17>0?(pj.ek17>0?'−'+nf(pj.ek17)+' eksik':'yeter'):'–'}</b></div><div><small>Stok biter</small><b>${pj.biter==null?'–':pj.biter>pj.top?'ay sonrası':'ayın '+Math.round(pj.biter)+'. günü'}</b></div><div><small>Kalan tah. satış</small><b>${nf(pj.ks)}</b></div></div>${modelTablo(m.kod,KATVERI[k])}`}).join('');
   return `<details style="border-top:1px solid var(--line)"><summary style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;font-size:13px;cursor:pointer;list-style:none"><span>${esc(m.ad)}</span><span>${tags} <span style="color:var(--mut)">▾</span></span></summary><div style="padding:0 0 8px">${body}<div class="note" style="margin:6px 0 0">Açık sipariş en geç ayın 17'sinde mağazada varsayıldı. Ay sonu stok = satılabilir + açık sipariş − kalan tahmini satış. "Stok biter": satılabilir stok beklenen günlük satışla ne zaman tükenir (siparişsiz).</div><div style="margin-top:6px"><a class="lnk" data-mk="${m.kod}">Mağaza sayfasını aç ›</a></div></div></details>`;
 }
+/* Stok sekmesi: mağaza arama — o mağazanın her departmanında satış, tahmin, stok, açık sipariş ve ay sonu stoğu */
+function stokAra(q){
+  const L=magList().arr.filter(m=>m.bolge!=='ONLINE'&&(!BLG||m.bolge===BLG)&&fold(m.ad+' '+m.kod).includes(q)).sort((a,b)=>b.top-a.top).slice(0,8);
+  if(!L.length)return '<div class="msg">Bu aramayla mağaza bulunamadı.</div>';
+  const gr='display:grid;grid-template-columns:1.25fr repeat(5,1fr);gap:4px;font-size:12px;align-items:center;padding:5px 0;border-top:1px solid var(--line)';
+  const baslik=`<div style="${gr};border-top:0;color:var(--mut);font-size:11px"><span></span><span style="text-align:right">Satış</span><span style="text-align:right">Tahmin</span><span style="text-align:right">Stok</span><span style="text-align:right">Sipariş</span><span style="text-align:right">Ay sonu</span></div>`;
+  return `<div class="note" style="margin:0 0 8px">${L.length} mağaza · Stok = satılabilir · Sipariş = açık sipariş · Ay sonu = stok + sipariş − kalan tahmini satış · ${esc(veriTarihi(D.donem)||'')}</div>`+L.map(m=>{
+    const T=[0,0,0,0,0]; let tf=true, depo=false;
+    const rows=KS.filter(k=>m.k[k]).map(k=>{const x=m.k[k], pj=stokProj(x), v=[N(x.main),x.fc!=null?Math.round(x.fc):null,N(x.sat),N(x.gel),Math.round(pj.son)];
+      v.forEach((a,i)=>{if(a!=null)T[i]+=a}); if(x.fc==null)tf=false; if(x.depo)depo=true;
+      return `<div style="${gr}"><span>${esc(KLAB[k]||k)}</span><span style="text-align:right">${nf(v[0])}</span><span class="or" style="text-align:right">${v[1]==null?'–':nf(v[1])}</span><span style="text-align:right">${x.sat==null?'–':nf(v[2])}</span><span style="text-align:right">${nf(v[3])}</span><span style="text-align:right" class="${v[4]<0?'neg':''}">${nf(v[4])}</span></div>`}).join('');
+    return `<div class="card dep" data-mk="${m.kod}"><div class="row" style="justify-content:space-between;gap:8px"><b>${esc(m.ad)}</b><small style="color:var(--mut)">${esc(m.kod)} ›</small></div><div class="note" style="margin:2px 0 6px">${esc(m.spv)} · ${tc(m.bolge)}</div>${baslik}${rows}<div style="${gr};font-weight:700"><span>Toplam</span><span style="text-align:right">${nf(T[0])}</span><span style="text-align:right">${tf?nf(T[1]):'–'}</span><span style="text-align:right">${nf(T[2])}</span><span style="text-align:right">${nf(T[3])}</span><span style="text-align:right" class="${T[4]<0?'neg':''}">${nf(T[4])}</span></div>${depo?'<div class="note" style="margin:6px 0 0">MDA ve Ankastre stoğu ortak Ankara deposundan (payı) hesaplandı.</div>':''}</div>`}).join('');
+}
 function vStok(){
+  const box=`<input type="search" id="sq" placeholder="Mağaza ara: stok, satış, açık sipariş…" value="${esc(sel.sq||'')}">`, q=fold(sel.sq||'').trim();
+  return box+(q?stokAra(q):vStok0());
+}
+function vStok0(){
   const U=D.urunler, rg=BLG||sel.stg||'', kt=KS.includes(sel.stk)?sel.stk:'', KK=kt?[kt]:KS, ad=rg?tc(rg):'Türkiye';
   const ms=magList().arr.filter(m=>m.bolge!=='ONLINE'&&(!rg||m.bolge===rg));
   const sm=f=>KK.reduce((a,k)=>a+ms.reduce((b,m)=>b+(m.k[k]?N(m.k[k][f]):0),0),0), sat=sm('sat'), gel=sm('gel');
@@ -2188,6 +2205,7 @@ function render(){
   const y=window.scrollY; XL=null;
   M.innerHTML=({ozet:vOzet,kat:vKat,mag:vMag,urun:vUrun,trf:vTrf,daha:vDaha}[tab]||vOzet)();
   bindChips();
+  const sqi=$('#sq'); if(sqi)sqi.oninput=()=>{sel.sq=sqi.value;const p=sqi.selectionStart;render();const n=$('#sq');n.focus();n.setSelectionRange(p,p)};
   const q=$('#q'); if(q)q.oninput=()=>{sel.q=q.value;const p=q.selectionStart;render();const n=$('#q');n.focus();n.setSelectionRange(p,p)};
   const go=(t,fn)=>{tab=t;LS.set('tab',t);if(fn)fn();render();window.scrollTo(0,0)};
   M.querySelectorAll('[data-mk]').forEach(el=>el.onclick=e=>{e.stopPropagation();const k=el.dataset.mk; if(k===ANKK){toast('Ankara mağazaları MDA/Ankastre stoğunu ortak depodan kullanır');return} go('mag',()=>{sel.mk=k})});
