@@ -1565,9 +1565,28 @@ function stokAra(q){
       return `<div style="${gr}"><span>${esc(KLAB[k]||k)}</span><span style="text-align:right">${nf(v[0])}</span><span class="or" style="text-align:right">${v[1]==null?'–':nf(v[1])}</span><span style="text-align:right">${x.sat==null?'–':nf(v[2])}</span><span style="text-align:right">${nf(v[3])}</span><span style="text-align:right" class="${v[4]<0?'neg':''}">${nf(v[4])}</span></div>`}).join('');
     return `<div class="card dep" data-mk="${m.kod}"><div class="row" style="justify-content:space-between;gap:8px"><b>${esc(m.ad)}</b><small style="color:var(--mut)">${esc(m.kod)} ›</small></div><div class="note" style="margin:2px 0 6px">${esc(m.spv)} · ${tc(m.bolge)}</div>${baslik}${rows}<div style="${gr};font-weight:700"><span>Toplam</span><span style="text-align:right">${nf(T[0])}</span><span style="text-align:right">${tf?nf(T[1]):'–'}</span><span style="text-align:right">${nf(T[2])}</span><span style="text-align:right">${nf(T[3])}</span><span style="text-align:right" class="${T[4]<0?'neg':''}">${nf(T[4])}</span></div>${depo?'<div class="note" style="margin:6px 0 0">MDA ve Ankastre stoğu ortak Ankara deposundan (payı) hesaplandı.</div>':''}</div>`}).join('');
 }
+/* Stok sekmesi: ürün arama — ürün adı, model ya da artikel; toplam + mağaza dağılımı (satış, stok, sipariş) */
+function stokUrun(q){
+  const U=D.urunler; if(!U)return '';
+  const ux=urunIdx(), toks=q.split(/\s+/).filter(Boolean), rg=BLG||'', hit=new Map();
+  U.r.forEach(r=>{
+    if(!toks.every(t=>ux.ul[r[0]].includes(t)))return;
+    const m=U.m[r[1]]; if(!m||m[1]==='ONLINE'||(rg&&m[1]!==rg))return;
+    let a=hit.get(r[0]); if(!a){a={u:r[0],k:r[2],adet:0,sat:0,gel:0,rows:[]};hit.set(r[0],a)}
+    a.adet+=r[3];a.sat+=r[5];a.gel+=r[6];a.rows.push(r);
+  });
+  const list=[...hit.values()].sort((a,b)=>b.adet-a.adet||b.sat-a.sat);
+  if(!list.length)return '';
+  return `<h2>Ürünler</h2><div class="note" style="margin:0 0 8px">${list.length} ürün${list.length>25?' (ilk 25)':''} · ${rg?tc(rg):'Türkiye'} · satış / satılabilir stok / açık sipariş · kartı aç: mağaza dağılımı</div>`+list.slice(0,25).map(a=>{
+    const rows=a.rows.slice().sort((x,y)=>y[3]-x[3]||y[5]-x[5]||y[6]-x[6]);
+    return `<details class="card"><summary><div class="nm"><b style="white-space:normal">${esc(U.u[a.u])}</b>${artI(a.u)}<span>${esc(U.k[a.k])}</span></div><div class="kv"><small>Satış</small><b>${nf(a.adet)}</b><span class="stk">Satılabilir stok ${nf(a.sat)}</span><span class="stk">Açık sipariş ${nf(a.gel)}</span></div></summary><div class="det" style="display:block"><div class="urow h"><span>Mağaza</span><span>Satış</span><span>Stok</span><span>Sipariş</span></div>`+
+      rows.map(r=>{const m=U.m[r[1]]||[r[1]];return `<div class="urow" data-mk="${r[1]}"><span>${esc(m[0])}</span><span>${r[3]}</span><span>${r[5]}</span><span>${r[6]}</span></div>`}).join('')+`</div></details>`}).join('');
+}
 function vStok(){
-  const box=`<input type="search" id="sq" placeholder="Mağaza ara: stok, satış, açık sipariş…" value="${esc(sel.sq||'')}">`, q=fold(sel.sq||'').trim();
-  return box+(q?stokAra(q):vStok0());
+  const box=`<input type="search" id="sq" placeholder="Mağaza veya ürün ara (ör. Forum, BCS71)…" value="${esc(sel.sq||'')}">`, q=fold(sel.sq||'').trim();
+  if(!q)return box+vStok0();
+  const st=stokAra(q), ur=q.length>=2?stokUrun(q):'', yok=st.includes('bulunamadı');
+  return box+(yok&&ur?'':st)+ur+(yok&&!ur?'':'');
 }
 function vStok0(){
   const U=D.urunler, rg=BLG||sel.stg||'', kt=KS.includes(sel.stk)?sel.stk:'', KK=kt?[kt]:KS, ad=rg?tc(rg):'Türkiye';
