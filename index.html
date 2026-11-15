@@ -1554,7 +1554,7 @@ function stokDet(m,ks,q,fn){
 }
 /* Stok sekmesi: mağaza arama — o mağazanın her departmanında satış, tahmin, stok, açık sipariş ve ay sonu stoğu */
 function stokAra(q){
-  const L=magList().arr.filter(m=>m.bolge!=='ONLINE'&&(!BLG||m.bolge===BLG)&&fold(m.ad+' '+m.kod).includes(q)).sort((a,b)=>b.top-a.top).slice(0,8);
+  const L=stokMagL(q);
   if(!L.length)return '<div class="msg">Bu aramayla mağaza bulunamadı.</div>';
   const gr='display:grid;grid-template-columns:1.25fr repeat(5,1fr);gap:4px;font-size:12px;align-items:center;padding:5px 0;border-top:1px solid var(--line)';
   const baslik=`<div style="${gr};border-top:0;color:var(--mut);font-size:11px"><span></span><span style="text-align:right">Satış</span><span style="text-align:right">Tahmin</span><span style="text-align:right">Stok</span><span style="text-align:right">Sipariş</span><span style="text-align:right">Ay sonu</span></div>`;
@@ -1566,8 +1566,8 @@ function stokAra(q){
     return `<div class="card dep" data-mk="${m.kod}"><div class="row" style="justify-content:space-between;gap:8px"><b>${esc(m.ad)}</b><small style="color:var(--mut)">${esc(m.kod)} ›</small></div><div class="note" style="margin:2px 0 6px">${esc(m.spv)} · ${tc(m.bolge)}</div>${baslik}${rows}<div style="${gr};font-weight:700"><span>Toplam</span><span style="text-align:right">${nf(T[0])}</span><span style="text-align:right">${tf?nf(T[1]):'–'}</span><span style="text-align:right">${nf(T[2])}</span><span style="text-align:right">${nf(T[3])}</span><span style="text-align:right" class="${T[4]<0?'neg':''}">${nf(T[4])}</span></div>${depo?'<div class="note" style="margin:6px 0 0">MDA ve Ankastre stoğu ortak Ankara deposundan (payı) hesaplandı.</div>':''}</div>`}).join('');
 }
 /* Stok sekmesi: ürün arama — ürün adı, model ya da artikel; toplam + mağaza dağılımı (satış, stok, sipariş) */
-function stokUrun(q){
-  const U=D.urunler; if(!U)return '';
+function stokUrunL(q){
+  const U=D.urunler; if(!U||q.length<2)return [];
   const ux=urunIdx(), toks=q.split(/\s+/).filter(Boolean), rg=BLG||'', hit=new Map();
   U.r.forEach(r=>{
     if(!toks.every(t=>ux.ul[r[0]].includes(t)))return;
@@ -1575,7 +1575,99 @@ function stokUrun(q){
     let a=hit.get(r[0]); if(!a){a={u:r[0],k:r[2],adet:0,sat:0,gel:0,rows:[]};hit.set(r[0],a)}
     a.adet+=r[3];a.sat+=r[5];a.gel+=r[6];a.rows.push(r);
   });
-  const list=[...hit.values()].sort((a,b)=>b.adet-a.adet||b.sat-a.sat);
+  return [...hit.values()].sort((a,b)=>b.adet-a.adet||b.sat-a.sat);
+}
+function stokMagL(q){return magList().arr.filter(m=>m.bolge!=='ONLINE'&&(!BLG||m.bolge===BLG)&&fold(m.ad+' '+m.kod).includes(q)).sort((a,b)=>b.top-a.top).slice(0,8)}
+/* arama sonucunu tek resim yap (paylaşım #hz katmanından) */
+function stokResim(q){
+  const U=D.urunler, ML=stokMagL(q), PL=stokUrunL(q), vt=veriTarihi(D.donem)||'', rg=BLG?tc(BLG):'Türkiye';
+  if(!ML.length&&!PL.length)return null;
+  const W=11, Mg=.35, IW=W-2*Mg, RH=.4, DET=PL.length<=3, PN=DET?PL.length:Math.min(PL.length,30);
+  const E=[5.3,6.6,7.9,9.1,10.3], EP=[0,8.5,9.5,10.3];
+  const mrows=m=>KS.filter(k=>m.k[k]);
+  let HT=.35+1.75+.3;
+  if(ML.length){HT+=.55; ML.forEach(m=>{HT+=.95+.4+mrows(m).length*RH+RH+(mrows(m).some(k=>m.k[k].depo)?.35:0)+.25})}
+  if(PN){HT+=.55; if(DET)PL.forEach(a=>{HT+=1.05+.4+Math.min(a.rows.length,15)*RH+(a.rows.length>15?.35:0)+.25}); else HT+=.95+PN*RH+.25+(PL.length>PN?.35:0)}
+  HT+=.9;
+  const U0=120, c=document.createElement('canvas'), g=c.getContext('2d'); c.width=W*U0; c.height=Math.round(HT*U0);
+  const NAVY='#16294D',NAVY2='#24407A',YEL='#FFD60A',ORG='#E8590C',RED='#E03131',BG='#EEF2F7',INK='#111827',MUT='#4B5563',LINE='#D0D7E2';
+  const FW={SemiBold:600,Bold:700,ExtraBold:800,Black:900}, up=t=>String(t).toLocaleUpperCase('tr');
+  const font=(pt,w)=>{g.font=`${FW[w||'ExtraBold']} ${pt/72*U0}px Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif`};
+  const rb=(x,y,w,h,fc,ec,r)=>{r=Math.min(r==null?.18:r,w/2,h/2);g.beginPath();const X=x*U0,Y=y*U0,Wd=w*U0,Hh=h*U0,R=r*U0;g.moveTo(X+R,Y);g.arcTo(X+Wd,Y,X+Wd,Y+Hh,R);g.arcTo(X+Wd,Y+Hh,X,Y+Hh,R);g.arcTo(X,Y+Hh,X,Y,R);g.arcTo(X,Y,X+Wd,Y,R);g.closePath();if(fc){g.fillStyle=fc;g.fill()}if(ec){g.strokeStyle=ec;g.lineWidth=1.2*U0/72;g.stroke()}};
+  const T=(x,y,s,pt,col,ha,w)=>{font(pt,w);g.fillStyle=col||INK;g.textAlign=ha||'left';g.textBaseline='middle';g.fillText(String(s),x*U0,y*U0)};
+  const tw=(s,pt,w)=>{font(pt,w);return g.measureText(s).width/U0};
+  const cut=(s,pt,w,max)=>{s=String(s);if(tw(s,pt,w)<=max)return s;while(s.length>2&&tw(s+'…',pt,w)>max)s=s.slice(0,-1);return s+'…'};
+  const hdr=(y,lab,ed)=>lab.forEach((t,i)=>T(ed?ed[i]:0,y,t,10.5,MUT,i?'right':'left','Bold'));
+  g.fillStyle=BG; g.fillRect(0,0,c.width,c.height);
+  let y=.35;
+  rb(Mg,y,IW,1.75,NAVY,null,.28); rb(Mg+.3,y+.32,1.3,.5,YEL,null,.12); T(Mg+.95,y+.57,'STOK',15,NAVY,'center','Black');
+  T(Mg+1.85,y+.57,cut(up(sel.sq||''),24,'Black',IW-5),24,'#ffffff','left','Black');
+  T(Mg+.32,y+1.2,`${rg} · ${vt}`,13,'#C9D6EE','left','Bold'); T(W-Mg-.32,y+.57,'BSH · MEDIAMARKT',12,YEL,'right','Bold');
+  y+=2.05;
+  if(ML.length){
+    T(Mg,y+.2,'MAĞAZALAR',14,NAVY,'left','Black'); y+=.55;
+    ML.forEach(m=>{
+      const R=mrows(m), dp=R.some(k=>m.k[k].depo), h=.95+.4+R.length*RH+RH+(dp?.35:0);
+      rb(Mg,y,IW,h,'#ffffff',LINE,.22);
+      T(Mg+.3,y+.4,cut(m.ad,15,'Black',6.6),15,NAVY,'left','Black'); T(W-Mg-.3,y+.4,m.kod,11,MUT,'right','Bold');
+      T(Mg+.3,y+.75,cut(`${m.spv} · ${tc(m.bolge)}`,10.5,'Bold',IW-.6),10.5,MUT,'left','Bold');
+      hdr(y+1.15,['Departman','Satış','Tahmin','Stok','Sipariş','Ay sonu'],[Mg+.3].concat(E));
+      const Tt=[0,0,0,0,0]; let tf=true;
+      R.forEach((k,i)=>{const x=m.k[k], pj=stokProj(x), v=[N(x.main),x.fc!=null?Math.round(x.fc):null,N(x.sat),N(x.gel),Math.round(pj.son)], yy=y+1.15+RH*(i+1);
+        v.forEach((a,j)=>{if(a!=null)Tt[j]+=a}); if(x.fc==null)tf=false;
+        if(i%2===0)rb(Mg+.12,yy-.19,IW-.24,.38,'#F6F8FB',null,.1);
+        T(Mg+.3,yy,up(KLAB[k]||k),12,INK,'left','Black');
+        [v[0],v[1],x.sat==null?null:v[2],v[3],v[4]].forEach((a,j)=>T(E[j],yy,a==null?'–':nf(a),12.5,j===1?ORG:j===4&&a<0?RED:INK,'right','Black'))});
+      const yt=y+1.15+RH*(R.length+1); g.fillStyle=LINE; g.fillRect((Mg+.3)*U0,(yt-.22)*U0,(IW-.6)*U0,1.5);
+      T(Mg+.3,yt,'TOPLAM',12,NAVY,'left','Black');
+      Tt.forEach((a,j)=>T(E[j],yt,j===1&&!tf?'–':nf(a),12.5,j===4&&a<0?RED:NAVY,'right','Black'));
+      if(dp)T(Mg+.3,yt+.33,'MDA ve Ankastre stoğu ortak Ankara deposundan (payı) hesaplandı.',9.5,MUT,'left','SemiBold');
+      y+=h+.25;
+    });
+  }
+  if(PN){
+    T(Mg,y+.2,'ÜRÜNLER',14,NAVY,'left','Black'); y+=.55;
+    if(DET){
+      PL.forEach(a=>{
+        const rows=a.rows.slice().sort((p,q)=>q[3]-p[3]||q[5]-p[5]||q[6]-p[6]), n=Math.min(rows.length,15), h=1.05+.4+n*RH+(rows.length>15?.35:0);
+        rb(Mg,y,IW,h,'#ffffff',LINE,.22);
+        T(Mg+.3,y+.4,cut(U.u[a.u],13,'Black',IW-.6),13,NAVY,'left','Black');
+        T(Mg+.3,y+.75,cut(`${U.a&&U.a[a.u]?'Artikel '+U.a[a.u]+' · ':''}${U.k[a.k]} · toplam satış ${nf(a.adet)} · stok ${nf(a.sat)} · sipariş ${nf(a.gel)}`,10.5,'Bold',IW-.6),10.5,MUT,'left','Bold');
+        hdr(y+1.15,['Mağaza','Satış','Stok','Sipariş'],[Mg+.3].concat(EP.slice(1)));
+        rows.slice(0,n).forEach((r,i)=>{const m=U.m[r[1]]||[r[1]], yy=y+1.15+RH*(i+1);
+          if(i%2===0)rb(Mg+.12,yy-.19,IW-.24,.38,'#F6F8FB',null,.1);
+          T(Mg+.3,yy,cut(m[0],12,'Black',5.6),12,INK,'left','Black');
+          [r[3],r[5],r[6]].forEach((v,j)=>T(EP[j+1],yy,nf(v),12.5,INK,'right','Black'))});
+        if(rows.length>n)T(Mg+.3,y+1.15+RH*(n+1)+.02,`+ ${rows.length-n} mağaza daha`,10,MUT,'left','SemiBold');
+        y+=h+.25;
+      });
+    }else{
+      const h=.95+PN*RH+(PL.length>PN?.35:0)-.0;
+      rb(Mg,y,IW,h,'#ffffff',LINE,.22); T(Mg+.3,y+.4,`${PL.length} ürün · ${rg}`,13,NAVY,'left','Black');
+      hdr(y+.75,['Ürün','Satış','Stok','Sipariş'],[Mg+.3].concat(EP.slice(1)));
+      PL.slice(0,PN).forEach((a,i)=>{const yy=y+.75+RH*(i+1);
+        if(i%2===0)rb(Mg+.12,yy-.19,IW-.24,.38,'#F6F8FB',null,.1);
+        T(Mg+.3,yy,cut(U.u[a.u],11,'Black',6.8),11,INK,'left','Black');
+        [a.adet,a.sat,a.gel].forEach((v,j)=>T(EP[j+1],yy,nf(v),12,INK,'right','Black'))});
+      if(PL.length>PN)T(Mg+.3,y+.75+RH*(PN+1)+.02,`+ ${PL.length-PN} ürün daha`,10,MUT,'left','SemiBold');
+      y+=h+.25;
+    }
+  }
+  T(Mg,y+.2,'Kaynak: MediaMarkt sell-out ve ham data · Stok = satılabilir · Sipariş = açık sipariş · Ay sonu = stok + sipariş − kalan tahmini satış',9,MUT,'left','SemiBold');
+  return {c,ad:('Stok_'+(sel.sq||'')+(vt?'_'+vt.slice(0,5):'')).replace(/[^\wÇĞİÖŞÜçğıöşü\-]+/g,'_')+'.png',t:'Stok · '+(sel.sq||'')+' · '+vt};
+}
+function stokAc(){
+  const q=fold(sel.sq||'').trim(); let r; try{r=stokResim(q)}catch(e){toast('Resim hazırlanamadı');return}
+  if(!r){toast('Paylaşılacak sonuç yok');return}
+  r.c.toBlob(b=>{
+    const im=$('#hz img'); if(HZ&&HZ.u)URL.revokeObjectURL(HZ.u);
+    HZ={b,ad:r.ad,t:r.t,kod:null,u:URL.createObjectURL(b)}; im.src=HZ.u;
+    $('#hzm').style.display='none'; $('#hz').style.display='block'; $('#hz').scrollTop=0;
+  },'image/png');
+}
+function stokUrun(q){
+  const U=D.urunler; if(!U)return '';
+  const rg=BLG||'', list=stokUrunL(q);
   if(!list.length)return '';
   return `<h2>Ürünler</h2><div class="note" style="margin:0 0 8px">${list.length} ürün${list.length>25?' (ilk 25)':''} · ${rg?tc(rg):'Türkiye'} · satış / satılabilir stok / açık sipariş · kartı aç: mağaza dağılımı</div>`+list.slice(0,25).map(a=>{
     const rows=a.rows.slice().sort((x,y)=>y[3]-x[3]||y[5]-x[5]||y[6]-x[6]);
@@ -1586,7 +1678,7 @@ function vStok(){
   const box=`<input type="search" id="sq" placeholder="Mağaza veya ürün ara (ör. Forum, BCS71)…" value="${esc(sel.sq||'')}">`, q=fold(sel.sq||'').trim();
   if(!q)return box+vStok0();
   const st=stokAra(q), ur=q.length>=2?stokUrun(q):'', yok=st.includes('bulunamadı');
-  return box+(yok&&ur?'':st)+ur+(yok&&!ur?'':'');
+  return box+((yok&&!ur)?'':'<button class="chip" id="stokPay" style="margin:0 0 8px">Resim olarak paylaş</button>')+(yok&&ur?'':st)+ur;
 }
 function vStok0(){
   const U=D.urunler, rg=BLG||sel.stg||'', kt=KS.includes(sel.stk)?sel.stk:'', KK=kt?[kt]:KS, ad=rg?tc(rg):'Türkiye';
@@ -2224,6 +2316,7 @@ function render(){
   const y=window.scrollY; XL=null;
   M.innerHTML=({ozet:vOzet,kat:vKat,mag:vMag,urun:vUrun,trf:vTrf,daha:vDaha}[tab]||vOzet)();
   bindChips();
+  const spb=$('#stokPay'); if(spb)spb.onclick=stokAc;
   const sqi=$('#sq'); if(sqi)sqi.oninput=()=>{sel.sq=sqi.value;const p=sqi.selectionStart;render();const n=$('#sq');n.focus();n.setSelectionRange(p,p)};
   const q=$('#q'); if(q)q.oninput=()=>{sel.q=q.value;const p=q.selectionStart;render();const n=$('#q');n.focus();n.setSelectionRange(p,p)};
   const go=(t,fn)=>{tab=t;LS.set('tab',t);if(fn)fn();render();window.scrollTo(0,0)};
