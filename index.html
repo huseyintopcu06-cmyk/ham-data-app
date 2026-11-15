@@ -335,6 +335,17 @@ async function openPack(text,pw,reuse){
   // Batı Marmara'ya şimdilik Zeki Gülsoy bakıyor (Uğur Çatalbaş ayrıldı); veri her yerde aynı adla gelsin
   return JSON.parse(new TextDecoder().decode(await gunzip(plain)).split('UĞUR ÇATALBAŞ').join('ZEKİ GÜLSOY (2)'));
 }
+/* Ankara mağazaları MDA ve Ankastre'de ortak Ankara deposunu (T802) kullanır: ürün satırları tek noktada ("ANKARA") toplanır, stok = depo
+   (mağazaların kendi stoğu sayılmaz). Kategori düzeyinde (magList) depo, mağazalara kalan tahmini satış payına göre bölünür. */
+const ANKK='ANKARA';
+function ankaraDepo(DD){
+  const U=DD&&DD.urunler, dp=U&&U.depo; if(!dp||dp._ok)return; dp._ok=1;
+  const A=new Set(dp.k), C=new Set(dp.c), pool=new Map(), keep=[];
+  U.r.forEach(r=>{ if(A.has(r[1])&&C.has(r[2])){let p=pool.get(r[0]); if(!p){p=[r[0],ANKK,r[2],0,0,0,0,0];pool.set(r[0],p)} p[3]+=r[3]; p[7]+=r[7]} else keep.push(r) });
+  dp.r.forEach(d=>{let p=pool.get(d[0]); if(!p){p=[d[0],ANKK,d[1],0,0,0,0,0];pool.set(d[0],p)} p[4]=d[2]; p[5]=d[3]; p[6]=d[4]});
+  const ref=U.m[dp.k[0]]; U.m[ANKK]=['ANKARA · ortak depo (T802)',ref?ref[1]:'İÇ ANADOLU',ref?ref[2]:''];
+  U.r=keep.concat([...pool.values()].filter(p=>p[3]+p[4]+p[5]+p[6]+p[7]>0));
+}
 async function load(force){
   M.innerHTML='<div class="msg">Yükleniyor…</div>';
   const pw=LS.get('pw');
@@ -349,7 +360,8 @@ async function load(force){
   try{
     D=await openPack(text,pw);
     P=null;
-    try{const r2=await fetch('onceki.enc?'+Date.now(),{cache:'no-store'});if(r2.ok)P=await openPack(await r2.text(),pw,true)}catch(e){}
+    try{ankaraDepo(D)}catch(e){console.warn('ankara depo',e)}
+    try{const r2=await fetch('onceki.enc?'+Date.now(),{cache:'no-store'});if(r2.ok){P=await openPack(await r2.text(),pw,true);try{ankaraDepo(P)}catch(e){}}}catch(e){}
     done(offline?'Çevrimdışı: son kaydedilen veri gösteriliyor.':'');
   }catch(e){LS.del('pw');gate('Şifre yanlış ya da değişmiş. Yeniden gir.')}
 }
@@ -962,6 +974,14 @@ function magList(DD){
         set:q.set.length?q.set.map(i=>N(r[i])):null,rank:q.rank>=0?r[q.rank]:null,per:q.per>=0?r[q.per]:null,bas:q.bas.map(i=>r[i]),ay:q.ays.length?sm(r,q.ays):null};
     });
   });
+  const dpo=DD.urunler&&DD.urunler.depo;
+  if(dpo)dpo.c.forEach(ci=>{   // Ankara mağazaları: MDA/Ankastre stoğu = ortak depo, kalan tahmini satış payına göre bölünür
+    const cn=DD.urunler.k[ci]; let S=0, G=0; dpo.r.forEach(d=>{if(d[1]===ci){S+=d[3];G+=d[4]}});
+    const L=dpo.k.map(k=>mp.get(k)).filter(m=>m&&m.k[cn]); if(!L.length)return;
+    const ks=L.map(m=>{const x=m.k[cn]; return x.fc!=null?Math.max(x.fc-x.main,0):0}), F=ks.reduce((a,b)=>a+b,0);
+    L.forEach((m,i)=>{const x=m.k[cn], w=F>0?ks[i]/F:1/L.length; x.sat=Math.round(S*w); x.gel=Math.round(G*w); x.depo=1;
+      if(x.bas.length){const b=Math.round(x.sat+x.gel-ks[i]); x.bas=x.bas.map(()=>b)}});
+  });
   const arr=[...mp.values()];
   arr.forEach(m=>{m.top=KATS.reduce((a,k)=>a+(m.k[k]?m.k[k].main:0),0);m.topfc=KATS.reduce((a,k)=>a+(m.k[k]&&m.k[k].fc?m.k[k].fc:0),0)});
   const o={arr,map:mp}; _ml.set(DD,o); return o;
@@ -1427,7 +1447,7 @@ const stokCnt=n=>`<span style="color:var(--mut);font-weight:400">· ${n}</span>`
 const stokSec=(t,tot,rows,id)=>tot?`<div class="card dep"${id?` id="${id}" style="scroll-margin-top:84px"`:''}><div class="bdh">${t} ${stokCnt(tot)}</div>${rows.join('')}</div>`:'';
 function urunMag(u,sag,st){   // ürün satırı + altında mağaza adları (yanlarında küçük not)
   const ML=magList().map;
-  return `<div style="border-top:1px solid var(--line);padding:7px 0 6px"><div class="urow" data-ara="${u}" style="border-top:0;padding:0;cursor:pointer"><span><b>${esc(D.urunler.u[u])}</b>${artI(u)}</span><span style="color:var(--mut)">${sag}</span></div><div class="note" style="margin:3px 0 0">${st.map(([k,g])=>{const m=ML.get(k);return `<a class="lnk" data-mk="${k}">${esc(m?m.ad:k)}</a> <small>${g}</small>`}).join(' · ')}</div></div>`;
+  return `<div style="border-top:1px solid var(--line);padding:7px 0 6px"><div class="urow" data-ara="${u}" style="border-top:0;padding:0;cursor:pointer"><span><b>${esc(D.urunler.u[u])}</b>${artI(u)}</span><span style="color:var(--mut)">${sag}</span></div><div class="note" style="margin:3px 0 0">${st.map(([k,g])=>{const m=ML.get(k);return `<a class="lnk" data-mk="${k}">${esc(m?m.ad:(D.urunler.m[k]?D.urunler.m[k][0]:k))}</a> <small>${g}</small>`}).join(' · ')}</div></div>`;
 }
 const stoksuzSatir=a=>urunMag(a.u,`${a.n} mağaza · geçen ay ${a.g} adet`,a.st.slice().sort((p,q)=>q[1]-p[1]));
 function kampGrup(r){   // [bölüm, 1 = Kampanya 1 (ana hedef) · 2 = Kampanya 2 ve sonrası · 0 = Hava (mağaza hedefi)]
@@ -1563,6 +1583,7 @@ function vStok(){
     s+=stokSec('Satmayan stok (bu ay ve geçen ay satış yok)',dead.length,dead.map(a=>urunMag(a.u,`${a.st.length} mağaza · stok ${nf(a.t)}`,a.st)));
   }
   if(s.length===n0)s+='<div class="msg">Stokla ilgili uyarı görünmüyor.</div>';
+  s+='<div class="note">Ankara mağazalarında MDA ve Ankastre stoğu ortak Ankara deposundan (T802) sayılır: ürün listelerinde tek satır, mağaza satırlarında depo kalan tahmini satış payına göre bölünür.</div>';
   s+='<div class="note">Stok günü, "biten" ve "stoksuz" hesaplarına açık sipariş dahil · Ay sonuna yetmeyen: stok + açık sipariş − kalan tahmini satış · ürün satırına dokun: ürün aramada aç</div>';
   return s;
 }
