@@ -1320,7 +1320,7 @@ function brandYorum(e,lab,ayl,tot,isTR,isB){
   const up=dl.filter(x=>x.p>=3).sort((a,b)=>b.d-a.d)[0], dn=dl.filter(x=>x.p>=3||true).sort((a,b)=>a.d-b.d)[0];
   if(up&&up.d>=1)L.push(`En çok yükselen: ${up.b} (${sgp(up.d)} puan, pay %${f1(up.p)}).`);
   if(dn&&dn.d<=-1)L.push(`En çok düşen: ${dn.b} (${sgp(dn.d)} puan).`);
-  return `<div class="card dep"><div class="yrm" style="border:0;margin:0;padding:0"><b>Yorum</b><br>${L.map(esc).join('<br>')}</div></div>`;
+  return `<div class="card dep"><div class="yrm" style="border:0;margin:0;padding:0"><b>Yorum</b><br>${L.map(okRenk).join('<br>')}</div></div>`;
 }
 function brandTrend(e,lab,ayl,tot,rows,isB){
   const A=ayl.filter(a=>!/\*$/.test(a.t)||ayl.length<=3); if(A.length<2)return '';
@@ -2057,6 +2057,7 @@ function vHedef(){
     rows:rows.map(r=>[r.kod,r.ad,r.spv,r.bolge,r.S,r.x.h,r.c.g,Math.round(r.c.o*100),r.c.fc,Math.round(r.c.of*100),r.c.kal,G.kalan>0?Math.round(r.c.kal/G.kalan*10)/10:'',HDUR[r.c.d][1],r.x.bn!=null?r.x.bn:'',r.x.bf!=null?r.x.bf:''])});
   return s;
 }
+const okRenk=t=>esc(t).replace(/▲(\d+)/g,'<b class="pos">▲$1</b>').replace(/▼(\d+)/g,'<b class="neg">▼$1</b>');
 function vGid(){
   if(!P)return '<div class="msg">Karşılaştırma için önceki gün raporu gerekiyor.<br>Bir sonraki günlük rapordan itibaren burada görünecek.</div>';
   const kk=KATS.includes(sel.gk)?sel.gk:KATS[0], rg=sel.grg||'';
@@ -2076,7 +2077,7 @@ function vGid(){
     if(rk.length)L.push('Sırası yükselen: '+rk.map(r=>`${r.m.ad} ▲${r.dr}`).join(', ')+'.');
     if(rd.length)L.push('Sırası düşen: '+rd.map(r=>`${r.m.ad} ▼${-r.dr}`).join(', ')+'.');
     const st=rows.filter(r=>r.x.sat!=null&&r.x.sat<=0).length; if(st)L.push(`${st} mağazada satılabilir stok yok.`);
-    s+=`<div class="card dep"><div class="yrm" style="border:0;margin:0;padding:0"><b>Yorum</b><br>${L.map(esc).join('<br>')}</div></div>`;
+    s+=`<div class="card dep"><div class="yrm" style="border:0;margin:0;padding:0"><b>Yorum</b><br>${L.map(okRenk).join('<br>')}</div></div>`;
   }
   s+=rows.map(r=>{
     const ar=r.dr>0?`<span class="pos">▲${r.dr}</span>`:r.dr<0?`<span class="neg">▼${-r.dr}</span>`:'<span style="color:var(--mut)">=</span>';
