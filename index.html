@@ -332,7 +332,8 @@ async function openPack(text,pw,reuse){
   const key=(reuse&&KEY&&SALTB===p.salt)?KEY:await deriveKey(pw,b64(p.salt),p.iter);
   const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64(p.iv)},key,b64(p.ct));   // yanlış şifrede hata verir
   if(!reuse){KEY=key;SALTB=p.salt}
-  return JSON.parse(new TextDecoder().decode(await gunzip(plain)));
+  // Batı Marmara'ya şimdilik Zeki Gülsoy bakıyor (Uğur Çatalbaş ayrıldı); veri her yerde aynı adla gelsin
+  return JSON.parse(new TextDecoder().decode(await gunzip(plain)).split('UĞUR ÇATALBAŞ').join('ZEKİ GÜLSOY (2)'));
 }
 async function load(force){
   M.innerHTML='<div class="msg">Yükleniyor…</div>';
