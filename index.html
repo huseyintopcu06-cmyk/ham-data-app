@@ -1398,6 +1398,7 @@ function vBrandStore(key){
 /* ---- Daha: görseller · gidişat · personel ---- */
 /* ---- Bugün ne yapmalı + bölge karnesi ---- */
 const KS=KATS.filter(k=>k!=='FOOD Diğer');
+const KSS=KATS;   // Stok sayfası: FOOD Diğer dahil bütün departmanlar (v125); Bugün sayfası KS ile kalır
 function ozTop(t,rg){   // özet tablosunun "Toplam" kolonu: bölge seçiliyse o bölgenin SPV satırları toplamı, değilse BSH genel toplamı
   if(!t)return null; const i=t.kolonlar.findIndex(x=>/^Toplam/.test(x)); if(i<0)return null;
   if(rg){if(t.kolonlar[1]!=='Bölge')return null; const L=t.satirlar.filter(r=>r[1]===rg); return L.length?L.reduce((a,r)=>a+N(r[i]),0):null}
@@ -1646,7 +1647,7 @@ function stokAra(q){
   const baslik=`<div style="${gr};border-top:0;color:var(--mut);font-size:11px"><span></span><span style="text-align:right">Satış</span><span style="text-align:right">Tahmin</span><span style="text-align:right">Stok</span><span style="text-align:right">Sipariş</span><span style="text-align:right">Ay sonu</span></div>`;
   return `<div class="note" style="margin:0 0 8px">${L.length} mağaza · Stok = satılabilir · Sipariş = açık sipariş · Ay sonu = stok + sipariş − kalan tahmini satış · ${esc(veriTarihi(D.donem)||'')}</div>`+L.map(m=>{
     const T=[0,0,0,0,0]; let tf=true, depo=false;
-    const rows=KS.filter(k=>m.k[k]).map(k=>{const x=m.k[k], pj=stokProj(x), v=[N(x.main),x.fc!=null?Math.round(x.fc):null,N(x.sat),N(x.gel),Math.round(pj.son)];
+    const rows=KSS.filter(k=>m.k[k]).map(k=>{const x=m.k[k], pj=stokProj(x), v=[N(x.main),x.fc!=null?Math.round(x.fc):null,N(x.sat),N(x.gel),Math.round(pj.son)];
       v.forEach((a,i)=>{if(a!=null)T[i]+=a}); if(x.fc==null)tf=false; if(x.depo)depo=true;
       return `<div style="${gr}"><span>${esc(KLAB[k]||k)}</span><span style="text-align:right">${nf(v[0])}</span><span class="or" style="text-align:right">${v[1]==null?'–':nf(v[1])}</span><span style="text-align:right">${x.sat==null?'–':nf(v[2])}</span><span style="text-align:right">${nf(v[3])}</span><span style="text-align:right" class="${v[4]<0?'neg':''}">${nf(v[4])}</span></div>`}).join('');
     return `<div class="card dep" data-mk="${m.kod}"><div class="row" style="justify-content:space-between;gap:8px"><b>${esc(m.ad)}</b><small style="color:var(--mut)">${esc(m.kod)} ›</small></div><div class="note" style="margin:2px 0 6px">${esc(m.spv)} · ${tc(m.bolge)}</div>${baslik}${rows}<div style="${gr};font-weight:700"><span>Toplam</span><span style="text-align:right">${nf(T[0])}</span><span style="text-align:right">${tf?nf(T[1]):'–'}</span><span style="text-align:right">${nf(T[2])}</span><span style="text-align:right">${nf(T[3])}</span><span style="text-align:right" class="${T[4]<0?'neg':''}">${nf(T[4])}</span></div>${depo?'<div class="note" style="margin:6px 0 0">MDA ve Ankastre stoğu ortak Ankara deposundan (payı) hesaplandı.</div>':''}</div>`}).join('');
@@ -1670,7 +1671,7 @@ function stokResim(q,only){
   if(!ML.length&&!PL.length)return null;
   const W=11, Mg=.35, IW=W-2*Mg, RH=.4, DET=PL.length<=3, PN=DET?PL.length:Math.min(PL.length,30);
   const E=[5.3,6.6,7.9,9.1,10.3], EP=[0,8.5,9.5,10.3];
-  const mrows=m=>KS.filter(k=>m.k[k]);
+  const mrows=m=>KSS.filter(k=>m.k[k]);
   let HT=.35+1.75+.3;
   if(ML.length){HT+=.55; ML.forEach(m=>{HT+=.95+.4+mrows(m).length*RH+RH+(mrows(m).some(k=>m.k[k].depo)?.35:0)+.25})}
   if(PN){HT+=.55; if(DET)PL.forEach(a=>{HT+=1.05+.4+Math.min(a.rows.length,15)*RH+(a.rows.length>15?.35:0)+.25}); else HT+=.95+PN*RH+.25+(PL.length>PN?.35:0)}
@@ -1767,7 +1768,7 @@ function vStok(){
   return box+((yok&&!ur)?'':'<button class="chip" id="stokPay" style="margin:0 0 8px">Resim olarak paylaş</button>')+(yok&&ur?'':st)+ur;
 }
 function vStok0(){
-  const U=D.urunler, rg=BLG||sel.stg||'', kt=KS.includes(sel.stk)?sel.stk:'', KK=kt?[kt]:KS, ad=rg?tc(rg):'Türkiye';
+  const U=D.urunler, rg=BLG||sel.stg||'', kt=KSS.includes(sel.stk)?sel.stk:'', KK=kt?[kt]:KSS, ad=rg?tc(rg):'Türkiye';
   const ms=magList().arr.filter(m=>m.bolge!=='ONLINE'&&(!rg||m.bolge===rg));
   const sm=f=>KK.reduce((a,k)=>a+ms.reduce((b,m)=>b+(m.k[k]?N(m.k[k][f]):0),0),0), sat=sm('sat'), gel=sm('gel');
   const biten=[], yet=[];
@@ -1776,7 +1777,7 @@ function vStok0(){
     if(b.length)biten.push({m,k:b}); if(y.length)yet.push({m,k:y,t:y.reduce((a,k)=>a+stokEks(m,k),0)})});
   biten.sort((a,b)=>b.m.top-a.m.top); yet.sort((a,b)=>b.t-a.t);
   STP=[]; const MLm=magList().map, mad=k=>{const m=MLm.get(k);return m?m.ad:(U&&U.m[k]?U.m[k][0]:k)}, kl=k=>KLAB[k]||k;
-  let s=bolgeChips('stg',rg)+chips([['','Tümü']].concat(KS.map(k=>[k,KLAB[k]||k])),kt,'stk',true);
+  let s=bolgeChips('stg',rg)+chips([['','Tümü']].concat(KSS.map(k=>[k,KLAB[k]||k])),kt,'stk',true);
   s+=`<div class="note" style="margin:0 0 8px">Stok · ${esc(ad)} · ${esc(kt?(KLAB[kt]||kt):'tüm departmanlar')} · ${esc(veriTarihi(D.donem)||'')}</div>`;
   s+=`<div class="card dep"><div class="g4"><div><small>Satılabilir stok</small><b>${nf(sat)}</b></div><div><small>Açık sipariş</small><b>${nf(gel)}</b></div><div><small>Stok + sipariş</small><b>${nf(sat+gel)}</b></div><div><small>Ay sonuna yetmeyen</small><b class="${yet.length?'neg':''}">${yet.length}<span style="font-size:12px;color:var(--mut)">/${ms.length}</span></b></div></div><div class="note" style="margin:8px 0 0">Ay sonu stoğu (tahmini): <b>${nf(ms.reduce((a,m)=>a+KK.reduce((b,k)=>b+(m.k[k]?stokProj(m.k[k]).son:0),0),0))}</b> adet · açık sipariş en geç ayın 17'sinde mağazada varsayıldı</div></div>`;
   const n0=s.length;
