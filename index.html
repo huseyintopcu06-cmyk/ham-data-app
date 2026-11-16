@@ -911,8 +911,9 @@ function yorumMag(m,k){
 }
 
 /* ---- mağaza × kategori durumunu resim olarak paylaş ---- */
-function kartResim(kod,k){
+function kartResim(kod,k,stok){   // stok: Stok aramasından çağrılınca ay sonu stok / 17'si / stok biter satırı da yazılır (v128)
   const m=magList().map.get(kod), x=m&&m.k[k]; if(!x){toast('Veri yok');return}
+  const pj=stok?stokProj(x):null, ek=stok?stokEks(m,k):0;
   const y=yorumMag(m,k), bm=buAy(D), pm=oncekiAy(D), U=D.urunler, ux=urunIdx();
   const cats=(KATVERI[k]||[]).map(c=>U.k.indexOf(c)).filter(i=>i>=0);
   const rows=ux?(ux.byKod.get(kod)||[]).filter(r=>cats.includes(r[2])&&(r[3]>0||r[5]>0||r[6]>0)).sort((a,b)=>b[3]-a[3]||b[5]-a[5]||b[6]-a[6]).slice(0,12):[];
@@ -924,7 +925,7 @@ function kartResim(kod,k){
   // yükseklik hesabı
   c.width=W; font(500,30);
   const yl=y?wrap(y.t,IW-80):[], ol=y?y.o.flatMap(z=>wrap('• '+z,IW-80)):[];
-  const H=P+250+190+(x.set?60:0)+(y?70+yl.length*40+ol.length*40+30:0)+(rows.length?110+rows.length*86+20:0)+110+P;
+  const H=P+250+190+(pj?104:0)+(x.set?60:0)+(y?70+yl.length*40+ol.length*40+30:0)+(rows.length?110+rows.length*86+20:0)+110+P;
   c.height=H;
   const bg=g.createLinearGradient(0,0,W,H); bg.addColorStop(0,ac); bg.addColorStop(1,ae); g.fillStyle=bg; g.fillRect(0,0,W,H);
   g.fillStyle='#ffffff'; rr(P/2,P/2,W-P,H-P,48); g.fill();
@@ -939,6 +940,12 @@ function kartResim(kod,k){
   const tw=(IW-48-3*16)/4;
   T.forEach(([l,v,col],i)=>{const tx=X0+i*(tw+16); g.fillStyle='#f1f5fb'; rr(tx,Y,tw,150,28); g.fill(); font(600,21); g.fillStyle='#667085'; g.textAlign='center'; g.fillText(l,tx+tw/2,Y+42); font(800,56); g.fillStyle=col; g.fillText(v,tx+tw/2,Y+112); g.textAlign='left'});
   Y+=190;
+  if(pj){
+    g.fillStyle=ek?'#fdecea':'#eef6ff'; rr(X0,Y-26,IW-48,88,22); g.fill();
+    font(700,27); g.fillStyle=pj.son<0?'#c0392b':'#16202e'; g.fillText(`Ay sonu stok (tahmini) ${nf(pj.son)}${ek?'  ·  ay sonuna '+nf(ek)+' adet eksik':''}`,X0+20,Y+8);
+    font(500,24); g.fillStyle='#475467'; g.fillText(`Ayın 17'sine kadar: ${pj.d17>0?(pj.ek17>0?'−'+nf(pj.ek17)+' eksik':'yeter'):'–'}  ·  Stok biter: ${pj.biter==null?'–':pj.biter>pj.top?'ay sonrası':'ayın '+Math.round(pj.biter)+'. günü'}  ·  Kalan tah. satış ${nf(pj.ks)}`,X0+20,Y+44);
+    Y+=104;
+  }
   if(x.set){font(600,28); g.fillStyle='#16202e'; g.fillText(`Satılabilir set ${nf(x.set.reduce((a,b)=>a+b,0))}  ·  Siyah ${nf(x.set[0])}  ·  Beyaz ${nf(x.set[1])}  ·  Gri ${nf(x.set[2])}`,X0,Y-10); Y+=50}
   if(y){
     const col=y.cls==='t-grn'?'#17803d':y.cls==='t-red'?'#c0392b':'#9a6b00';
@@ -1658,7 +1665,7 @@ function stokAra(q){
     const T=[0,0,0,0,0]; let tf=true, depo=false;
     const rows=KSS.filter(k=>m.k[k]).map(k=>{const x=m.k[k], pj=stokProj(x), v=[N(x.main),x.fc!=null?Math.round(x.fc):null,N(x.sat),N(x.gel),Math.round(pj.son)];
       v.forEach((a,i)=>{if(a!=null)T[i]+=a}); if(x.fc==null)tf=false; if(x.depo)depo=true;
-      return `<details class="sdep"><summary style="${gr};list-style:none;cursor:pointer"><span style="display:flex;align-items:center;gap:6px"><i class="acb">▾</i><b style="font-weight:600">${esc(KLAB[k]||k)}</b></span><span style="text-align:right">${nf(v[0])}</span><span class="or" style="text-align:right">${v[1]==null?'–':nf(v[1])}</span><span style="text-align:right">${x.sat==null?'–':nf(v[2])}</span><span style="text-align:right">${nf(v[3])}</span><span style="text-align:right" class="${v[4]<0?'neg':''}">${nf(v[4])}</span></summary><div style="padding:2px 0 10px">${e_(m,k)}${stokDepDetay(m,k,false)}</div></details>`}).join('');
+      return `<details class="sdep"><summary style="${gr};list-style:none;cursor:pointer"><span style="display:flex;align-items:center;gap:6px"><i class="acb">▾</i><b style="font-weight:600">${esc(KLAB[k]||k)}</b></span><span style="text-align:right">${nf(v[0])}</span><span class="or" style="text-align:right">${v[1]==null?'–':nf(v[1])}</span><span style="text-align:right">${x.sat==null?'–':nf(v[2])}</span><span style="text-align:right">${nf(v[3])}</span><span style="text-align:right" class="${v[4]<0?'neg':''}">${nf(v[4])}</span></summary><div style="padding:2px 0 10px"><div style="margin:2px 0 8px"><button class="chip" data-kimg="${m.kod}" data-kk="${esc(k)}" data-ks="1" style="padding:6px 12px;font-size:12.5px">⇪ Resim paylaş</button></div>${e_(m,k)}${stokDepDetay(m,k,false)}</div></details>`}).join('');
     return `<div class="card dep"><div class="row" data-mk="${m.kod}" style="justify-content:space-between;gap:8px;cursor:pointer"><b>${esc(m.ad)}</b><small style="color:var(--mut)">${esc(m.kod)} · mağaza sayfası ›</small></div><div class="note" style="margin:2px 0 6px">${esc(m.spv)} · ${tc(m.bolge)}</div>${baslik}${rows}<div style="${gr};font-weight:700"><span>Toplam</span><span style="text-align:right">${nf(T[0])}</span><span style="text-align:right">${tf?nf(T[1]):'–'}</span><span style="text-align:right">${nf(T[2])}</span><span style="text-align:right">${nf(T[3])}</span><span style="text-align:right" class="${T[4]<0?'neg':''}">${nf(T[4])}</span></div>${depo?'<div class="note" style="margin:6px 0 0">MDA ve Ankastre stoğu ortak Ankara deposundan (payı) hesaplandı.</div>':''}</div>`}).join('');
 }
 /* Stok sekmesi: ürün arama — ürün adı, model ya da artikel; toplam + mağaza dağılımı (satış, stok, sipariş) */
@@ -2450,7 +2457,7 @@ function render(keep){
   const go=(t,fn)=>{pgKaydet();tab=t;LS.set('tab',t);if(fn)fn();render();window.scrollTo(0,0)};
   M.querySelectorAll('[data-mk]').forEach(el=>el.onclick=e=>{e.stopPropagation();const k=el.dataset.mk; if(k===ANKK){toast('Ankara mağazaları MDA/Ankastre stoğunu ortak depodan kullanır');return} go('mag',()=>{sel.mk=k})});
   M.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{if(b.dataset.back==='mk')sel.mk=null;if(b.dataset.back==='dh'){sel.dh='';if(sel.dhfrom){tab=sel.dhfrom;sel.dhfrom='';LS.set('tab',tab)}}render();window.scrollTo(0,0)});
-  M.querySelectorAll('[data-kimg]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();kartResim(b.dataset.kimg,b.dataset.kk)});
+  M.querySelectorAll('[data-kimg]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();kartResim(b.dataset.kimg,b.dataset.kk,b.dataset.ks==='1')});
   M.querySelectorAll('[data-bk]').forEach(el=>el.onclick=()=>{sel.bk=el.dataset.bk;sel.bl='';sel.q='';render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-bkback]').forEach(el=>el.onclick=()=>{sel.bk=null;render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-bf]').forEach(el=>el.onclick=()=>{sel.bf=+el.dataset.bf;sel.bs=0;sel.q='';sel.brg='';render();window.scrollTo(0,0)});
