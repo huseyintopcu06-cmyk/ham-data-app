@@ -646,7 +646,7 @@ function vKat(){
   const onl=(T[2]?T[2].satirlar:[]).concat(mag.satirlar.filter(r=>!isTot(r)&&r[bi]==='ONLINE'));
   const rows=mag.satirlar.filter(r=>isTot(r)||(r[bi]!=='ONLINE'&&(!rg||r[bi]===rg)&&(!q||fold(r[name]).includes(q))));
   const tot=rows.filter(isTot), body=rows.filter(r=>!isTot(r));
-  s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+
+  s+=`<input type="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+
      chips([['','Tümü']].concat(have.map(x=>[x,tc(x)])),rg,'rg');
   s+=`<div class="row" style="margin:0 0 8px;gap:8px"><div class="note" style="margin:0">${esc(C.baslik||'')} · kartı aç: tüm kolonlar</div><span style="display:flex;gap:6px"><button class="chip" data-sh="kat">Paylaş</button>${XLB}</span></div>`;
   XL=()=>({ad:k+' '+(rg?tc(rg)+' ':'')+veriTarihi(D.donem),h,rows:onl.concat(tot,body)});
@@ -1008,7 +1008,7 @@ function vMag(){
   if(sel.mk)return vMagDetay(sel.mk);
   const ml=magList().arr, rg=sel.mrg||'', q=fold(sel.q);
   const rows=ml.filter(m=>(!rg||m.bolge===rg)&&(!q||fold(m.ad).includes(q))).sort((a,b)=>b.top-a.top);
-  let s=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+bolgeChips('mrg',rg);
+  let s=`<input type="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+bolgeChips('mrg',rg);
   s+=`<div class="note" style="margin:0 0 8px">${rows.length} mağaza · tüm departmanların toplam sell-out'una göre · dokun: mağaza sayfası</div>`;
   s+=rows.map((m,i)=>`<div class="card ${m.bolge===GAB?'ga':''}" data-mk="${m.kod}"><div class="sm"><div class="rk">${i+1}</div><div class="nm"><b>${esc(m.ad)}</b><span>${esc(m.spv)} · ${tc(m.bolge)}</span></div><div class="kv"><small>Sell-out</small><b>${nf(m.top)}</b><span>Tahmin ${nf(m.topfc)}</span></div></div></div>`).join('');
   return s;
@@ -1073,7 +1073,7 @@ function urunGrafik(ui,ga){
 function vUrun(){
   const U=D.urunler; if(!U)return '<div class="msg">Bu raporda ürün verisi yok.</div>';
   const ux=urunIdx(), q=fold(sel.q).trim(), rg=sel.urg||'', ust=sel.ustk==='yok';
-  let s=`<input type="search" id="q" placeholder="Mağaza, ürün, model veya artikel ara… (ör. Van, BCS71)" value="${esc(sel.q||'')}">`+bolgeChips('urg',rg)+chips([['','Tümü'],['yok','Stoksuz mağazalar']],sel.ustk||'','ustk')+chips([['','Tüm kategoriler']].concat(U.k.map((x,i)=>[String(i),x])),sel.ukat||'','ukat',true);
+  let s=`<input type="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="q" placeholder="Mağaza, ürün, model veya artikel ara… (ör. Van, BCS71)" value="${esc(sel.q||'')}">`+bolgeChips('urg',rg)+chips([['','Tümü'],['yok','Stoksuz mağazalar']],sel.ustk||'','ustk')+chips([['','Tüm kategoriler']].concat(U.k.map((x,i)=>[String(i),x])),sel.ukat||'','ukat',true);
   const toks=q.split(/\s+/).filter(Boolean);
   if(q.length===1){
     s+='<div class="note" style="margin:0 0 8px">En az 2 harf yaz: mağaza adı, ürün adı, model kodu ya da artikel numarasının bir kısmı.</div>';
@@ -1227,7 +1227,7 @@ function vBrand(){
   if(f.personel)s+=`<div class="note" style="margin:0 0 6px">PERSONEL kolonu: ${esc(f.etiket)} ay sonu personel listesine göre (Var = o departmanda promotör var).</div>`;
   if(F.filter(x=>x.etiket===f.etiket).length>1)s+=`<div class="note" style="margin:0 0 6px">Bu ayın diğer dosyaları için geri dönüp seç.</div>`;
   s+=chips(f.sayfalar.map((x,i)=>[String(i),x.ad]),String(si),'bs',true);
-  s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`;
+  s+=`<input type="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`;
   if(bol.length>1)s+=chips([['','Tümü']].concat(bol.map(x=>[x,x.toLocaleLowerCase('tr').replace(/(^|\s)\S/g,m=>m.toLocaleUpperCase('tr'))])),rg,'brg');
   const bcs=[]; hd.forEach((x,j)=>{ if(j!==sc&&/sat[ıi][şs]\s*adedi/i.test(x.b+' '+x.c)&&x.a)bcs.push({j,ad:bTitle(x.a),ih:(hd[j+1]&&/[İI]HS/i.test(hd[j+1].b))?j+1:-1}) });
   const dup={}; bcs.forEach(c=>{dup[c.ad]=(dup[c.ad]||0)+1; if(dup[c.ad]>1)c.ad+=' ('+dup[c.ad]+')'});
@@ -1299,7 +1299,7 @@ function vBrandMag(){
   const ml=magList().map;
   let L=[...I.S.values()].filter(e=>!e.agg&&(e.kod||e.m.size>3)).map(e=>{const m=e.kod?ml.get(e.kod):null;return {e,bolge:m?m.bolge:'',ad:m?m.ad:e.ad}});
   L=L.filter(x=>(!rg||x.bolge===rg)&&(!q||fold(x.ad).includes(q))).sort((a,b)=>(a.e.kod||'Z').localeCompare(b.e.kod||'Z'));
-  let s=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+bolgeChips('brg2',rg);
+  let s=`<input type="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+bolgeChips('brg2',rg);
   if(!q){const RL=ORD.filter(b=>(!rg||b===rg)&&I.S.has('B:'+b)); if(RL.length)s+='<h2 style="margin-top:4px">Bölgeler</h2>'+RL.map(b=>`<div class="card ${b===GAB?'ga':''}"><div class="sm" data-bk="B:${esc(b)}"><div class="rk">Σ</div><div class="nm"><b>${tc(b)}</b><span>bölge toplamı · pay trendi</span></div><span class="chev">›</span></div></div>`).join('')+'<h2>Mağazalar</h2>'}
   s+=`<div class="note" style="margin:0 0 8px">${L.length} mağaza · dokun: ay ay marka karşılaştırması ve pay trendi</div>`;
   s+=L.map(x=>`<div class="card ${x.bolge===GAB?'ga':''}"><div class="sm" data-bk="${esc(x.e.key)}"><div class="nm"><b>${esc(x.ad)}</b><span>${esc(x.e.kod)} ${x.bolge?'· '+tc(x.bolge):''}</span></div><span class="chev">›</span></div></div>`).join('');
@@ -1691,7 +1691,7 @@ function stokUrun(q){
       rows.map(r=>{const m=U.m[r[1]]||[r[1]];return `<div class="urow" data-mk="${r[1]}"><span>${esc(m[0])}</span><span>${r[3]}</span><span>${r[5]}</span><span>${r[6]}</span></div>`}).join('')+`</div></details>`}).join('');
 }
 function vStok(){
-  const box=`<input type="search" id="sq" placeholder="Mağaza veya ürün ara (ör. Forum, BCS71)…" value="${esc(sel.sq||'')}">`, q=fold(sel.sq||'').trim();
+  const box=`<input type="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="sq" placeholder="Mağaza veya ürün ara (ör. Forum, BCS71)…" value="${esc(sel.sq||'')}">`, q=fold(sel.sq||'').trim();
   if(!q)return box+vStok0();
   const st=stokAra(q), ur=q.length>=2?stokUrun(q):'', yok=st.includes('bulunamadı');
   return box+((yok&&!ur)?'':'<button class="chip" id="stokPay" style="margin:0 0 8px">Resim olarak paylaş</button>')+(yok&&ur?'':st)+ur;
@@ -2081,7 +2081,7 @@ function vHedef(){
     s+='<h2>Bölgeler</h2><div class="card dep">'+ORD.map(B=>{const L=all.filter(r=>r.bolge===B); if(!L.length)return ''; const t=top(L);
       return `<div class="urow ${B===GAB?'gar':''}" style="grid-template-columns:1fr auto auto;cursor:pointer" data-hb="${esc(B)}"><span><b>${tc(B)}</b><br><span class="note" style="margin:0">${hdeg(t.g,b)} / ${hdeg(t.h,b)} · tutacak ${t.yol}/${t.n}</span></span><span style="text-align:right">%${Math.round(t.g/t.h*100)}</span><span style="text-align:right;color:var(--org);font-weight:700;min-width:54px">→ %${Math.round(t.fc/t.h*100)}</span></div>`}).join('')+'</div>';
   }
-  s+=`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+chips([['iyi',tur==='ciro'?'En çok ciro üstte':'En çok satan üstte'],['geri',tur==='ciro'?'En az ciro üstte':'En az satan üstte']],sr,'hs');
+  s+=`<input type="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+chips([['iyi',tur==='ciro'?'En çok ciro üstte':'En çok satan üstte'],['geri',tur==='ciro'?'En az ciro üstte':'En az satan üstte']],sr,'hs');
   s+=rows.map(r=>`<div class="card ${r.bolge===GAB?'ga':''}" data-hr="${r.kod}" data-hs="${esc(r.S)}" style="padding:3px 12px;cursor:pointer">${hedefSatir(r.x,G,r.ad,r.S)}</div>`).join('')||'<div class="msg">Mağaza bulunamadı.</div>';
   s+=`<div class="note">Mağazaya dokun: o departmanın hedef kartı resim olarak açılır, Paylaş ile gönderilir. Küçük grafik: gün gün birikimli gerçekleşen; kesik çizgi hedefe düz gidiş, turuncu noktalı çizgi ay sonu tahmini. Çubukta dikey çizgi = hedef, turuncu ok = ay sonu tahmini. Gerçekleşen, Hedef Kontrol dosyasındaki resmi sell-out'tur (MDA ciro = adet × TEPF; ankastre ve hava temizleme hariç). ${H.yontem==='kart'?`Tahmin (Hedef Gerçekleştirme Kartı formülü) = mağazanın ${esc(H.ortad||'')} aylık ortalaması × kategori TR tahmin endeksi; MDA ciro tahmini = tahmini adet × mağazanın bu ayki ortalama TEPF'i; tahmin gerçekleşenin altına inmez. TR endeksleri: MDA ${ek('MDA')} · Ankastre ${ek('DAV')} · Süpürge ${ek('BU')} · Robot ${ek('ROBOT')} · KEA ${ek('FD')} · MUM ${ek('MUM')} · FAEM ${ek('FAEM')} · Hava ${ek('HAVA')}.`:'Tahmin = şu anki tempo, kalan günlerin gün katsayısıyla (Pzt–Per 1,0 · Cuma 1,2 · Cmt 1,7 · Paz 2,1).'} Tempoda = tahmin hedefi geçiyor · Sınırda = tahmin %85–99 · Geride = tahmin %85'in altında. KEA'da hedef ilk baremdir. Kazanç = brüt bonus, Hedef Kontrol dosyasındaki kurallarla hesaplanır: "şu an" bugünkü satışla hak edilen, "tahmini" ay sonu tahmini tutarsa hak edilecek tutardır. Hava temizleme kazancı kişi başıdır. Kaynak: ${esc(H.kaynak)}</div>`;
   XL=()=>({ad:'Hedef '+HTUR.find(x=>x[0]===tur)[1]+' '+(rg?tc(rg)+' ':'')+H.gun+' '+AYAD[H.ay-1],h:['Kod','Mağaza','SPV','Bölge','Hedef sayfası','Hedef','Gerçekleşen','Gerçekleşme %','Ay sonu tahmini','Tahmin %','Kalan','Günlük gereken','Durum','Kazanç şu an (TL)','Kazanç tahmini (TL)'],
@@ -2123,7 +2123,7 @@ function vPer(){
     .sort((a,b)=>(ORD.indexOf(a.bolge)-ORD.indexOf(b.bolge))||a.ad.localeCompare(b.ad,'tr'));
   const cnt={}, pn=v=>{v=String(v||'');const m=v.match(/^(\d+)x$/);return m?+m[1]:/^Var$/.test(v)?1:0};
   DEP.forEach(k=>{cnt[k]={var:0,dol:0,acik:0,yok:0,kisi:0};rows.forEach(m=>{const x=m.k[k],c=perCls(x&&x.per);if(cnt[k][c]!=null)cnt[k][c]++;cnt[k].kisi+=pn(x&&x.per)})});
-  let s=(D.personel_liste?`<div class="card dep" style="padding:8px 12px"><b>Personel listesi: ${esc(D.personel_liste)}</b><div class="note" style="margin:2px 0 0">Aşağıdaki durum bu listeye göre</div></div>`:'')+`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+bolgeChips('prg',rg);
+  let s=(D.personel_liste?`<div class="card dep" style="padding:8px 12px"><b>Personel listesi: ${esc(D.personel_liste)}</b><div class="note" style="margin:2px 0 0">Aşağıdaki durum bu listeye göre</div></div>`:'')+`<input type="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+bolgeChips('prg',rg);
   s+=`<div class="card dep"><div style="text-align:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line)"><div style="font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em">Toplam BSH personel${rg?' · '+tc(rg):''}</div><b style="font-size:26px">${DEP.reduce((a,k)=>a+cnt[k].kisi,0)}</b><span style="font-size:13px;color:var(--mut)"> kişi</span></div><div class="g4">`+DEP.map(k=>`<div><small>${k}</small><b>${cnt[k].kisi}<span style="font-size:12px;color:var(--mut)"> kişi</span></b><small style="text-transform:none">${cnt[k].var+cnt[k].dol}/${rows.length} mağazada${cnt[k].acik?' · '+cnt[k].acik+' açık':''} · ${cnt[k].yok} yok</small></div>`).join('')+'</div></div>';
   const acik=DEP.map(k=>[k,rows.filter(m=>perCls(m.k[k]&&m.k[k].per)==='acik')]).filter(x=>x[1].length);
   if(acik.length)s+=`<div class="card dep" style="border-left:5px solid #f0a500;background:color-mix(in srgb,#ffe9b8 38%,var(--card))"><b>Açık noktalar · ${acik.reduce((a,x)=>a+x[1].length,0)}</b><span class="note" style="margin:0"> personel aranıyor${rg?' · '+tc(rg):''}</span>`+
@@ -2226,7 +2226,7 @@ function vIht(){
   const agg=new Map(); rows.forEach(x=>x.parts.forEach(p=>{const k=p.g+'|'+p.ad;agg.set(k,(agg.get(k)||0)+p.v)}));
   const top=[...agg.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8);
   const tot=rows.reduce((a,x)=>a+x.tot,0), n=rows.filter(x=>x.tot>0).length;
-  let s=chips(Object.keys(IHT).map(k=>[k,IHT[k]]),tip,'it')+`<input type="search" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+bolgeChips('irg',rg);
+  let s=chips(Object.keys(IHT).map(k=>[k,IHT[k]]),tip,'it')+`<input type="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+bolgeChips('irg',rg);
   s+=`<div class="card dep"><div class="g4" style="grid-template-columns:repeat(2,1fr)"><div><small>Toplam sipariş ihtiyacı</small><b class="or">${nf(tot)}</b></div><div><small>Siparişi olan mağaza</small><b>${n}<span style="font-size:12px;color:var(--mut)">/${rows.length}</span></b></div></div></div>`;
   s+=`<div class="row" style="margin:0 0 8px;justify-content:flex-end">${XLB}</div>`;
   XL=()=>({ad:IHT[tip]+' ihtiyaç listesi '+(rg?tc(rg)+' ':'')+veriTarihi(D.donem),h:['Kod','Mağaza','SPV','Bölge','Grup','Model','Artikel','Sipariş adet'],rows:rows.flatMap(x=>x.parts.map(p=>[x.kod,x.ad,x.spv,x.bolge,p.g,p.ad,artIht(p.ad),p.v]))});
@@ -2340,19 +2340,30 @@ function vTrf(){
 }
 
 /* ---------- çizim ---------- */
-function render(){
+/* Arama kutusuna yazarken kutu yeniden oluşturulmaz (v121): kutu DOM'dan çıkıp odağı kaybedince telefon klavyesi her harfte harf sayfasına dönüyordu.
+   Sayfanın geri kalanı yenilenir, canlı kutu yerinde kalır. Kutu sayfanın üst düzeyinde değilse eski yola (tam çizim) düşer. */
+function yerindeCiz(keep,html){
+  if(!keep.isConnected||keep.parentNode!==M)return false;
+  const t=document.createElement('template'); t.innerHTML=html;
+  const ni=t.content.querySelector('#'+keep.id); if(!ni||ni.parentNode!==t.content)return false;
+  while(keep.previousSibling)keep.previousSibling.remove(); while(keep.nextSibling)keep.nextSibling.remove();
+  let once=true; [...t.content.childNodes].forEach(n=>{if(n===ni){once=false;return} if(once)M.insertBefore(n,keep);else M.appendChild(n)});
+  return true;
+}
+function yaz(el){const p=el.selectionStart,id=el.id;render(el);const n=$('#'+id);if(n&&n!==el){n.focus();try{n.setSelectionRange(p,p)}catch(e){}}}
+function render(keep){
   if(!D)return;
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab&&(tab!=='daha'||(b.dataset.s||'')===(sel.dh||''))));
   const ng=$('#navgun'); if(ng){const g0=D.gunluk&&D.gunluk[0]; ng.classList.toggle('al',!!(g0&&/^(hata|uyari)$/.test(g0.tur)))}
   const on=document.querySelector('nav button.on'); if(on&&on.scrollIntoView)on.scrollIntoView({inline:'nearest',block:'nearest'});
   if(BLG){BKEYS.forEach(k=>{sel[k]=BLG}); if(sel.rg==null)sel.rg=BLG}
   const y=window.scrollY; XL=null;
-  M.innerHTML=({ozet:vOzet,kat:vKat,mag:vMag,urun:vUrun,trf:vTrf,daha:vDaha}[tab]||vOzet)();
+  {const html=({ozet:vOzet,kat:vKat,mag:vMag,urun:vUrun,trf:vTrf,daha:vDaha}[tab]||vOzet)(); if(!(keep&&keep.nodeType===1&&yerindeCiz(keep,html)))M.innerHTML=html}
   bindChips();
   const spb=$('#stokPay'); if(spb)spb.onclick=()=>stokAc();
   M.querySelectorAll('[data-spay]').forEach(el=>el.onclick=e=>{e.preventDefault();e.stopPropagation();stokAc(+el.dataset.spay)});
-  const sqi=$('#sq'); if(sqi)sqi.oninput=()=>{sel.sq=sqi.value;const p=sqi.selectionStart;render();const n=$('#sq');n.focus();n.setSelectionRange(p,p)};
-  const q=$('#q'); if(q)q.oninput=()=>{sel.q=q.value;const p=q.selectionStart;render();const n=$('#q');n.focus();n.setSelectionRange(p,p)};
+  const sqi=$('#sq'); if(sqi)sqi.oninput=()=>{sel.sq=sqi.value;yaz(sqi)};
+  const q=$('#q'); if(q)q.oninput=()=>{sel.q=q.value;yaz(q)};
   const go=(t,fn)=>{tab=t;LS.set('tab',t);if(fn)fn();render();window.scrollTo(0,0)};
   M.querySelectorAll('[data-mk]').forEach(el=>el.onclick=e=>{e.stopPropagation();const k=el.dataset.mk; if(k===ANKK){toast('Ankara mağazaları MDA/Ankastre stoğunu ortak depodan kullanır');return} go('mag',()=>{sel.mk=k})});
   M.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{if(b.dataset.back==='mk')sel.mk=null;if(b.dataset.back==='dh'){sel.dh='';if(sel.dhfrom){tab=sel.dhfrom;sel.dhfrom='';LS.set('tab',tab)}}render();window.scrollTo(0,0)});
