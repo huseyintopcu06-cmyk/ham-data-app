@@ -2364,7 +2364,7 @@ function render(keep){
   M.querySelectorAll('[data-spay]').forEach(el=>el.onclick=e=>{e.preventDefault();e.stopPropagation();stokAc(+el.dataset.spay)});
   const sqi=$('#sq'); if(sqi)sqi.oninput=()=>{sel.sq=sqi.value;yaz(sqi)};
   const q=$('#q'); if(q)q.oninput=()=>{sel.q=q.value;yaz(q)};
-  const go=(t,fn)=>{tab=t;LS.set('tab',t);if(fn)fn();render();window.scrollTo(0,0)};
+  const go=(t,fn)=>{pgKaydet();tab=t;LS.set('tab',t);if(fn)fn();render();window.scrollTo(0,0)};
   M.querySelectorAll('[data-mk]').forEach(el=>el.onclick=e=>{e.stopPropagation();const k=el.dataset.mk; if(k===ANKK){toast('Ankara mağazaları MDA/Ankastre stoğunu ortak depodan kullanır');return} go('mag',()=>{sel.mk=k})});
   M.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{if(b.dataset.back==='mk')sel.mk=null;if(b.dataset.back==='dh'){sel.dh='';if(sel.dhfrom){tab=sel.dhfrom;sel.dhfrom='';LS.set('tab',tab)}}render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-kimg]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();kartResim(b.dataset.kimg,b.dataset.kk)});
@@ -2389,7 +2389,18 @@ function render(keep){
   if($('#gkd')){$('#gpd').onclick=pdfPaylas; $('#gkd').onclick=()=>gorselKaydet(); M.querySelectorAll('[data-gk]').forEach(b=>b.onclick=()=>gorselKaydet(b.dataset.gk)); gorselDurum()}
   window.scrollTo(0,y);
 }
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;LS.set('tab',tab);sel.q='';if(tab==='mag')sel.mk=null;if(tab==='daha'){sel.dh=b.dataset.s||'';sel.dhfrom='';sel.dhnav=!!b.dataset.s}window.scrollTo(0,0);render()});
+/* Sayfa hafızası (v122): alt menüden başka sayfaya geçip geri dönünce sayfa kaldığı yerden açılır (kaydırma konumu, arama metni, açık bölümler, açık mağaza).
+   Bulunulan sayfanın düğmesine tekrar basmak sayfayı başa alır. Yalnız oturum içinde tutulur. */
+const PG={}, pgKey=()=>tab+(tab==='daha'?':'+(sel.dh||''):'');
+function pgKaydet(){PG[pgKey()]={y:window.scrollY,q:sel.q||'',mk:sel.mk,det:[...M.querySelectorAll('details')].map(d=>d.open)}}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  const eski=pgKey(); pgKaydet();
+  tab=b.dataset.t;LS.set('tab',tab);if(tab==='daha'){sel.dh=b.dataset.s||'';sel.dhfrom='';sel.dhnav=!!b.dataset.s}
+  const p=pgKey()!==eski?PG[pgKey()]:null;
+  sel.q=p?p.q:'';if(tab==='mag')sel.mk=p?p.mk:null;
+  window.scrollTo(0,0);render();
+  if(p){const d=[...M.querySelectorAll('details')]; if(d.length===p.det.length)d.forEach((x,i)=>{if(x.open!==p.det[i])x.open=p.det[i]}); window.scrollTo(0,p.y); requestAnimationFrame(()=>window.scrollTo(0,p.y))}
+});
 $('#zoom button').onclick=()=>{$('#zoom').style.display='none'};
 $('#hzk').onclick=()=>{$('#hz').style.display='none'};
 $('#hzs').onclick=hedefPaylas;
