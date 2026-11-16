@@ -916,7 +916,8 @@ function kartResim(kod,k,stok){   // stok: Stok aramasından çağrılınca ay s
   const pj=stok?stokProj(x):null, ek=stok?stokEks(m,k):0;
   const y=yorumMag(m,k), bm=buAy(D), pm=oncekiAy(D), U=D.urunler, ux=urunIdx();
   const cats=(KATVERI[k]||[]).map(c=>U.k.indexOf(c)).filter(i=>i>=0);
-  const rows=ux?(ux.byKod.get(kod)||[]).filter(r=>cats.includes(r[2])&&(r[3]>0||r[5]>0||r[6]>0)).sort((a,b)=>b[3]-a[3]||b[5]-a[5]||b[6]-a[6]).slice(0,12):[];
+  const rows=ux?(ux.byKod.get(kod)||[]).filter(r=>cats.includes(r[2])&&(r[3]>0||r[5]>0||r[6]>0)).sort((a,b)=>b[3]-a[3]||b[5]-a[5]||b[6]-a[6]).slice(0,stok?200:12):[];   // Stok paylaşımında bütün modeller (v129)
+  const SK=rows.length>14;   // çok satırda sıkı düzen: satır alçalır, artikel model adının yanına geçer
   const css=getComputedStyle(document.documentElement), ac=css.getPropertyValue('--ac').trim()||'#3b6fc4', ad=css.getPropertyValue('--ad').trim()||'#1F3864', ae=css.getPropertyValue('--ae').trim()||'#16294a';
   const W=1080, P=44, IW=W-2*P, c=document.createElement('canvas'), g=c.getContext('2d');
   const font=(w,s)=>g.font=`${w} ${s}px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif`;
@@ -925,7 +926,13 @@ function kartResim(kod,k,stok){   // stok: Stok aramasından çağrılınca ay s
   // yükseklik hesabı
   c.width=W; font(500,30);
   const yl=y?wrap(y.t,IW-80):[], ol=y?y.o.flatMap(z=>wrap('• '+z,IW-80)):[];
-  const H=P+250+190+(pj?104:0)+(x.set?60:0)+(y?70+yl.length*40+ol.length*40+30:0)+(rows.length?110+rows.length*86+20:0)+110+P;
+  // model adı sığmazsa kesilmez: küçük puntoyla 2 (gerekirse 3) satıra bölünür, satır yüksekliği ona göre büyür (v129)
+  const NW=470*(IW-48)/910-14;
+  const B0=SK?56:86;
+  const RL=rows.map(r=>{const nm=String(U.u[r[0]]); font(600,SK?24:25); if(g.measureText(nm).width<=NW)return {l:[nm],f:SK?24:25,h:B0,w:g.measureText(nm).width};
+    font(600,22); let l=wrap(nm,NW); if(l.length>3){l=l.slice(0,3); l[2]=l[2].replace(/.{2}$/,'')+'…'} return {l,f:22,h:B0+(l.length-1)*28,w:NW}});
+  font(500,30);
+  const H=P+250+190+(pj?104:0)+(x.set?60:0)+(y?70+yl.length*40+ol.length*40+30:0)+(rows.length?110+RL.reduce((t,z)=>t+z.h,0)+20:0)+110+P;
   c.height=H;
   const bg=g.createLinearGradient(0,0,W,H); bg.addColorStop(0,ac); bg.addColorStop(1,ae); g.fillStyle=bg; g.fillRect(0,0,W,H);
   g.fillStyle='#ffffff'; rr(P/2,P/2,W-P,H-P,48); g.fill();
@@ -959,11 +966,14 @@ function kartResim(kod,k,stok){   // stok: Stok aramasından çağrılınca ay s
     HD.forEach(([t,col],i)=>{const hx=X0+cx[i]; if(col){g.fillStyle=col; rr(hx+3,Y,cw[i]-6,50,25); g.fill(); g.fillStyle='#fff'}else g.fillStyle='#16202e'; font(700,24); g.textAlign=col?'center':'left'; g.fillText(t,col?hx+cw[i]/2:hx+6,Y+34)}); g.textAlign='left';
     Y+=70;
     rows.forEach((r,ri)=>{
-      if(ri%2===0){g.fillStyle='#f6f8fc'; rr(X0-8,Y-6,IW-32,80,18); g.fill()}
-      font(600,25); g.fillStyle='#16202e'; let nm=String(U.u[r[0]]); while(g.measureText(nm).width>cw[0]-14&&nm.length>8)nm=nm.slice(0,-2); if(nm!==U.u[r[0]])nm=nm.trimEnd()+'…'; g.fillText(nm,X0+6,Y+28);
-      const ar=U.a&&U.a[r[0]]; if(ar){font(500,20); g.fillStyle='#667085'; g.fillText('Artikel: '+ar,X0+6,Y+56)}
-      [[r[3],'#c65911'],[r[7],'#5b6b82'],[r[5],'#2E75B6'],[r[6],'#17803d']].forEach(([v,col],i)=>{font(800,28); g.fillStyle=v>0?col:'#c7cfdb'; g.textAlign='center'; g.fillText(v>0?String(v):'·',X0+cx[i+1]+cw[i+1]/2,Y+40)}); g.textAlign='left';
-      Y+=86;
+      const z=RL[ri], ex=z.h-B0, ty=SK?26:28;
+      if(ri%2===0){g.fillStyle='#f6f8fc'; rr(X0-8,Y-6,IW-32,z.h-(SK?2:6),SK?14:18); g.fill()}
+      font(600,z.f); g.fillStyle='#16202e'; z.l.forEach((t,li)=>g.fillText(t,X0+6,Y+ty+li*28));
+      const ar=U.a&&U.a[r[0]];
+      if(ar&&!SK){font(500,20); g.fillStyle='#667085'; g.fillText('Artikel: '+ar,X0+6,Y+56+ex)}
+      else if(ar&&z.l.length===1){font(500,19); const aw=g.measureText(ar).width; if(z.w+16+aw<=NW){g.fillStyle='#98a2b3'; g.fillText(ar,X0+6+z.w+16,Y+ty)}}
+      [[r[3],'#c65911'],[r[7],'#5b6b82'],[r[5],'#2E75B6'],[r[6],'#17803d']].forEach(([v,col],i)=>{font(800,28); g.fillStyle=v>0?col:'#c7cfdb'; g.textAlign='center'; g.fillText(v>0?String(v):'·',X0+cx[i+1]+cw[i+1]/2,Y+(SK?28:40)+ex/2)}); g.textAlign='left';
+      Y+=z.h;
     });
   }
   font(500,22); g.fillStyle='#98a2b3'; g.textAlign='center'; g.fillText('Ham Data · BSH Güney Anadolu · '+(D.olusturma||''),W/2,H-P-26); g.textAlign='left';
