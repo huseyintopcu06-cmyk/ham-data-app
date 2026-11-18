@@ -1095,9 +1095,10 @@ function urunGrafik(ui,ga){
 }
 /* ---- Ara: mağaza yanında departman personel rozeti ---- */
 function araPer(kod,kat){
-  const dep={'MDA':'MDA','Ankastre':'MDA','VC':'VC','FOOD':'FOOD','FOOD Diğer':'FOOD','FAEM':'FAEM'}[kat]; if(!dep)return '';
-  const m=magList().map.get(kod), x=m&&m.k[dep]; if(!x||x.per==null)return '';
-  return ` <span class="pb ${perCls(x.per)}" style="font-size:10px;padding:1px 6px;margin-left:4px">${dep}: ${esc(perTxt(x.per))}</span>`;
+  const m=magList().map.get(kod); if(!m)return '';
+  const t=['MDA','VC','FOOD','FAEM'].map(d=>{const x=m.k[d]; if(!x||x.per==null)return '';
+    return `<span class="pb ${perCls(x.per)}" style="font-size:10px;padding:1px 6px;margin:2px 4px 0 0">${d}: ${esc(perTxt(x.per))}</span>`}).join('');
+  return t?`<br>${t}`:'';
 }
 /* ---- Ürün sekmesi ---- */
 /* Fiyat sayfası (v133): ürün ara, MediaMarkt sitesindeki güncel fiyatını aç. Fiyat uygulamaya çekilemiyor (site bot koruması), bu yüzden her ürün bir bağlantı. */
