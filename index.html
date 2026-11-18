@@ -268,7 +268,7 @@ nav button.on{box-shadow:none;background:color-mix(in srgb,var(--c) 18%,transpar
 main{padding-bottom:calc(104px + env(safe-area-inset-bottom))}
 #toast{bottom:calc(96px + env(safe-area-inset-bottom));-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 /* alt menü: satırda en çok 8 düğme, fazlası ikinci satıra iner; yana kaydırma yok */
-nav{flex-wrap:wrap;justify-content:center;overflow:visible}
+nav{flex-wrap:wrap;justify-content:flex-start;overflow:visible}
 nav button{flex:0 0 12.5%;min-width:0;text-align:center;line-height:1.1}
 nav button.on{margin:3px 0}
 main{padding-bottom:calc(160px + env(safe-area-inset-bottom))}
@@ -292,6 +292,7 @@ main{padding-bottom:calc(160px + env(safe-area-inset-bottom))}
 <button style="--c:#B266E0" data-t="urun"><b>⌕</b>Ara</button>
 <button style="--c:#F0544F" data-t="trf"><b>⇄</b>Transfer</button>
 <button style="--c:#14B8A6" data-t="daha" data-s="brand"><b>▤</b>BRAND</button>
+<button style="--c:#E8590C" data-t="daha" data-s="fiyat"><b>₺</b>Fiyat</button>
 <button style="--c:#F5C518" data-t="daha" data-s="ihtiyac"><b>☑</b>İhtiyaç</button>
 <button style="--c:#FF5FA2" data-t="daha" data-s="gid"><b>↗</b>Gidişat</button>
 <button style="--c:#8BC34A" data-t="daha" data-s="hedef"><b>◎</b>Hedef Ajans</button>
@@ -1093,6 +1094,24 @@ function urunGrafik(ui,ga){
   return `<div class="ugr"><div class="note" style="margin:0 0 2px"><b>Günlük satış (adet/gün)</b> · ${ga?'Güney Anadolu':'Türkiye (fiziksel)'}</div>${svg}<div class="note" style="margin:2px 0 6px">Çubuk altı: rapor günü ve satılabilir stok${n>1?` · stok ${nf(f.st)} → ${nf(l.st)}`:' · günler geçtikçe çubuklar çoğalır'}</div></div>`;
 }
 /* ---- Ürün sekmesi ---- */
+/* Fiyat sayfası (v133): ürün ara, MediaMarkt sitesindeki güncel fiyatını aç. Fiyat uygulamaya çekilemiyor (site bot koruması), bu yüzden her ürün bir bağlantı. */
+function vFiyat(){
+  const U=D.urunler; if(!U)return '<div class="msg">Bu raporda ürün verisi yok.</div>';
+  const q=fold(sel.q).trim(), toks=q.split(/\s+/).filter(Boolean), kt=sel.fyk||'';
+  const A=new Map(); U.r.forEach(r=>{const m=U.m[r[1]]; if(BLG&&(!m||m[1]!==BLG))return; let a=A.get(r[0]); if(!a){a={u:r[0],k:r[2],s:0,g:0,st:0};A.set(r[0],a)} a.s+=N(r[3]);a.g+=N(r[7]);a.st+=N(r[5])});
+  let L=U.u.map((ad,i)=>A.get(i)||{u:i,k:-1,s:0,g:0,st:0}).filter(a=>U.a&&U.a[a.u]);
+  if(kt)L=L.filter(a=>a.k>=0&&U.k[a.k]===kt);
+  if(toks.length)L=L.filter(a=>{const t=fold(U.u[a.u]+' '+U.a[a.u]);return toks.every(k=>t.includes(k))});
+  L.sort((a,b)=>b.s-a.s||b.g-a.g||String(U.u[a.u]).localeCompare(String(U.u[b.u]),'tr'));
+  const MAXF=80;
+  let s=`<input type="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="q" placeholder="Model ya da artikel ara… (ör. BCS71, 1250068)" value="${esc(sel.q||'')}">`+chips([['','Tümü']].concat(U.k.map(k=>[k,KLAB[k]||k])),kt,'fyk',true);
+  s+=`<div class="note" style="margin:0 0 8px">${L.length} ürün · çok satan üstte · <b>MM fiyatı</b>'na dokun: MediaMarkt sitesinde o ürün açılır</div>`;
+  s+='<div class="card dep">'+L.slice(0,MAXF).map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid var(--line);padding:9px 0"><span style="min-width:0"><b>${esc(U.u[a.u])}</b><br><small style="color:var(--mut)">Artikel ${esc(U.a[a.u])}${a.k>=0?' · '+esc(KLAB[U.k[a.k]]||U.k[a.k]):''} · bu ay ${nf(a.s)} satış · stok ${nf(a.st)}</small></span><a class="chip on" style="flex:0 0 auto;text-decoration:none;padding:8px 13px;font-size:12.5px" href="https://www.mediamarkt.com.tr/tr/search.html?query=${encodeURIComponent(U.a[a.u])}" target="_blank" rel="noopener">MM fiyatı ›</a></div>`).join('')+'</div>';
+  if(L.length>MAXF)s+=`<div class="note">İlk ${MAXF} ürün gösteriliyor; aramayla ya da kategoriyle daralt.</div>`;
+  if(!L.length)s+='<div class="msg">Ürün bulunamadı.</div>';
+  s+='<div class="note">Fiyat MediaMarkt sitesinde açılır; uygulama fiyatı kendisi çekemiyor (site otomatik erişimi engelliyor).</div>';
+  return s;
+}
 function vUrun(){
   const U=D.urunler; if(!U)return '<div class="msg">Bu raporda ürün verisi yok.</div>';
   const ux=urunIdx(), q=fold(sel.q).trim(), rg=sel.urg||'', ust=sel.ustk==='yok';
@@ -1984,9 +2003,11 @@ function vDaha(){
   if(sub==='per')return back+vPer();
   if(sub==='ihtiyac')return back+vIht();
   if(sub==='brand')return back+vBrand();
+  if(sub==='fiyat')return back+vFiyat();
   if(sub==='gunluk')return back+vGunluk();
   return [['stok','▥','Stok','Ay sonuna yetmeyen, biten ve bitmek üzere olan stoklar; stoksuz çok satan ve satmayan ürünler'],
           ['bugun','✔','Bugün ne yapmalı','Seçili bölge için: tutması zor hedefler, biten stoklar, satış yapmayanlar; bölge karnesi görseli'],
+          ['fiyat','₺','Fiyat','Ürün ara, MediaMarkt sitesindeki güncel fiyatını aç (artikel ile)'],
           ['brand','▤','BRAND','Aylık BRAND tabloları: departman bazlı TR satışları (2025–2026)'],
           ['ihtiyac','☰','İhtiyaç listeleri','Ankastre ve SDA: hangi mağazaya hangi modelden kaç sipariş'],
           ['img','▣','Sıralama Görsel','6 sıralama tablosu görseli (MDA, Ankastre, VC, FOOD, FAEM, Hava)'],
