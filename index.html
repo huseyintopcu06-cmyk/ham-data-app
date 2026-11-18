@@ -1093,6 +1093,12 @@ function urunGrafik(ui,ga){
   const f=pts[0], l=pts[n-1];
   return `<div class="ugr"><div class="note" style="margin:0 0 2px"><b>Günlük satış (adet/gün)</b> · ${ga?'Güney Anadolu':'Türkiye (fiziksel)'}</div>${svg}<div class="note" style="margin:2px 0 6px">Çubuk altı: rapor günü ve satılabilir stok${n>1?` · stok ${nf(f.st)} → ${nf(l.st)}`:' · günler geçtikçe çubuklar çoğalır'}</div></div>`;
 }
+/* ---- Ara: mağaza yanında departman personel rozeti ---- */
+function araPer(kod,kat){
+  const dep={'MDA':'MDA','Ankastre':'MDA','VC':'VC','FOOD':'FOOD','FOOD Diğer':'FOOD','FAEM':'FAEM'}[kat]; if(!dep)return '';
+  const m=magList().map.get(kod), x=m&&m.k[dep]; if(!x||x.per==null)return '';
+  return ` <span class="pb ${perCls(x.per)}" style="font-size:10px;padding:1px 6px;margin-left:4px">${dep}: ${esc(perTxt(x.per))}</span>`;
+}
 /* ---- Ürün sekmesi ---- */
 /* Fiyat sayfası (v133): ürün ara, MediaMarkt sitesindeki güncel fiyatını aç. Fiyat uygulamaya çekilemiyor (site bot koruması), bu yüzden her ürün bir bağlantı. */
 function vFiyat(){
@@ -1149,7 +1155,7 @@ function vUrun(){
       <div class="kv"><small>Sell-out</small><b>${nf(a.adet)}</b>${ust?`<span class="stk neg">${a.rows.length} mağazada stoksuz</span><span class="stk">Geçen ay ${nf(a.gec)}</span>`:`<span class="stk">Satılabilir stok ${nf(a.sat)}</span>`}<span class="stk">Açık sipariş ${nf(a.gel)}</span>${a.on?`<span class="stk" style="color:var(--ac);font-weight:700">Online: ${nf(a.on.adet)} satış · stok ${nf(a.on.sat)}</span>`:''}</div></summary>
       <div class="det" style="display:block">${urunGrafik(a.u,rg===GAB)}<div class="urow h"><span>Mağaza</span><span>Sell-out</span><span>${ust?'Geçen ay':'Satılabilir'}</span><span>Sipariş</span></div>`+
       (a.on?`<div class="urow" style="font-weight:700"><span>ONLINE (ayrı)</span><span>${a.on.adet}</span><span>${ust?a.on.gec:a.on.sat}</span><span>${a.on.gel}</span></div>`:'')+
-      rows.map(r=>{const m=U.m[r[1]]||[r[1],'',''];return `<div class="urow ${m[1]===GAB?'gar':''}" data-mk="${r[1]}"><span>${esc(m[0])}</span><span>${r[3]}</span><span>${ust?r[7]:r[5]}</span><span>${r[6]}</span></div>`}).join('')+`</div></details>`;
+      rows.map(r=>{const m=U.m[r[1]]||[r[1],'',''];return `<div class="urow ${m[1]===GAB?'gar':''}" data-mk="${r[1]}"><span>${esc(m[0])}${araPer(r[1],U.k[a.k])}</span><span>${r[3]}</span><span>${ust?r[7]:r[5]}</span><span>${r[6]}</span></div>`}).join('')+`</div></details>`;
   }).join('');
   return s;
 }
