@@ -79,6 +79,7 @@ h2{font-size:14px;margin:16px 0 8px;color:var(--mut);text-transform:uppercase;le
 .mt.gt td:first-child{min-width:0;max-width:none;color:var(--mut)}.mt.gt{overflow-x:visible}.mt.gt table{table-layout:auto}.gg>div{min-width:0}.gt td.v{text-align:right;white-space:normal}.gt td.v.n{width:1%;white-space:nowrap}
 .gt tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--chip) 55%,transparent)}
 .chip.rs{padding:5px 12px;font-size:12px;font-weight:600;color:#fff;background:linear-gradient(135deg,var(--ac),var(--ad));border-color:transparent}
+.mmf{color:var(--ac);font-weight:700;text-decoration:none;padding:3px 0 3px 2px;white-space:nowrap}
 .art{display:block;font-size:10.5px;color:var(--mut);font-weight:500;letter-spacing:.2px;margin-top:1px}
 .mt{margin:4px 0 6px}.mt table{font-size:12px}.mt th,.mt td{padding:5px 7px}
 .mt td:first-child,.mt th:first-child{position:static;white-space:normal;min-width:130px;max-width:190px;text-align:left;line-height:1.25;background:transparent}
@@ -463,7 +464,8 @@ function artMap(){   // model kodu -> artikel (urunler listesinden)
   U.u.forEach((n,i)=>{if(!U.a[i])return; const t=String(n).split(/\s+/).filter(w=>!/^(BOSCH|SIEMENS|PROFILO)$/i.test(w)); if(t[0]&&!m.has(t[0]))m.set(t[0],U.a[i])});
   _am.set(D,m); return m;
 }
-const artHtml=a=>a?`<small class="art">Artikel: ${esc(a)}</small>`:'';
+/* MM fiyatı bağlantısı (v132): artikelin yanında; dokununca mediamarkt.com.tr'de o artikelin araması telefonun tarayıcısında açılır (fiyat otomatik çekilemiyor: site bot koruması, 18.11.2026 denemesi) */
+const artHtml=a=>a?`<small class="art">Artikel: ${esc(a)} · <a class="mmf" href="https://www.mediamarkt.com.tr/tr/search.html?query=${encodeURIComponent(a)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">MM fiyatı ›</a></small>`:'';
 const artI=i=>{const U=D.urunler;return artHtml(U&&U.a&&U.a[i])};
 const artT=s=>{const m=artMap(); if(!m)return ''; const t=String(s||'').split(/[\s(]+/).filter(w=>w&&!/^(BOSCH|SIEMENS|PROFILO)$/i.test(w)); return artHtml(t[0]&&m.get(t[0]))};
 /* stok kaç gün yeter: günlük hız = bu ayki satış ÷ geçen gün (bu ay satış yoksa geçen ay ÷ 30). Satış yoksa hesaplanmaz. */
