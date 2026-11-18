@@ -1798,6 +1798,36 @@ function vStok(){
   const st=stokAra(q), ur=q.length>=2?stokUrun(q):'', yok=st.includes('bulunamadı');
   return box+((yok&&!ur)?'':'<button class="chip" id="stokPay" style="margin:0 0 8px">Resim olarak paylaş</button>')+(yok&&ur?'':st)+ur;
 }
+/* Stok · Mağaza mağaza görünümü (v131): mağazalar eksik ürün sayısına göre sıralı; mağazayı açınca stokta olmayan (geçen ay ≥2 satmış, stok + açık sipariş 0)
+   ve bitmek üzere olan (≤7 gün) ürünleri. Kurallar "Ürün ürün" görünümündeki bölümlerle aynı. */
+function stokMagazaG(ms,KK,ad,kt){
+  const U=D.urunler; if(!U)return '<div class="msg">Ürün verisi yok.</div>';
+  const cats=new Set(KK.flatMap(k=>KATVERI[k]||[]).map(c=>U.k.indexOf(c)).filter(i=>i>=0));
+  const P=new Map(ms.map(m=>[m.kod,{m,yok:[],az:[]}]));
+  U.r.forEach(r=>{const p=P.get(r[1]); if(!p||!cats.has(r[2]))return;
+    if(r[7]>=2&&r[5]+r[6]<=0)p.yok.push(r);
+    else if(r[3]>=2&&r[5]+r[6]>0){const g=stokGun(r[3],r[5]+r[6],r[7]); if(g<=7)p.az.push([r,g])}});
+  const L=[...P.values()]; L.forEach(p=>{p.yok.sort((a,b)=>b[7]-a[7]||b[3]-a[3]); p.az.sort((a,b)=>a[1]-b[1])});
+  L.sort((a,b)=>b.yok.length-a.yok.length||b.az.length-a.az.length||a.m.ad.localeCompare(b.m.ad,'tr'));
+  const dolu=L.filter(p=>p.yok.length||p.az.length), bos=L.filter(p=>!p.yok.length&&!p.az.length);
+  const alt=ad+' · '+(kt?(KLAB[kt]||kt):'tüm departmanlar');
+  let s=`<div class="note" style="margin:0 0 8px">${dolu.length} mağazada eksik ürün var · en çok eksiği olan üstte · mağazaya dokun: ürünler açılır</div>`;
+  const satir=(u,kat,sag,kirmizi)=>`<div data-ara="${u}" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-top:1px solid var(--line);padding:8px 0;cursor:pointer"><span style="min-width:0"><b>${esc(U.u[u])}</b> <small style="color:var(--mut)">· ${esc(U.k[kat])}</small>${artI(u)}</span><span style="flex:0 0 auto;text-align:right;white-space:nowrap;line-height:1.35" class="${kirmizi?'neg':''}">${sag}</span></div>`;
+  s+=dolu.map(p=>{const m=p.m;
+    STP.push({t:m.ad+' · eksik ürünler',alt,rows:p.yok.map(r=>({a:U.u[r[0]],s:`stok yok · geçen ay ${nf(r[7])}`,k:1,d:U.k[r[2]]+(r[3]?` · bu ay ${nf(r[3])} satış`:'')}))
+      .concat(p.az.map(([r,g])=>({a:U.u[r[0]],s:`${sgYaz(g)} gün · stok ${nf(r[5]+r[6])}`,d:U.k[r[2]]+` · bu ay ${nf(r[3])} satış`})))});
+    const pi=STP.length-1;
+    return `<details class="card dep sdep"><summary style="display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer"><i class="acb">▾</i><span style="flex:1;min-width:0"><b>${esc(m.ad)}</b><br><small style="color:var(--mut)">${p.yok.length?`<span class="neg">${p.yok.length} ürün stokta yok</span>`:''}${p.yok.length&&p.az.length?' · ':''}${p.az.length?`${p.az.length} ürün bitmek üzere`:''}</small></span><b style="font-size:18px" class="${p.yok.length?'neg':''}">${p.yok.length+p.az.length}</b></summary>
+      <div style="padding:6px 0 4px"><div class="row" style="gap:8px;margin:0 0 6px"><button class="chip" data-stp="${pi}" style="padding:6px 12px;font-size:12.5px">⇪ Resim paylaş</button><a class="lnk" data-mk="${m.kod}" style="font-size:12.5px">mağaza sayfası ›</a></div>
+      ${p.yok.length?`<div class="bdh" style="margin-top:4px">Stokta yok <span class="note" style="margin:0;font-weight:400">· stok + açık sipariş 0 · geçen ay satmış</span></div>`+p.yok.map(r=>satir(r[0],r[2],`geçen ay <b>${nf(r[7])}</b>${r[3]?`<br><small>bu ay ${nf(r[3])}</small>`:''}`,true)).join(''):''}
+      ${p.az.length?`<div class="bdh" style="margin-top:10px">Bitmek üzere <span class="note" style="margin:0;font-weight:400">· 7 gün ve altı</span></div>`+p.az.map(([r,g])=>satir(r[0],r[2],`<b>${sgYaz(g)} gün</b><br><small>stok ${nf(r[5]+r[6])} · bu ay ${nf(r[3])}</small>`,false)).join(''):''}
+      </div></details>`}).join('');
+  if(bos.length)s+=`<div class="note">Eksik ürün görünmeyen ${bos.length} mağaza: ${bos.map(p=>`<a class="lnk" data-mk="${p.m.kod}">${esc(p.m.ad)}</a>`).join(' · ')}</div>`;
+  if(!dolu.length)s+='<div class="msg">Bu seçimde eksik ürün görünmüyor.</div>';
+  s+='<div class="note">Stokta yok: geçen ay en az 2 satmış, stok + açık sipariş 0 · Bitmek üzere: bu ay en az 2 satmış, stok + açık sipariş 7 gün ve altı · ürüne dokun: ürün aramada aç</div>';
+  s+='<div class="note">Ankara mağazalarında MDA ve Ankastre stoğu ortak Ankara deposundan (T802) sayılır; bu ürünler mağaza listesinde görünmez.</div>';
+  return s;
+}
 function vStok0(){
   const U=D.urunler, rg=BLG||sel.stg||'', kt=KSS.includes(sel.stk)?sel.stk:'', KK=kt?[kt]:KSS, ad=rg?tc(rg):'Türkiye';
   const ms=magList().arr.filter(m=>m.bolge!=='ONLINE'&&(!rg||m.bolge===rg));
@@ -1808,9 +1838,11 @@ function vStok0(){
     if(b.length)biten.push({m,k:b}); if(y.length)yet.push({m,k:y,t:y.reduce((a,k)=>a+stokEks(m,k),0)})});
   biten.sort((a,b)=>b.m.top-a.m.top); yet.sort((a,b)=>b.t-a.t);
   STP=[]; const MLm=magList().map, mad=k=>{const m=MLm.get(k);return m?m.ad:(U&&U.m[k]?U.m[k][0]:k)}, kl=k=>KLAB[k]||k;
-  let s=bolgeChips('stg',rg)+chips([['','Tümü']].concat(KSS.map(k=>[k,KLAB[k]||k])),kt,'stk',true);
+  const mv=sel.stv==='m';
+  let s=chips([['','Ürün ürün'],['m','Mağaza mağaza']],mv?'m':'','stv')+bolgeChips('stg',rg)+chips([['','Tümü']].concat(KSS.map(k=>[k,KLAB[k]||k])),kt,'stk',true);
   s+=`<div class="note" style="margin:0 0 8px">Stok · ${esc(ad)} · ${esc(kt?(KLAB[kt]||kt):'tüm departmanlar')} · ${esc(veriTarihi(D.donem)||'')}</div>`;
   s+=`<div class="card dep"><div class="g4"><div><small>Satılabilir stok</small><b>${nf(sat)}</b></div><div><small>Açık sipariş</small><b>${nf(gel)}</b></div><div><small>Stok + sipariş</small><b>${nf(sat+gel)}</b></div><div><small>Ay sonuna yetmeyen</small><b class="${yet.length?'neg':''}">${yet.length}<span style="font-size:12px;color:var(--mut)">/${ms.length}</span></b></div></div><div class="note" style="margin:8px 0 0">Ay sonu stoğu (tahmini): <b>${nf(ms.reduce((a,m)=>a+KK.reduce((b,k)=>b+(m.k[k]?stokProj(m.k[k]).son:0),0),0))}</b> adet · açık sipariş en geç ayın 17'sinde mağazada varsayıldı</div></div>`;
+  if(mv)return s+stokMagazaG(ms,KK,ad,kt);
   const n0=s.length;
   s+=stokSec('Ay sonuna yetmeyen stok (eksik adet)',yet.length,yet.map(x=>stokDet(x.m,x.k,true)),null,yet.map(x=>({a:x.m.ad,s:nf(x.t)+' adet eksik',k:1,d:x.k.map(k=>`${kl(k)} −${nf(stokEks(x.m,k))}`).join(' · ')})));
   const e17=ms.map(m=>{const k=KK.filter(c=>m.k[c]&&stokProj(m.k[c]).ek17>0); return k.length?{m,k,t:k.reduce((a,c)=>a+stokProj(m.k[c]).ek17,0)}:null}).filter(Boolean).sort((a,b)=>b.t-a.t);
