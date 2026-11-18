@@ -279,7 +279,7 @@ main{padding-bottom:calc(160px + env(safe-area-inset-bottom))}
 </style>
 </head>
 <body>
-<header><div class="row"><div><h1 id="ttl">Ham Data</h1><small id="sub">yükleniyor…</small></div><div><small id="surum" title="Uygulama sürümü" style="opacity:.65;margin-right:6px">v141</small><button class="ib" id="rf" title="Veriyi yenile">↻</button> <button class="ib" id="th" title="Tema">◐</button> <button class="ib" id="gn" title="Uygulamayı güncelle (yeni sürümü al)">⬆</button> <button class="ib" id="st" title="Çıkış yap (şifreyi bu cihazdan sil)">Çıkış</button></div></div><div class="row" style="justify-content:flex-end;margin-top:6px"><select id="blg" class="ib" title="Bölge seçimi: yalnız seçilen bölge görünür"></select></div></header>
+<header><div class="row"><div><h1 id="ttl">Ham Data</h1><small id="sub">yükleniyor…</small></div><div><small id="surum" title="Uygulama sürümü" style="opacity:.65;margin-right:6px">v142</small><button class="ib" id="rf" title="Veriyi yenile">↻</button> <button class="ib" id="th" title="Tema">◐</button> <button class="ib" id="gn" title="Uygulamayı güncelle (yeni sürümü al)">⬆</button> <button class="ib" id="st" title="Çıkış yap (şifreyi bu cihazdan sil)">Çıkış</button></div></div><div class="row" style="justify-content:flex-end;margin-top:6px"><select id="blg" class="ib" title="Bölge seçimi: yalnız seçilen bölge görünür"></select></div></header>
 <div id="byt" hidden></div>
 <div id="upd" hidden><span>Yeni sürüm var</span><button id="updgo">Yenile</button></div>
 <main id="m"></main>
@@ -1094,8 +1094,13 @@ function urunGrafik(ui,ga){
   return `<div class="ugr"><div class="note" style="margin:0 0 2px"><b>Günlük satış (adet/gün)</b> · ${ga?'Güney Anadolu':'Türkiye (fiziksel)'}</div>${svg}<div class="note" style="margin:2px 0 6px">Çubuk altı: rapor günü ve satılabilir stok${n>1?` · stok ${nf(f.st)} → ${nf(l.st)}`:' · günler geçtikçe çubuklar çoğalır'}</div></div>`;
 }
 /* ---- Ara: mağaza yanında departman personel rozeti ---- */
+function araDep(kat){const s=String(kat||'');return /^VC/.test(s)?'VC':/^FOOD/.test(s)?'FOOD':/^FAEM/.test(s)?'FAEM':/^(MDA|Ankastre)/.test(s)?'MDA':''}
+function araVar(kod,kat){   // true: ürünün departmanında personel var · false: yok/açık nokta · null: bilinmiyor
+  const dep=araDep(kat); if(!dep)return null; const m=magList().map.get(kod), x=m&&m.k[dep]; if(!x)return null;
+  const c=perCls(x.per); return c==='var'||c==='dol';
+}
 function araPer(kod,kat){   // ürünün kendi departmanının personel durumu (MDA/Ankastre→MDA, VC*, FOOD*, FAEM)
-  const s=String(kat||''), dep=/^VC/.test(s)?'VC':/^FOOD/.test(s)?'FOOD':/^FAEM/.test(s)?'FAEM':/^(MDA|Ankastre)/.test(s)?'MDA':''; if(!dep)return '';
+  const dep=araDep(kat); if(!dep)return '';
   const m=magList().map.get(kod), x=m&&m.k[dep]; if(!x)return '';
   const c=perCls(x.per), t=c==='yok'||c==='bos'?'Yok':perTxt(x.per);
   return `<br><span class="pb ${c==='bos'?'yok':c}" style="font-size:10px;padding:1px 6px;margin-top:2px">${dep}: ${esc(t)}</span>`;
@@ -1122,7 +1127,7 @@ function vFiyat(){
 function vUrun(){
   const U=D.urunler; if(!U)return '<div class="msg">Bu raporda ürün verisi yok.</div>';
   const ux=urunIdx(), q=fold(sel.q).trim(), rg=sel.urg||'', ust=sel.ustk==='yok';
-  let s=`<input type="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="q" placeholder="Mağaza, ürün, model veya artikel ara… (ör. Van, BCS71)" value="${esc(sel.q||'')}">`+bolgeChips('urg',rg)+chips([['','Tümü'],['yok','Stoksuz mağazalar']],sel.ustk||'','ustk')+chips([['','Tüm kategoriler']].concat(U.k.map((x,i)=>[String(i),x])),sel.ukat||'','ukat',true);
+  let s=`<input type="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="q" placeholder="Mağaza, ürün, model veya artikel ara… (ör. Van, BCS71)" value="${esc(sel.q||'')}">`+bolgeChips('urg',rg)+chips([['','Tümü'],['yok','Stoksuz mağazalar']],sel.ustk||'','ustk')+chips([['','Personel: hepsi'],['var','Personel var'],['yok','Personel yok']],sel.uper||'','uper')+chips([['','Tüm kategoriler']].concat(U.k.map((x,i)=>[String(i),x])),sel.ukat||'','ukat',true);
   const toks=q.split(/\s+/).filter(Boolean);
   if(q.length===1){
     s+='<div class="note" style="margin:0 0 8px">En az 2 harf yaz: mağaza adı, ürün adı, model kodu ya da artikel numarasının bir kısmı.</div>';
@@ -1139,6 +1144,7 @@ function vUrun(){
     const m=U.m[r[1]]; if(!m)return;
     const onl=m[1]==='ONLINE';
     if(!onl&&(rg&&m[1]!==rg))return; if(ust&&(onl||r[5]+r[6]>0))return;
+    if(sel.uper){if(onl)return; const v=araVar(r[1],U.k[r[2]]); if(v===null||v!==(sel.uper==='var'))return}
     let a=hit.get(r[0]); if(!a){a={u:r[0],k:r[2],adet:0,stok:0,sat:0,gel:0,gec:0,rows:[],on:null};hit.set(r[0],a)}
     if(onl){a.on=a.on||{adet:0,sat:0,gel:0,gec:0};a.on.adet+=r[3];a.on.sat+=r[5];a.on.gel+=r[6];a.on.gec+=r[7];return}
     a.adet+=r[3];a.stok+=r[4];a.sat+=r[5];a.gel+=r[6];a.gec+=r[7];a.rows.push(r);
