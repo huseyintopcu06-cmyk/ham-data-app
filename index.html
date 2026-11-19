@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="150">
+<meta name="surum" content="63">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -279,7 +279,7 @@ main{padding-bottom:calc(160px + env(safe-area-inset-bottom))}
 </style>
 </head>
 <body>
-<header><div class="row"><div><h1 id="ttl">Ham Data</h1><small id="sub">yükleniyor…</small></div><div><small id="surum" title="Uygulama sürümü" style="opacity:.65;margin-right:6px">v150</small><button class="ib" id="rf" title="Veriyi yenile">↻</button> <button class="ib" id="th" title="Tema">◐</button> <button class="ib" id="gn" title="Uygulamayı güncelle (yeni sürümü al)">⬆</button> <button class="ib" id="st" title="Çıkış yap (şifreyi bu cihazdan sil)">Çıkış</button></div></div><div class="row" style="justify-content:flex-end;margin-top:6px"><select id="blg" class="ib" title="Bölge seçimi: yalnız seçilen bölge görünür"></select></div></header>
+<header><div class="row"><div><h1 id="ttl">Ham Data</h1><small id="sub">yükleniyor…</small></div><div><small id="surum" title="Uygulama sürümü" style="opacity:.65;margin-right:6px">v144</small><button class="ib" id="rf" title="Veriyi yenile">↻</button> <button class="ib" id="th" title="Tema">◐</button> <button class="ib" id="gn" title="Uygulamayı güncelle (yeni sürümü al)">⬆</button> <button class="ib" id="st" title="Çıkış yap (şifreyi bu cihazdan sil)">Çıkış</button></div></div><div class="row" style="justify-content:flex-end;margin-top:6px"><select id="blg" class="ib" title="Bölge seçimi: yalnız seçilen bölge görünür"></select></div></header>
 <div id="byt" hidden></div>
 <div id="upd" hidden><span>Yeni sürüm var</span><button id="updgo">Yenile</button></div>
 <main id="m"></main>
@@ -292,7 +292,6 @@ main{padding-bottom:calc(160px + env(safe-area-inset-bottom))}
 <button style="--c:#B266E0" data-t="urun"><b>⌕</b>Ara</button>
 <button style="--c:#F0544F" data-t="trf"><b>⇄</b>Transfer</button>
 <button style="--c:#14B8A6" data-t="daha" data-s="brand"><b>▤</b>BRAND</button>
-<button style="--c:#7C5CFF" data-t="daha" data-s="gecmis"><b>◷</b>BSH Geçmiş</button>
 <button style="--c:#E8590C" data-t="daha" data-s="fiyat"><b>₺</b>Fiyat</button>
 <button style="--c:#F5C518" data-t="daha" data-s="ihtiyac"><b>☑</b>İhtiyaç</button>
 <button style="--c:#FF5FA2" data-t="daha" data-s="gid"><b>↗</b>Gidişat</button>
@@ -1158,10 +1157,10 @@ function vUrun(){
   XL=()=>({ad:'Ürünler '+(sel.ukat?U.k[+sel.ukat]+' ':'')+(rg?tc(rg)+' ':'')+veriTarihi(D.donem),h:['Ürün','Artikel','Kategori','Sell-out','Satılabilir stok','Açık sipariş','Geçen ay','Mağaza sayısı','Online satış','Online stok'],rows:list.map(a=>[U.u[a.u],U.a&&U.a[a.u]||'',U.k[a.k],a.adet,a.sat,a.gel,a.gec,a.rows.length,a.on?a.on.adet:'',a.on?a.on.sat:''])});
   if(!list.length)return s+(stm.length?'':'<div class="msg">Eşleşen mağaza ya da ürün yok.</div>');
   s+=list.slice(0,40).map(a=>{
-    const rows=a.rows.slice().sort((x,y)=>ust?(y[7]-x[7]||y[3]-x[3]):(y[3]-x[3]||y[5]-x[5]));   // bütün mağazalar (v144; eskiden ilk 80, Türkiye seçiliyken 105 mağazanın 25'i görünmüyordu)
+    const rows=a.rows.slice().sort((x,y)=>ust?(y[7]-x[7]||y[3]-x[3]):(y[3]-x[3]||y[5]-x[5])).slice(0,80);
     return `<details class="card"><summary><div class="nm"><b style="white-space:normal">${esc(U.u[a.u])}</b>${artI(a.u)}<span>${esc(U.k[a.k])}</span></div>
       <div class="kv"><small>Sell-out</small><b>${nf(a.adet)}</b>${ust?`<span class="stk neg">${a.rows.length} mağazada stoksuz</span><span class="stk">Geçen ay ${nf(a.gec)}</span>`:`<span class="stk">Satılabilir stok ${nf(a.sat)}</span>`}<span class="stk">Açık sipariş ${nf(a.gel)}</span>${a.on?`<span class="stk" style="color:var(--ac);font-weight:700">Online: ${nf(a.on.adet)} satış · stok ${nf(a.on.sat)}</span>`:''}</div></summary>
-      <div class="det" style="display:block">${urunGrafik(a.u,rg===GAB)}<div class="note" style="margin:6px 0">${rows.length} mağaza · ${rg?`yalnız ${esc(tc(rg))}${BLG?' (üstteki bölge seçimi)':' · Türkiye için yukarıdan Tümü'}`:'Türkiye, bütün mağazalar'}</div><div class="urow h"><span>Mağaza</span><span>Sell-out</span><span>${ust?'Geçen ay':'Satılabilir'}</span><span>Sipariş</span></div>`+
+      <div class="det" style="display:block">${urunGrafik(a.u,rg===GAB)}<div class="urow h"><span>Mağaza</span><span>Sell-out</span><span>${ust?'Geçen ay':'Satılabilir'}</span><span>Sipariş</span></div>`+
       (a.on?`<div class="urow" style="font-weight:700"><span>ONLINE (ayrı)</span><span>${a.on.adet}</span><span>${ust?a.on.gec:a.on.sat}</span><span>${a.on.gel}</span></div>`:'')+
       rows.map(r=>{const m=U.m[r[1]]||[r[1],'',''];return `<div class="urow ${m[1]===GAB?'gar':''}" data-mk="${r[1]}"><span>${esc(m[0])}${araPer(r[1],U.k[a.k])}</span><span>${r[3]}</span><span>${ust?r[7]:r[5]}</span><span>${r[6]}</span></div>`}).join('')+`</div></details>`;
   }).join('');
@@ -1219,7 +1218,7 @@ async function brandYukle(){
     const r=await fetch('brand.enc?'+Date.now(),{cache:'no-store'}); if(!r.ok)throw new Error(r.status);
     BR=await openPack(await r.text(),LS.get('pw'),true); BRHATA='';
   }catch(e){BRHATA='BRAND verisi alınamadı.'}
-  if(tab==='daha'&&(sel.dh==='brand'||sel.dh==='gecmis'))render();
+  if(tab==='daha'&&sel.dh==='brand')render();
 }
 const brandOran=h=>/[İIÜU]HS|PAY/i.test(h||'');
 function brandFmt(v,h){
@@ -1378,70 +1377,6 @@ function brandIdx(){
   });
   RG.forEach((r,k)=>S.set(k,r));
   _bi={src:BR,S,ayList:[...ayList.values()].sort((a,b)=>a.k-b.k)}; return _bi;
-}
-/* ---- BSH Geçmiş (v146): raporlar/analizler/<yıl>_Bolge_Bazli_Satis_Adetleri.xlsx → brand.enc içindeki 'gecmis' ----
-   Bölgeler: toplam, aylık ortalama, mağaza başı ortalama, pay; aylık tablo; bölgeye dokun → mağazalar (ay ay) */
-const GKIS={'DOĞU MARMARA':'D.Mar','BATI MARMARA':'B.Mar','İÇ ANADOLU':'İç An','GÜNEY ANADOLU':'Güney','EGE AKDENİZ':'Ege Ak'};
-/* mağaza × ay tablosu (v148): mağaza adı solda sabit, sağa kaydırınca aylar; hücre rengi o mağazanın en iyi ayına göre koyulaşır */
-const gTablo=(Ms,aylar,ay,vurgu,bg,AG)=>{
-  AG=AG||aylar.map(()=>1);   // çok aylık kolon (ör. Oca–Ağu) renk/kalın için aylık ortalamasıyla kıyaslanır
-  const sum=a=>a.reduce((x,y)=>x+y,0), mxT=Math.max(1,...Ms.map(m=>sum(m.ay)));
-  const st='position:sticky;left:0;z-index:1;background:var(--card);';
-  const hc=j=>j===ay?'background:var(--ga-line);color:#fff;':'';
-  let t=`<div class="card dep" style="padding:0;overflow-x:auto"><table style="font-size:12px;border-collapse:separate;border-spacing:0;width:max-content;min-width:100%;table-layout:auto"><tr><th style="${st}background:var(--navy);color:#fff;text-align:left;padding:7px 8px;width:118px;min-width:118px;max-width:118px;border-right:1px solid var(--line);z-index:2">Mağaza</th><th style="text-align:right;padding:7px 8px">Toplam</th>${aylar.map((a,j)=>`<th style="text-align:right;padding:7px 7px;white-space:nowrap;${hc(j)}">${esc(a)}</th>`).join('')}</tr>`;
-  t+=Ms.map(m=>{const pa=m.ay.map((v,j)=>v/(AG[j]||1)), mx=Math.max(1e-9,...pa), T=sum(m.ay), ga=bg&&m.b===vurgu;
-    const nb=ga?'background:var(--ga);':'';
-    return `<tr><td style="${st}${nb}padding:6px 8px;width:118px;min-width:118px;max-width:118px;overflow:hidden;white-space:normal;overflow-wrap:anywhere;border-top:1px solid var(--line);border-right:1px solid var(--line);line-height:1.2;box-shadow:2px 0 4px rgba(0,0,0,.06)"><small style="color:var(--mut)">${m.rk}.</small> <b style="font-size:12px">${esc(m.ad.replace(/^Media\s+/i,'').replace(/\s*\(not active\)/i,''))}</b><br><small style="color:var(--mut)">${bg?esc(GKIS[m.b]||tc(m.b))+' · ':''}${esc(m.kod)}${m.not?' · kapanmış':''}</small></td>
-      <td style="text-align:right;padding:6px 8px;border-top:1px solid var(--line);font-weight:800;${nb}">${nf(T)}<div style="height:3px;margin-top:3px;background:var(--line);border-radius:2px"><i style="display:block;height:100%;border-radius:2px;background:#7C5CFF;width:${Math.max(2,Math.round(T/mxT*100))}%"></i></div></td>`+
-      m.ay.map((v,j)=>`<td style="text-align:right;padding:6px 7px;border-top:1px solid var(--line);background:${j===ay?'var(--ga)':`rgba(124,92,255,${v?(0.06+0.34*Math.min(1,pa[j]/mx)).toFixed(2):0})`};${pa[j]===mx&&v?'font-weight:800':''}${j===ay?'outline:1px solid var(--ga-line);outline-offset:-1px;':''}">${v?nf(v):'<span style="color:var(--mut)">–</span>'}</td>`).join('')+'</tr>'}).join('');
-  return t+'</table></div>';
-};
-function vGecmis(){
-  if(!BR){ brandYukle();
-    return BRHATA&&BRHATA!=='yukleniyor'?`<div class="msg">${esc(BRHATA)}<br>İnterneti kontrol edip tekrar dene.</div>`:'<div class="msg">Geçmiş veri yükleniyor…</div>'; }
-  const GG=BR.gecmis||[]; if(!GG.length)return '<div class="msg">Geçmiş veri yok. Depoda raporlar/analizler/…_Bolge_Bazli_Satis_Adetleri.xlsx bulunamadı.</div>';
-  const yil=GG.some(g=>String(g.yil)===String(sel.gyl))?String(sel.gyl):String(GG[0].yil), G=GG.find(g=>String(g.yil)===yil);
-  const dk=G.dep.map(d=>d.ad), ilk=x=>String(x||'').split(' ')[0], dad=dk.includes(sel.gdp)?sel.gdp:(dk.find(d=>ilk(d)===ilk(sel.gdp))||dk[0]), Dp=G.dep.find(d=>d.ad===dad);
-  const na=G.aylar.length, sum=a=>a.reduce((x,y)=>x+y,0), AG=G.agirlik||G.aylar.map(()=>1), W=sum(AG), KS=G.kisa||G.aylar.map(x=>x.slice(0,3)), f1=v=>(Math.round(v*10)/10).toLocaleString('tr-TR');
-  const ay=(sel.gay!=null&&sel.gay!==''&&+sel.gay>=0&&+sel.gay<na)?+sel.gay:-1, V=a=>ay<0?sum(a):(a[ay]||0), bol=ay<0?W:(AG[ay]||1);
-  const donem=(ay<0?`${G.yil} Ocak–${esc(G.aylar[na-1])}`:`${esc(G.aylar[ay])} ${G.yil}`)+(G.guncel?` · ${esc(G.guncel)}`:'');
-  const B=Dp.bolge.map(b=>({...b,t:V(b.ay)})).sort((a,b)=>b.t-a.t), FT=sum(B.map(b=>b.t));
-  const vurgu=BLG||GAB;
-  const gw=sel.gvw==='mag'?'mag':'bol';
-  let s=(GG.length>1?chips(GG.map(g=>[String(g.yil),String(g.yil)]),yil,'gyl'):'')+chips([['bol','Bölgeler'],['mag','Mağazalar']],gw,'gvw')+chips([['','Ocak–'+G.aylar[na-1].slice(0,3)],...KS.map((x,j)=>[String(j),x])],ay<0?'':String(ay),'gay',1)+chips(dk.map(d=>[d,d]),dad,'gdp');
-  if(gw==='mag'){
-    const bl=[['','Tümü'],...B.map(b=>[b.ad,GKIS[b.ad]||tc(b.ad)])], fb=B.some(b=>b.ad===sel.gmb)?sel.gmb:(sel.gmb==null?(BLG||''):'');
-    const All=Dp.magaza.filter(m=>B.some(b=>b.ad===m.b)).map(m=>({...m,t:V(m.ay)})).sort((x,y)=>y.t-x.t); All.forEach((m,i)=>m.rk=i+1);
-    const Ms=All.filter(m=>!fb||m.b===fb), mx=Math.max(1,...Ms.map(m=>m.t));
-    s+=chips(bl,fb,'gmb',1);
-    s+=`<div class="note" style="margin:0 0 6px">${dad} · ${donem} · ${Ms.length} mağaza${fb?' · '+esc(tc(fb)):' · Türkiye'} · numara Türkiye sırası (online ve depo hariç) · sağa kaydır: aylar · her mağazanın en iyi ayı kalın ve koyu</div>`;
-    return s+gTablo(Ms,KS,ay,vurgu,!fb,AG);
-  }
-  if(sel.gbr&&B.some(b=>b.ad===sel.gbr)){
-    const b=B.find(x=>x.ad===sel.gbr), rk=B.indexOf(b)+1;
-    const Ms=Dp.magaza.filter(m=>m.b===b.ad).map(m=>({...m,t:V(m.ay)})).sort((x,y)=>y.t-x.t), mx=Math.max(1,...Ms.map(m=>m.t));
-    s+=`<div class="row" style="margin:0 0 8px"><button class="chip" data-gbr="">← Bütün bölgeler</button></div>`;
-    s+=`<div class="card dep"><b style="font-size:16px">${esc(tc(b.ad))}</b> <small style="color:var(--mut)">${esc(tc(b.yon))} · ${dad} · ${donem}</small>
-      <div class="g4" style="grid-template-columns:repeat(3,1fr);margin-top:8px"><div><small>${ay<0?'Toplam':esc(G.aylar[ay])}</small><b>${nf(b.t)}</b></div><div><small>Mağaza başı</small><b>${f1(b.n?b.t/bol/b.n:0)}${ay<0?'/ay':''}</b></div><div><small>Sıra / pay</small><b>${rk}. · %${f1(FT?b.t/FT*100:0)}</b></div></div></div>`;
-    Ms.forEach((m,i)=>m.rk=i+1);
-    s+=`<div class="note" style="margin:0 0 6px">${Ms.length} mağaza · ${ay<0?'toplamı':esc(G.aylar[ay])+' satışı'} yüksek olan üstte · sağa kaydır: aylar · her mağazanın en iyi ayı kalın ve koyu</div>`;
-    return s+gTablo(Ms,KS,ay,'',false,AG);
-  }
-  s+=`<div class="note" style="margin:0 0 8px">${dad} satış adedi · ${donem} · bölgeye dokun: mağazalar</div>`;
-  const mxb=Math.max(1,...B.map(b=>b.t));
-  s+='<div class="card dep" style="padding:4px 0">'+B.map((b,i)=>`<div data-gbr="${esc(b.ad)}" style="cursor:pointer;padding:9px 12px;${i?'border-top:1px solid var(--line);':''}${b.ad===vurgu?'background:var(--ga);':''}">
-    <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><span><b>${i+1}. ${esc(tc(b.ad))}</b> <small style="color:var(--mut)">${esc(tc(b.yon))} · ${b.n} mağaza</small></span><span><b>${nf(b.t)}</b> <span class="chev">›</span></span></div>
-    <div style="height:6px;margin:5px 0 4px;background:var(--line);border-radius:3px"><i style="display:block;height:100%;border-radius:3px;background:#7C5CFF;width:${Math.max(2,Math.round(b.t/mxb*100))}%"></i></div>
-    <small style="color:var(--mut)">${ay<0?`Aylık ort. <b style="color:var(--ink)">${nf(b.t/W)}</b> · `:''}mağaza başı <b style="color:var(--ink)">${f1(b.n?b.t/bol/b.n:0)}</b>${ay<0?'/ay':''} · pay <b style="color:var(--ink)">%${f1(FT?b.t/FT*100:0)}</b></small></div>`).join('')+'</div>';
-  const dg=Dp.diger.map(x=>({...x,t:V(x.ay)})), GT=FT+sum(dg.map(x=>x.t));
-  s+=`<div class="card dep"><div class="g4" style="grid-template-columns:repeat(${2+dg.length},1fr)"><div><small>Fiziksel</small><b>${nf(FT)}</b></div>${dg.map(x=>`<div><small>${esc(tc(x.ad))}</small><b>${nf(x.t)}</b></div>`).join('')}<div><small>Genel toplam</small><b>${nf(GT)}</b></div></div></div>`;
-  // aylık tablo: satır ay, sütun bölge (her ayın en yükseği kalın, seçili bölge vurgulu)
-  const ord=Dp.bolge.slice();
-  s+=`<div class="note" style="margin:10px 0 4px">Ay ay bölgeler · her ayın en yükseği kalın${AG.some(x=>x!==1)?' · '+esc(KS[0])+' '+AG[0]+' ayın toplamı':''}</div><div class="card dep" style="padding:0;overflow-x:auto"><table style="font-size:12px"><tr><th style="text-align:left;padding:6px 8px">Ay</th>${ord.map(b=>`<th style="text-align:right;padding:6px 5px;${b.ad===vurgu?'background:var(--ga-line);color:#fff':''}">${esc(GKIS[b.ad]||tc(b.ad))}</th>`).join('')}<th style="text-align:right;padding:6px 8px">Fiziksel</th></tr>`+
-    G.aylar.map((a,j)=>{const mx=Math.max(...ord.map(b=>b.ay[j])); return `<tr style="border-top:1px solid var(--line);${j===ay?'outline:2px solid var(--ga-line);outline-offset:-2px':''}"><td style="padding:5px 8px;${j===ay?'font-weight:800':''}">${esc(KS[j])}</td>${ord.map(b=>`<td style="text-align:right;padding:5px;${b.ad===vurgu?'background:var(--ga);':''}${b.ay[j]===mx?'font-weight:800':''}">${nf(b.ay[j])}</td>`).join('')}<td style="text-align:right;padding:5px 8px;color:var(--mut)">${nf(sum(ord.map(b=>b.ay[j])))}</td></tr>`}).join('')+
-    `<tr style="border-top:2px solid var(--line);font-weight:700"><td style="padding:6px 8px">Aylık ort.</td>${ord.map(b=>`<td style="text-align:right;padding:6px 5px;${b.ad===vurgu?'background:var(--ga)':''}">${nf(sum(b.ay)/W)}</td>`).join('')}<td style="text-align:right;padding:6px 8px">${nf(sum(ord.map(b=>sum(b.ay)))/W)}</td></tr></table></div>`;
-  if(G.aciklama)s+=`<div class="note">${esc(G.aciklama)}</div>`;
-  return s;
 }
 function vBrandMag(){
   const I=brandIdx(), q=fold(sel.q), rg=sel.brg2||'';
@@ -2121,14 +2056,12 @@ function vDaha(){
   if(sub==='per')return back+vPer();
   if(sub==='ihtiyac')return back+vIht();
   if(sub==='brand')return back+vBrand();
-  if(sub==='gecmis')return back+vGecmis();
   if(sub==='fiyat')return back+vFiyat();
   if(sub==='gunluk')return back+vGunluk();
   return [['stok','▥','Stok','Ay sonuna yetmeyen, biten ve bitmek üzere olan stoklar; stoksuz çok satan ve satmayan ürünler'],
           ['bugun','✔','Bugün ne yapmalı','Seçili bölge için: tutması zor hedefler, biten stoklar, satış yapmayanlar; bölge karnesi görseli'],
           ['fiyat','₺','Fiyat','Ürün ara, MediaMarkt sitesindeki güncel fiyatını aç (artikel ile)'],
           ['brand','▤','BRAND','Aylık BRAND tabloları: departman bazlı TR satışları (2025–2026)'],
-          ['gecmis','◷','BSH Geçmiş','2025 ve 2026 bölge ve mağaza bazlı satış adetleri: MDA, VC, FAEM · aylık; bu ay her ham data ile güncellenir'],
           ['ihtiyac','☰','İhtiyaç listeleri','Ankastre ve SDA: hangi mağazaya hangi modelden kaç sipariş'],
           ['img','▣','Sıralama Görsel','6 sıralama tablosu görseli (MDA, Ankastre, VC, FOOD, FAEM, Hava)'],
           ['gid','↗','Gidişat','Önceki rapora göre günlük satış, sıra ve tahmin değişimi'],
@@ -2137,7 +2070,7 @@ function vDaha(){
     .map(([k,ic,b,t])=>`<div class="card"><div class="sm" data-dh="${k}"><div class="rk">${ic}</div><div class="nm"><b>${b}</b><span style="white-space:normal">${t}</span></div><span class="chev">›</span></div></div>`).join('');
 }
 /* ---- Hedef takibi (aylık Hedef Kontrol dosyası): hedef · gerçekleşen · ay sonu tahmini ---- */
-const HTUR=[['ciro','MDA ciro'],['set','Ankastre set'],['yildiz','Yıldızlı'],['supurge','Süpürge'],['mum','MUM'],['faem','FAEM'],['kea','KEA'],['hava','Hava']];
+const HTUR=[['ciro','MDA ciro'],['set','Ankastre set'],['yildiz','Yıldızlı'],['supurge','Süpürge'],['robot','Robot'],['mum','MUM'],['faem','FAEM'],['kea','KEA'],['hava','Hava']];
 const GKAT=[2.1,1,1,1,1,1.2,1.7];   // Pazar … Cumartesi gün katsayısı
 const hgor=x=>!!(x.h||x.bn||x.bf);   // hedefi olmayan kalem yalnız kazancı varsa görünür
 const HDUR={tuttu:['t-grn','Tuttu'],tutar:['t-grn','Tempoda'],sinir:['t-yel','Sınırda'],geride:['t-red','Geride']};
@@ -2353,25 +2286,27 @@ function vHedef(){
   const G=hedefGun(), tur=(sel.ht==='tumu'||HTUR.some(x=>x[0]===sel.ht))?sel.ht:'ciro', tumu=tur==='tumu', rg=sel.hrg||'', q=fold(sel.q), sr=sel.hs==='geri'?'geri':'iyi';
   const ML=magList().map, UM=(D.urunler&&D.urunler.m)||{}, all=[];
   Object.keys(H.m).forEach(kod=>{const m=ML.get(kod), um=UM[kod], ad=m?m.ad:um?um[0]:kod, bolge=m?m.bolge:um?um[1]:'', spv=m?m.spv:um?um[2]:'';
-    H.m[kod].forEach(S=>S.i.forEach(x=>{if((tumu||x.k===tur)&&x.h)all.push({kod,ad,bolge,spv,var:!!m,S:S.s,x,c:hedefHesap(x,G)})}))});
+    H.m[kod].forEach(S=>S.i.forEach(x=>{if((tumu||x.k===tur)&&hgor(x))all.push({kod,ad,bolge,spv,var:!!m,S:S.s,x,c:hedefHesap(x,G)})}))});
   const b=tumu?'adet':all[0]?all[0].x.b:'adet', br=tumu?'':b==='TL'?'TL':b;
-  const top=L=>({n:L.length,h:L.reduce((a,r)=>a+N(r.x.h),0),g:L.reduce((a,r)=>a+r.c.g,0),fc:L.reduce((a,r)=>a+r.c.fc,0),tut:L.filter(r=>r.c.d==='tuttu').length,yol:L.filter(r=>r.c.d==='tuttu'||r.c.d==='tutar').length});
+  const top=L0=>{const L=L0.filter(r=>r.x.h);return {n:L.length,h:L.reduce((a,r)=>a+N(r.x.h),0),g:L.reduce((a,r)=>a+r.c.g,0),fc:L.reduce((a,r)=>a+r.c.fc,0),tut:L.filter(r=>r.c.d==='tuttu').length,yol:L.filter(r=>r.c.d==='tuttu'||r.c.d==='tutar').length}};
   const rows=all.filter(r=>(!rg||r.bolge===rg)&&(!q||fold(r.ad).includes(q)||fold(r.kod).includes(q))).sort((x,y)=>tumu?(sr==='iyi'?(y.c.o-x.c.o):(x.c.o-y.c.o)):sr==='iyi'?(y.c.g-x.c.g)||(y.c.o-x.c.o):(x.c.g-y.c.g)||(x.c.o-y.c.o));   // yapılan ciroya / adede göre
   const T=top(all.filter(r=>!rg||r.bolge===rg)), KL=all.filter(r=>(!rg||r.bolge===rg)&&r.x.bn!=null), KZ={var:KL.length>0,n:KL.reduce((a,r)=>a+r.x.bn,0),f:KL.reduce((a,r)=>a+r.x.bf,0)};
   let s=AYC+`<div class="row" style="margin:0 0 8px;gap:8px"><span class="note" style="margin:0">Hedef Kontrol · ${hedefBaslik()}${!sel.hay&&H.gun!==donemGun()?` · ham data ${donemGun()}. güne kadar, hedef verisi ${H.gun}. güne kadar`:''}</span>${XLB}</div>`;
-  s+=chips([['tumu','Tümü']].concat(HTUR).filter(t=>t[0]==='tumu'||all.length&&t[0]===tur||Object.values(H.m).some(L=>L.some(S=>S.i.some(x=>x.k===t[0]&&x.h)))),tur,'ht',true)+chips([['','Tümü']].concat(ORD.map(x=>[x,tc(x)])),rg,'hrg',true)+hedefSpv();
-  if(!T.n)return s+'<div class="msg">Bu bölgede bu hedef türü yok.</div>';
-  if(tumu)s+=`<div class="card dep"><div class="g4"><div><small>Kalem</small><b>${T.n}</b></div><div><small>Tuttu</small><b class="pos">${T.tut}</b></div><div><small>Tutacak</small><b>${T.yol-T.tut}</b></div><div><small>Tutmayacak</small><b class="neg">${T.n-T.yol}</b></div></div>
+  s+=chips([['tumu','Tümü']].concat(HTUR).filter(t=>t[0]==='tumu'||all.length&&t[0]===tur||Object.values(H.m).some(L=>L.some(S=>S.i.some(x=>x.k===t[0]&&hgor(x))))),tur,'ht',true)+chips([['','Tümü']].concat(ORD.map(x=>[x,tc(x)])),rg,'hrg',true)+hedefSpv();
+  if(!all.some(r=>!rg||r.bolge===rg))return s+'<div class="msg">Bu bölgede bu hedef türü yok.</div>';
+  if(!T.n)s+=`<div class="card dep"><div class="g4"><div><small>Mağaza</small><b>${KL.length}</b></div><div><small>Gerçekleşen</small><b>${hdeg(all.filter(r=>!rg||r.bolge===rg).reduce((a,r)=>a+r.c.g,0),b)}</b><small style="text-transform:none;min-height:0">${b}</small></div><div><small>Kazanç şu an</small><b>${nf(KZ.n)}</b></div><div><small>Kazanç tahmini</small><b class="or">${nf(KZ.f)}</b></div></div>
+    <div class="note" style="margin:8px 0 0">${tc(rg||'Türkiye')} · ${HTUR.find(x=>x[0]===tur)[1]} · bu kalemin ajans hedefi yok, yalnız adet başı kazanç var (brüt TL).</div></div>`;
+  else if(tumu)s+=`<div class="card dep"><div class="g4"><div><small>Kalem</small><b>${T.n}</b></div><div><small>Tuttu</small><b class="pos">${T.tut}</b></div><div><small>Tutacak</small><b>${T.yol-T.tut}</b></div><div><small>Tutmayacak</small><b class="neg">${T.n-T.yol}</b></div></div>
     <div class="note" style="margin:8px 0 0">${tc(rg||'Türkiye')} · tüm hedef kalemleri (mağaza × departman × kampanya) · ay ilerlemesi %${Math.round(G.a/G.t*100)} (gün katsayılı)${KZ.var?`<br>Bu kalemlerden kazanç (brüt): şu an <b>${nf(KZ.n)}</b> → tahmini <b>${nf(KZ.f)} TL</b>`:''}</div></div>`;
   else s+=`<div class="card dep"><div class="g4"><div><small>Hedef</small><b>${hdeg(T.h,b)}</b></div><div><small>Gerçekleşen</small><b>${hdeg(T.g,b)}</b><small style="text-transform:none;min-height:0">%${Math.round(T.g/T.h*100)}</small></div><div><small>Ay sonu tahmini</small><b class="or">${hdeg(T.fc,b)}</b><small style="text-transform:none;min-height:0">%${Math.round(T.fc/T.h*100)}</small></div><div><small>Hedefi tutacak</small><b>${T.yol}<span style="font-size:12px;color:var(--mut)"> / ${T.n}</span></b><small style="text-transform:none;min-height:0">${T.tut} tuttu</small></div></div>
     <div class="note" style="margin:8px 0 0">${tc(rg||'Türkiye')} · ${HTUR.find(x=>x[0]===tur)[1]} (${br}) · ay ilerlemesi %${Math.round(G.a/G.t*100)} (gün katsayılı)${KZ.var?`<br>Bu kalemden kazanç (brüt): şu an <b>${nf(KZ.n)}</b> → tahmini <b>${nf(KZ.f)} TL</b>`:''}</div></div>`;
   if(!q){
-    const LL=all.filter(r=>!rg||r.bolge===rg), YR=yakinRiskli(LL,6);
+    const LL=all.filter(r=>!rg||r.bolge===rg), YR=yakinRiskli(LL.filter(r=>r.x.h),6);
     const lst=(t,L,n,yk)=>L.length?`<details class="card" open><summary style="padding:10px 12px;font-weight:600;cursor:pointer">${t} · ${n}</summary><div style="padding:0 12px 8px">${L.map(r=>hrSatir(r,yk,!yk)).join('')}</div></details>`:'';
     s+=lst('Hedefe en yakın',YR.yakin,YR.nyak,true)+lst('Hedefi tutması zor',YR.riskli,YR.nrisk,false);
   }
   if(!rg){
-    s+='<h2>Bölgeler</h2><div class="card dep">'+ORD.map(B=>{const L=all.filter(r=>r.bolge===B); if(!L.length)return ''; const t=top(L);
+    s+='<h2>Bölgeler</h2><div class="card dep">'+ORD.map(B=>{const L=all.filter(r=>r.bolge===B); if(!L.length)return ''; const t=top(L); if(!t.n){const kz=L.reduce((a,r)=>a+N(r.x.bf),0);return `<div class="urow ${B===GAB?'gar':''}" style="grid-template-columns:1fr auto;cursor:pointer" data-hb="${esc(B)}"><span><b>${tc(B)}</b><br><span class="note" style="margin:0">${L.length} mağaza</span></span><span style="text-align:right;color:var(--org);font-weight:700">${nf(kz)} TL</span></div>`}
       return `<div class="urow ${B===GAB?'gar':''}" style="grid-template-columns:1fr auto auto;cursor:pointer" data-hb="${esc(B)}"><span><b>${tc(B)}</b><br><span class="note" style="margin:0">${tumu?`${t.tut} tuttu · tutacak ${t.yol}/${t.n}`:`${hdeg(t.g,b)} / ${hdeg(t.h,b)} · tutacak ${t.yol}/${t.n}`}</span></span><span style="text-align:right">${tumu?'':'%'+Math.round(t.g/t.h*100)}</span><span style="text-align:right;color:var(--org);font-weight:700;min-width:54px">${tumu?'%'+Math.round(t.yol/t.n*100):'→ %'+Math.round(t.fc/t.h*100)}</span></div>`}).join('')+'</div>';
   }
   s+=`<input type="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+chips(tumu?[['iyi','En yüksek gerçekleşme %'],['geri','En düşük gerçekleşme %']]:[['iyi',tur==='ciro'?'En çok ciro üstte':'En çok satan üstte'],['geri',tur==='ciro'?'En az ciro üstte':'En az satan üstte']],sr,'hs');
@@ -2664,7 +2599,6 @@ function render(keep){
   M.querySelectorAll('[data-mk]').forEach(el=>el.onclick=e=>{e.stopPropagation();const k=el.dataset.mk; if(k===ANKK){toast('Ankara mağazaları MDA/Ankastre stoğunu ortak depodan kullanır');return} go('mag',()=>{sel.mk=k})});
   M.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{if(b.dataset.back==='mk')sel.mk=null;if(b.dataset.back==='dh'){sel.dh='';if(sel.dhfrom){tab=sel.dhfrom;sel.dhfrom='';LS.set('tab',tab)}}render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-kimg]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();kartResim(b.dataset.kimg,b.dataset.kk,b.dataset.ks==='1')});
-  M.querySelectorAll('[data-gbr]').forEach(el=>el.onclick=()=>{sel.gbr=el.dataset.gbr;render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-bk]').forEach(el=>el.onclick=()=>{sel.bk=el.dataset.bk;sel.bl='';sel.q='';render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-bkback]').forEach(el=>el.onclick=()=>{sel.bk=null;render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-bf]').forEach(el=>el.onclick=()=>{sel.bf=+el.dataset.bf;sel.bs=0;sel.q='';sel.brg='';render();window.scrollTo(0,0)});
@@ -2676,7 +2610,7 @@ function render(keep){
   if($('#hspv'))$('#hspv').onclick=()=>{sel.hspv=!sel.hspv;render()};
   M.querySelectorAll('[data-hb]').forEach(el=>el.onclick=()=>{sel.hrg=el.dataset.hb;render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-dh]').forEach(el=>el.onclick=()=>{sel.dhnav=false;sel.dh=el.dataset.dh;render();window.scrollTo(0,0)});
-  M.querySelectorAll('[data-ara]').forEach(el=>el.onclick=()=>go('urun',()=>{sel.q=D.urunler.u[+el.dataset.ara];sel.urg=BLG||'';sel.ustk=''})   /* v145: eskiden Güney'e kilitliyordu, kart 17 mağaza gösteriyordu */);
+  M.querySelectorAll('[data-ara]').forEach(el=>el.onclick=()=>go('urun',()=>{sel.q=D.urunler.u[+el.dataset.ara];sel.urg=GAB;sel.ustk=''}));
   M.querySelectorAll('[data-tf]').forEach(el=>el.onclick=()=>{sel.tr='1';sel.ts=el.dataset.tf;sel.to='';sel.tk='';render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-go]').forEach(el=>el.onclick=()=>go(el.dataset.go));
   M.querySelectorAll('[data-sh]').forEach(b=>b.onclick=()=>{const t=paylasMetin(b.dataset.sh,b.dataset.arg);if(t)paylas(t);else if(b.dataset.sh==='sip')toast('Bu mağazada sipariş ihtiyacı görünmüyor')});
@@ -2736,7 +2670,6 @@ temaUygula(LS.get('tema')||'auto'); renkUygula(LS.get('renk')||'mavi');
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 /* yeni sürüm uyarısı: index.html'deki surum numarası çalışandan farklıysa şerit göster */
 const SURUM=(document.querySelector('meta[name=surum]')||{}).content;
-if(SURUM&&$('#surum'))$('#surum').textContent='v'+SURUM;   /* v149: başlıktaki sürüm yazısı meta'dan; her sürümde meta surum = sw.js kabuk numarası */
 async function surumKontrol(){
   try{
     const t=await (await fetch('index.html?'+Date.now(),{cache:'no-store'})).text();
