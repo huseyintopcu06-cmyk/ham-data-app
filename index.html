@@ -1157,7 +1157,7 @@ function vUrun(){
   XL=()=>({ad:'Ürünler '+(sel.ukat?U.k[+sel.ukat]+' ':'')+(rg?tc(rg)+' ':'')+veriTarihi(D.donem),h:['Ürün','Artikel','Kategori','Sell-out','Satılabilir stok','Açık sipariş','Geçen ay','Mağaza sayısı','Online satış','Online stok'],rows:list.map(a=>[U.u[a.u],U.a&&U.a[a.u]||'',U.k[a.k],a.adet,a.sat,a.gel,a.gec,a.rows.length,a.on?a.on.adet:'',a.on?a.on.sat:''])});
   if(!list.length)return s+(stm.length?'':'<div class="msg">Eşleşen mağaza ya da ürün yok.</div>');
   s+=list.slice(0,40).map(a=>{
-    const rows=a.rows.slice().sort((x,y)=>ust?(y[7]-x[7]||y[3]-x[3]):(y[3]-x[3]||y[5]-x[5])).slice(0,80);
+    const rows=a.rows.slice().sort((x,y)=>ust?(y[7]-x[7]||y[3]-x[3]):(y[3]-x[3]||y[5]-x[5]));   // bütün mağazalar (v144; eskiden ilk 80, Türkiye seçiliyken 105 mağazanın 25'i görünmüyordu)
     return `<details class="card"><summary><div class="nm"><b style="white-space:normal">${esc(U.u[a.u])}</b>${artI(a.u)}<span>${esc(U.k[a.k])}</span></div>
       <div class="kv"><small>Sell-out</small><b>${nf(a.adet)}</b>${ust?`<span class="stk neg">${a.rows.length} mağazada stoksuz</span><span class="stk">Geçen ay ${nf(a.gec)}</span>`:`<span class="stk">Satılabilir stok ${nf(a.sat)}</span>`}<span class="stk">Açık sipariş ${nf(a.gel)}</span>${a.on?`<span class="stk" style="color:var(--ac);font-weight:700">Online: ${nf(a.on.adet)} satış · stok ${nf(a.on.sat)}</span>`:''}</div></summary>
       <div class="det" style="display:block">${urunGrafik(a.u,rg===GAB)}<div class="urow h"><span>Mağaza</span><span>Sell-out</span><span>${ust?'Geçen ay':'Satılabilir'}</span><span>Sipariş</span></div>`+
