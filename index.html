@@ -1382,6 +1382,10 @@ function brandIdx(){
 /* ---- BSH Geçmiş (v146): raporlar/analizler/<yıl>_Bolge_Bazli_Satis_Adetleri.xlsx → brand.enc içindeki 'gecmis' ----
    Bölgeler: toplam, aylık ortalama, mağaza başı ortalama, pay; aylık tablo; bölgeye dokun → mağazalar (ay ay) */
 const GKIS={'DOĞU MARMARA':'D.Mar','BATI MARMARA':'B.Mar','İÇ ANADOLU':'İç An','GÜNEY ANADOLU':'Güney','EGE AKDENİZ':'Ege Ak'};
+const gRow=(m,i,mx,na,aylar,bg,vurgu)=>{const G={aylar}, f1=v=>(Math.round(v*10)/10).toLocaleString('tr-TR'); return `<details class="gmg" style="${bg&&m.b===vurgu?'background:var(--ga);':''}border-top:${i?'1px solid var(--line)':'0'}"><summary style="list-style:none;cursor:pointer;display:grid;grid-template-columns:26px 1fr auto auto;gap:4px 10px;align-items:center;padding:8px 12px">
+      <small style="color:var(--mut)">${m.rk||i+1}</small><span style="min-width:0"><b style="font-size:13px">${esc(m.ad.replace(/^Media\s+/i,''))}</b> <small style="color:var(--mut)">${bg?esc(GKIS[m.b]||tc(m.b))+' · ':''}${esc(m.kod)}${m.not?' · '+esc(m.not):''}</small><div style="height:5px;margin-top:4px;background:var(--line);border-radius:3px"><i style="display:block;height:100%;border-radius:3px;background:#7C5CFF;width:${m.t?Math.max(2,Math.round(m.t/mx*100)):0}%"></i></div></span>
+      <b style="text-align:right">${nf(m.t)}</b><small style="color:var(--mut);text-align:right;min-width:52px">${f1(m.t/na)}/ay</small></summary>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:2px 12px 10px 44px">${G.aylar.map((a,j)=>`<div style="background:var(--bg2,rgba(127,127,127,.08));border-radius:6px;padding:4px 6px"><small style="color:var(--mut)">${esc(a)}</small><br><b>${nf(m.ay[j])}</b></div>`).join('')}</div></details>`};
 function vGecmis(){
   if(!BR){ brandYukle();
     return BRHATA&&BRHATA!=='yukleniyor'?`<div class="msg">${esc(BRHATA)}<br>İnterneti kontrol edip tekrar dene.</div>`:'<div class="msg">Geçmiş veri yükleniyor…</div>'; }
@@ -1391,7 +1395,16 @@ function vGecmis(){
   const na=G.aylar.length, sum=a=>a.reduce((x,y)=>x+y,0), ort=a=>sum(a)/na, f1=v=>(Math.round(v*10)/10).toLocaleString('tr-TR');
   const B=Dp.bolge.map(b=>({...b,t:sum(b.ay)})).sort((a,b)=>b.t-a.t), FT=sum(B.map(b=>b.t));
   const vurgu=BLG||GAB;
-  let s=(GG.length>1?chips(GG.map(g=>[String(g.yil),String(g.yil)]),yil,'gyl'):'')+chips(dk.map(d=>[d,d]),dad,'gdp');
+  const gw=sel.gvw==='mag'?'mag':'bol';
+  let s=(GG.length>1?chips(GG.map(g=>[String(g.yil),String(g.yil)]),yil,'gyl'):'')+chips([['bol','Bölgeler'],['mag','Mağazalar']],gw,'gvw')+chips(dk.map(d=>[d,d]),dad,'gdp');
+  if(gw==='mag'){
+    const bl=[['','Tümü'],...B.map(b=>[b.ad,GKIS[b.ad]||tc(b.ad)])], fb=B.some(b=>b.ad===sel.gmb)?sel.gmb:(sel.gmb==null?(BLG||''):'');
+    const All=Dp.magaza.map(m=>({...m,t:sum(m.ay)})).sort((x,y)=>y.t-x.t); All.forEach((m,i)=>m.rk=i+1);
+    const Ms=All.filter(m=>!fb||m.b===fb), mx=Math.max(1,...Ms.map(m=>m.t));
+    s+=chips(bl,fb,'gmb',1);
+    s+=`<div class="note" style="margin:0 0 6px">${dad} · ${G.yil} ${esc(G.aylar[0])}–${esc(G.aylar[na-1])} · ${Ms.length} mağaza${fb?' · '+esc(tc(fb)):' · Türkiye'} · sıra numarası Türkiye sırası · ay ay görmek için mağazaya dokun</div><div class="card dep" style="padding:4px 0">`;
+    return s+Ms.map((m,i)=>gRow(m,i,mx,na,G.aylar,!fb,vurgu)).join('')+'</div>';
+  }
   if(sel.gbr&&B.some(b=>b.ad===sel.gbr)){
     const b=B.find(x=>x.ad===sel.gbr), rk=B.indexOf(b)+1;
     const Ms=Dp.magaza.filter(m=>m.b===b.ad).map(m=>({...m,t:sum(m.ay)})).sort((x,y)=>y.t-x.t), mx=Math.max(1,...Ms.map(m=>m.t));
@@ -1399,10 +1412,7 @@ function vGecmis(){
     s+=`<div class="card dep"><b style="font-size:16px">${esc(tc(b.ad))}</b> <small style="color:var(--mut)">${esc(tc(b.yon))} · ${dad} · ${G.yil} ${esc(G.aylar[0])}–${esc(G.aylar[na-1])}</small>
       <div class="g4" style="grid-template-columns:repeat(3,1fr);margin-top:8px"><div><small>Toplam</small><b>${nf(b.t)}</b></div><div><small>Aylık ort.</small><b>${nf(b.t/na)}</b></div><div><small>Sıra / pay</small><b>${rk}. · %${f1(FT?b.t/FT*100:0)}</b></div></div></div>`;
     s+=`<div class="note" style="margin:0 0 6px">${Ms.length} mağaza · çok satan üstte · ay ay görmek için mağazaya dokun</div><div class="card dep" style="padding:4px 0">`;
-    s+=Ms.map((m,i)=>`<details class="gmg" style="border-top:${i?'1px solid var(--line)':'0'}"><summary style="list-style:none;cursor:pointer;display:grid;grid-template-columns:22px 1fr auto auto;gap:4px 10px;align-items:center;padding:8px 12px">
-      <small style="color:var(--mut)">${i+1}</small><span style="min-width:0"><b style="font-size:13px">${esc(m.ad.replace(/^Media\s+/i,''))}</b> <small style="color:var(--mut)">${esc(m.kod)}${m.not?' · '+esc(m.not):''}</small><div style="height:5px;margin-top:4px;background:var(--line);border-radius:3px"><i style="display:block;height:100%;border-radius:3px;background:#7C5CFF;width:${m.t?Math.max(2,Math.round(m.t/mx*100)):0}%"></i></div></span>
-      <b style="text-align:right">${nf(m.t)}</b><small style="color:var(--mut);text-align:right;min-width:52px">${f1(m.t/na)}/ay</small></summary>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:2px 12px 10px 44px">${G.aylar.map((a,j)=>`<div style="background:var(--bg2,rgba(127,127,127,.08));border-radius:6px;padding:4px 6px"><small style="color:var(--mut)">${esc(a)}</small><br><b>${nf(m.ay[j])}</b></div>`).join('')}</div></details>`).join('');
+    s+=Ms.map((m,i)=>gRow(m,i,mx,na,G.aylar,false,'')).join('');
     return s+'</div>';
   }
   s+=`<div class="note" style="margin:0 0 8px">${dad} satış adedi · ${G.yil} ${esc(G.aylar[0])}–${esc(G.aylar[na-1])} (${na} ay) · bölgeye dokun: mağazalar</div>`;
