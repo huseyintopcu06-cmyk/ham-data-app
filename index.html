@@ -1160,7 +1160,7 @@ function vUrun(){
     const rows=a.rows.slice().sort((x,y)=>ust?(y[7]-x[7]||y[3]-x[3]):(y[3]-x[3]||y[5]-x[5]));   // bütün mağazalar (v144; eskiden ilk 80, Türkiye seçiliyken 105 mağazanın 25'i görünmüyordu)
     return `<details class="card"><summary><div class="nm"><b style="white-space:normal">${esc(U.u[a.u])}</b>${artI(a.u)}<span>${esc(U.k[a.k])}</span></div>
       <div class="kv"><small>Sell-out</small><b>${nf(a.adet)}</b>${ust?`<span class="stk neg">${a.rows.length} mağazada stoksuz</span><span class="stk">Geçen ay ${nf(a.gec)}</span>`:`<span class="stk">Satılabilir stok ${nf(a.sat)}</span>`}<span class="stk">Açık sipariş ${nf(a.gel)}</span>${a.on?`<span class="stk" style="color:var(--ac);font-weight:700">Online: ${nf(a.on.adet)} satış · stok ${nf(a.on.sat)}</span>`:''}</div></summary>
-      <div class="det" style="display:block">${urunGrafik(a.u,rg===GAB)}<div class="urow h"><span>Mağaza</span><span>Sell-out</span><span>${ust?'Geçen ay':'Satılabilir'}</span><span>Sipariş</span></div>`+
+      <div class="det" style="display:block">${urunGrafik(a.u,rg===GAB)}<div class="note" style="margin:6px 0">${rows.length} mağaza · ${rg?`yalnız ${esc(tc(rg))}${BLG?' (üstteki bölge seçimi)':' · Türkiye için yukarıdan Tümü'}`:'Türkiye, bütün mağazalar'}</div><div class="urow h"><span>Mağaza</span><span>Sell-out</span><span>${ust?'Geçen ay':'Satılabilir'}</span><span>Sipariş</span></div>`+
       (a.on?`<div class="urow" style="font-weight:700"><span>ONLINE (ayrı)</span><span>${a.on.adet}</span><span>${ust?a.on.gec:a.on.sat}</span><span>${a.on.gel}</span></div>`:'')+
       rows.map(r=>{const m=U.m[r[1]]||[r[1],'',''];return `<div class="urow ${m[1]===GAB?'gar':''}" data-mk="${r[1]}"><span>${esc(m[0])}${araPer(r[1],U.k[a.k])}</span><span>${r[3]}</span><span>${ust?r[7]:r[5]}</span><span>${r[6]}</span></div>`}).join('')+`</div></details>`;
   }).join('');
@@ -2608,7 +2608,7 @@ function render(keep){
   if($('#hspv'))$('#hspv').onclick=()=>{sel.hspv=!sel.hspv;render()};
   M.querySelectorAll('[data-hb]').forEach(el=>el.onclick=()=>{sel.hrg=el.dataset.hb;render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-dh]').forEach(el=>el.onclick=()=>{sel.dhnav=false;sel.dh=el.dataset.dh;render();window.scrollTo(0,0)});
-  M.querySelectorAll('[data-ara]').forEach(el=>el.onclick=()=>go('urun',()=>{sel.q=D.urunler.u[+el.dataset.ara];sel.urg=GAB;sel.ustk=''}));
+  M.querySelectorAll('[data-ara]').forEach(el=>el.onclick=()=>go('urun',()=>{sel.q=D.urunler.u[+el.dataset.ara];sel.urg=BLG||'';sel.ustk=''})   /* v145: eskiden Güney'e kilitliyordu, kart 17 mağaza gösteriyordu */);
   M.querySelectorAll('[data-tf]').forEach(el=>el.onclick=()=>{sel.tr='1';sel.ts=el.dataset.tf;sel.to='';sel.tk='';render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-go]').forEach(el=>el.onclick=()=>go(el.dataset.go));
   M.querySelectorAll('[data-sh]').forEach(b=>b.onclick=()=>{const t=paylasMetin(b.dataset.sh,b.dataset.arg);if(t)paylas(t);else if(b.dataset.sh==='sip')toast('Bu mağazada sipariş ihtiyacı görünmüyor')});
