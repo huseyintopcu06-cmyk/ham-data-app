@@ -279,7 +279,7 @@ main{padding-bottom:calc(160px + env(safe-area-inset-bottom))}
 </style>
 </head>
 <body>
-<header><div class="row"><div><h1 id="ttl">Ham Data</h1><small id="sub">yükleniyor…</small></div><div><small id="surum" title="Uygulama sürümü" style="opacity:.65;margin-right:6px">v142</small><button class="ib" id="rf" title="Veriyi yenile">↻</button> <button class="ib" id="th" title="Tema">◐</button> <button class="ib" id="gn" title="Uygulamayı güncelle (yeni sürümü al)">⬆</button> <button class="ib" id="st" title="Çıkış yap (şifreyi bu cihazdan sil)">Çıkış</button></div></div><div class="row" style="justify-content:flex-end;margin-top:6px"><select id="blg" class="ib" title="Bölge seçimi: yalnız seçilen bölge görünür"></select></div></header>
+<header><div class="row"><div><h1 id="ttl">Ham Data</h1><small id="sub">yükleniyor…</small></div><div><small id="surum" title="Uygulama sürümü" style="opacity:.65;margin-right:6px">v143</small><button class="ib" id="rf" title="Veriyi yenile">↻</button> <button class="ib" id="th" title="Tema">◐</button> <button class="ib" id="gn" title="Uygulamayı güncelle (yeni sürümü al)">⬆</button> <button class="ib" id="st" title="Çıkış yap (şifreyi bu cihazdan sil)">Çıkış</button></div></div><div class="row" style="justify-content:flex-end;margin-top:6px"><select id="blg" class="ib" title="Bölge seçimi: yalnız seçilen bölge görünür"></select></div></header>
 <div id="byt" hidden></div>
 <div id="upd" hidden><span>Yeni sürüm var</span><button id="updgo">Yenile</button></div>
 <main id="m"></main>
@@ -1205,6 +1205,12 @@ function gaToplam(DD,i){const r=DD.ozet[0]&&DD.ozet[0].satirlar.find(isGA);retur
 
 /* ---- BRAND: aylık departman bazlı TR tabloları (şifreli, ilk açılışta yüklenir) ---- */
 let BR=null, BRHATA='';
+async function hedefAyYukle(ay){
+  if(ay in HARS)return; HARS[ay]=null;
+  try{const r=await fetch('hedef_'+ay+'.enc?'+Date.now(),{cache:'no-store'}); if(!r.ok)throw new Error(r.status);
+    HARS[ay]=await openPack(await r.text(),LS.get('pw'),true)}catch(e){HARS[ay]=0}
+  if(sel.hay===ay&&tab==='daha'&&sel.dh==='hedef')render();
+}
 async function brandYukle(){
   if(BR||BRHATA==='yukleniyor')return;
   BRHATA='yukleniyor';
@@ -1463,7 +1469,8 @@ function ozTop(t,rg){   // özet tablosunun "Toplam" kolonu: bölge seçiliyse o
    Diğer her yerde (Hedef Ajans sekmesi, mağaza sayfası) yalnız ajans (Hedef Kontrol) dosyası. Nihai sonuç her zaman ajans dosyasıdır. */
 let _hh=null,_hhD=null;
 const hamMod=()=>tab==='daha'&&sel.dh==='bugun';
-function HD(){const H=D.hedef; if(!H||!H.ham||!hamMod())return H; if(_hhD!==D){_hh=Object.assign({},H,H.ham,{hamv:1,ajgun:H.gun}); delete _hh.ham; _hhD=D} return _hh}
+const HARS={};   // geçmiş ayların hedef verisi (hedef_YYYY-MM.enc), ihtiyaç olunca yüklenir
+function HD(){if(sel.hay&&HARS[sel.hay])return HARS[sel.hay]; const H=D.hedef; if(!H||!H.ham||!hamMod())return H; if(_hhD!==D){_hh=Object.assign({},H,H.ham,{hamv:1,ajgun:H.gun}); delete _hh.ham; _hhD=D} return _hh}
 function ajansG(kod,S,k){const L=D.hedef&&D.hedef.m&&D.hedef.m[kod], s=L&&L.find(z=>z.s===S), x=s&&s.i.find(z=>z.k===k); return x?x.g:null}
 function hedefHepsi(rg){   // tüm hedef kalemleri (mağaza × sayfa × kalem), bölgeye göre süzülmüş
   const H=HD(); if(!H||!H.m)return [];
@@ -2261,21 +2268,35 @@ function hedefSpv(){
   s+=`<div class="note" style="margin:0 0 12px">Dosyada tek SPV hedefi var: tüm bölgeler için ortak, gerçekleşen Türkiye fiziksel toplam cirosu (online hariç, TEPF ile). Bölge payı = bölgenin bu cirodaki payı; bölgeye ayrı hedef verilmemiş. Buradaki tahmin şu anki tempoya göredir (gün katsayılı).</div>`;
   return s;
 }
+function hedefAyChips(){   // en üstte yıl · ay seçimi: güncel ay + arşivlenmiş geçmiş aylar
+  const H0=D.hedef, cur=H0?H0.yil+'-'+String(H0.ay).padStart(2,'0'):'';
+  const ays=[...new Set([...(D.hedef_aylar||[]),cur].filter(Boolean))].sort().reverse();
+  if(sel.hay===cur)sel.hay='';
+  if(sel.hay&&!ays.includes(sel.hay))sel.hay='';
+  const lab=a=>a.slice(0,4)+' · '+AYAD[+a.slice(5)-1];
+  if(ays.length<2)return `<div class="note" style="margin:0 0 6px;font-weight:700">${ays[0]?lab(ays[0]):''}</div>`;
+  return chips(ays.map(a=>[a===cur?'':a,lab(a)]),sel.hay||'','hay',true);
+}
 function vHedef(){
-  const H=HD(); if(!H||!H.m)return '<div class="msg">Bu ay için Hedef Kontrol dosyası henüz gelmedi.<br>Dosya geldiğinde hedefler burada görünecek.</div>';
+  const AYC=hedefAyChips();
+  if(sel.hay&&!(sel.hay in HARS)){hedefAyYukle(sel.hay);return AYC+'<div class="msg">Geçmiş ay yükleniyor…</div>'}
+  if(sel.hay&&!HARS[sel.hay])return AYC+'<div class="msg">Bu ayın hedef verisi alınamadı.</div>';
+  const H=HD(); if(!H||!H.m)return AYC+'<div class="msg">Bu ay için Hedef Kontrol dosyası henüz gelmedi.<br>Dosya geldiğinde hedefler burada görünecek.</div>';
   const ek=k=>H.endeks&&H.endeks[k]!=null?String(H.endeks[k]).replace('.',','):'–';
-  const G=hedefGun(), tur=HTUR.some(x=>x[0]===sel.ht)?sel.ht:'ciro', rg=sel.hrg||'', q=fold(sel.q), sr=sel.hs==='geri'?'geri':'iyi';
+  const G=hedefGun(), tur=(sel.ht==='tumu'||HTUR.some(x=>x[0]===sel.ht))?sel.ht:'ciro', tumu=tur==='tumu', rg=sel.hrg||'', q=fold(sel.q), sr=sel.hs==='geri'?'geri':'iyi';
   const ML=magList().map, UM=(D.urunler&&D.urunler.m)||{}, all=[];
   Object.keys(H.m).forEach(kod=>{const m=ML.get(kod), um=UM[kod], ad=m?m.ad:um?um[0]:kod, bolge=m?m.bolge:um?um[1]:'', spv=m?m.spv:um?um[2]:'';
-    H.m[kod].forEach(S=>S.i.forEach(x=>{if(x.k===tur&&x.h)all.push({kod,ad,bolge,spv,var:!!m,S:S.s,x,c:hedefHesap(x,G)})}))});
-  const b=all[0]?all[0].x.b:'adet', br=b==='TL'?'TL':b;
+    H.m[kod].forEach(S=>S.i.forEach(x=>{if((tumu||x.k===tur)&&x.h)all.push({kod,ad,bolge,spv,var:!!m,S:S.s,x,c:hedefHesap(x,G)})}))});
+  const b=tumu?'adet':all[0]?all[0].x.b:'adet', br=tumu?'':b==='TL'?'TL':b;
   const top=L=>({n:L.length,h:L.reduce((a,r)=>a+N(r.x.h),0),g:L.reduce((a,r)=>a+r.c.g,0),fc:L.reduce((a,r)=>a+r.c.fc,0),tut:L.filter(r=>r.c.d==='tuttu').length,yol:L.filter(r=>r.c.d==='tuttu'||r.c.d==='tutar').length});
-  const rows=all.filter(r=>(!rg||r.bolge===rg)&&(!q||fold(r.ad).includes(q)||fold(r.kod).includes(q))).sort((x,y)=>sr==='iyi'?(y.c.g-x.c.g)||(y.c.o-x.c.o):(x.c.g-y.c.g)||(x.c.o-y.c.o));   // yapılan ciroya / adede göre
+  const rows=all.filter(r=>(!rg||r.bolge===rg)&&(!q||fold(r.ad).includes(q)||fold(r.kod).includes(q))).sort((x,y)=>tumu?(sr==='iyi'?(y.c.o-x.c.o):(x.c.o-y.c.o)):sr==='iyi'?(y.c.g-x.c.g)||(y.c.o-x.c.o):(x.c.g-y.c.g)||(x.c.o-y.c.o));   // yapılan ciroya / adede göre
   const T=top(all.filter(r=>!rg||r.bolge===rg)), KL=all.filter(r=>(!rg||r.bolge===rg)&&r.x.bn!=null), KZ={var:KL.length>0,n:KL.reduce((a,r)=>a+r.x.bn,0),f:KL.reduce((a,r)=>a+r.x.bf,0)};
-  let s=`<div class="row" style="margin:0 0 8px;gap:8px"><span class="note" style="margin:0">Hedef Kontrol · ${hedefBaslik()}${H.gun!==donemGun()?` · ham data ${donemGun()}. güne kadar, hedef verisi ${H.gun}. güne kadar`:''}</span>${XLB}</div>`;
-  s+=chips(HTUR.filter(t=>all.length&&t[0]===tur||Object.values(H.m).some(L=>L.some(S=>S.i.some(x=>x.k===t[0]&&x.h)))),tur,'ht',true)+chips([['','Tümü']].concat(ORD.map(x=>[x,tc(x)])),rg,'hrg',true)+hedefSpv();
+  let s=AYC+`<div class="row" style="margin:0 0 8px;gap:8px"><span class="note" style="margin:0">Hedef Kontrol · ${hedefBaslik()}${!sel.hay&&H.gun!==donemGun()?` · ham data ${donemGun()}. güne kadar, hedef verisi ${H.gun}. güne kadar`:''}</span>${XLB}</div>`;
+  s+=chips([['tumu','Tümü']].concat(HTUR).filter(t=>t[0]==='tumu'||all.length&&t[0]===tur||Object.values(H.m).some(L=>L.some(S=>S.i.some(x=>x.k===t[0]&&x.h)))),tur,'ht',true)+chips([['','Tümü']].concat(ORD.map(x=>[x,tc(x)])),rg,'hrg',true)+hedefSpv();
   if(!T.n)return s+'<div class="msg">Bu bölgede bu hedef türü yok.</div>';
-  s+=`<div class="card dep"><div class="g4"><div><small>Hedef</small><b>${hdeg(T.h,b)}</b></div><div><small>Gerçekleşen</small><b>${hdeg(T.g,b)}</b><small style="text-transform:none;min-height:0">%${Math.round(T.g/T.h*100)}</small></div><div><small>Ay sonu tahmini</small><b class="or">${hdeg(T.fc,b)}</b><small style="text-transform:none;min-height:0">%${Math.round(T.fc/T.h*100)}</small></div><div><small>Hedefi tutacak</small><b>${T.yol}<span style="font-size:12px;color:var(--mut)"> / ${T.n}</span></b><small style="text-transform:none;min-height:0">${T.tut} tuttu</small></div></div>
+  if(tumu)s+=`<div class="card dep"><div class="g4"><div><small>Kalem</small><b>${T.n}</b></div><div><small>Tuttu</small><b class="pos">${T.tut}</b></div><div><small>Tutacak</small><b>${T.yol-T.tut}</b></div><div><small>Tutmayacak</small><b class="neg">${T.n-T.yol}</b></div></div>
+    <div class="note" style="margin:8px 0 0">${tc(rg||'Türkiye')} · tüm hedef kalemleri (mağaza × departman × kampanya) · ay ilerlemesi %${Math.round(G.a/G.t*100)} (gün katsayılı)${KZ.var?`<br>Bu kalemlerden kazanç (brüt): şu an <b>${nf(KZ.n)}</b> → tahmini <b>${nf(KZ.f)} TL</b>`:''}</div></div>`;
+  else s+=`<div class="card dep"><div class="g4"><div><small>Hedef</small><b>${hdeg(T.h,b)}</b></div><div><small>Gerçekleşen</small><b>${hdeg(T.g,b)}</b><small style="text-transform:none;min-height:0">%${Math.round(T.g/T.h*100)}</small></div><div><small>Ay sonu tahmini</small><b class="or">${hdeg(T.fc,b)}</b><small style="text-transform:none;min-height:0">%${Math.round(T.fc/T.h*100)}</small></div><div><small>Hedefi tutacak</small><b>${T.yol}<span style="font-size:12px;color:var(--mut)"> / ${T.n}</span></b><small style="text-transform:none;min-height:0">${T.tut} tuttu</small></div></div>
     <div class="note" style="margin:8px 0 0">${tc(rg||'Türkiye')} · ${HTUR.find(x=>x[0]===tur)[1]} (${br}) · ay ilerlemesi %${Math.round(G.a/G.t*100)} (gün katsayılı)${KZ.var?`<br>Bu kalemden kazanç (brüt): şu an <b>${nf(KZ.n)}</b> → tahmini <b>${nf(KZ.f)} TL</b>`:''}</div></div>`;
   if(!q){
     const LL=all.filter(r=>!rg||r.bolge===rg), YR=yakinRiskli(LL,6);
@@ -2284,12 +2305,12 @@ function vHedef(){
   }
   if(!rg){
     s+='<h2>Bölgeler</h2><div class="card dep">'+ORD.map(B=>{const L=all.filter(r=>r.bolge===B); if(!L.length)return ''; const t=top(L);
-      return `<div class="urow ${B===GAB?'gar':''}" style="grid-template-columns:1fr auto auto;cursor:pointer" data-hb="${esc(B)}"><span><b>${tc(B)}</b><br><span class="note" style="margin:0">${hdeg(t.g,b)} / ${hdeg(t.h,b)} · tutacak ${t.yol}/${t.n}</span></span><span style="text-align:right">%${Math.round(t.g/t.h*100)}</span><span style="text-align:right;color:var(--org);font-weight:700;min-width:54px">→ %${Math.round(t.fc/t.h*100)}</span></div>`}).join('')+'</div>';
+      return `<div class="urow ${B===GAB?'gar':''}" style="grid-template-columns:1fr auto auto;cursor:pointer" data-hb="${esc(B)}"><span><b>${tc(B)}</b><br><span class="note" style="margin:0">${tumu?`${t.tut} tuttu · tutacak ${t.yol}/${t.n}`:`${hdeg(t.g,b)} / ${hdeg(t.h,b)} · tutacak ${t.yol}/${t.n}`}</span></span><span style="text-align:right">${tumu?'':'%'+Math.round(t.g/t.h*100)}</span><span style="text-align:right;color:var(--org);font-weight:700;min-width:54px">${tumu?'%'+Math.round(t.yol/t.n*100):'→ %'+Math.round(t.fc/t.h*100)}</span></div>`}).join('')+'</div>';
   }
-  s+=`<input type="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+chips([['iyi',tur==='ciro'?'En çok ciro üstte':'En çok satan üstte'],['geri',tur==='ciro'?'En az ciro üstte':'En az satan üstte']],sr,'hs');
-  s+=rows.map(r=>`<div class="card ${r.bolge===GAB?'ga':''}" data-hr="${r.kod}" data-hs="${esc(r.S)}" style="padding:3px 12px;cursor:pointer">${hedefSatir(r.x,G,r.ad,r.S)}</div>`).join('')||'<div class="msg">Mağaza bulunamadı.</div>';
+  s+=`<input type="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="q" placeholder="Mağaza ara…" value="${esc(sel.q||'')}">`+chips(tumu?[['iyi','En yüksek gerçekleşme %'],['geri','En düşük gerçekleşme %']]:[['iyi',tur==='ciro'?'En çok ciro üstte':'En çok satan üstte'],['geri',tur==='ciro'?'En az ciro üstte':'En az satan üstte']],sr,'hs');
+  s+=rows.map(r=>`<div class="card ${r.bolge===GAB?'ga':''}" data-hr="${r.kod}" data-hs="${esc(r.S)}" style="padding:3px 12px;cursor:pointer">${hedefSatir(r.x,G,r.ad,tumu?r.S+' · '+r.x.ad:r.S)}</div>`).join('')||'<div class="msg">Mağaza bulunamadı.</div>';
   s+=`<div class="note">Mağazaya dokun: o departmanın hedef kartı resim olarak açılır, Paylaş ile gönderilir. Küçük grafik: gün gün birikimli gerçekleşen; kesik çizgi hedefe düz gidiş, turuncu noktalı çizgi ay sonu tahmini. Çubukta dikey çizgi = hedef, turuncu ok = ay sonu tahmini. Gerçekleşen, Hedef Kontrol dosyasındaki resmi sell-out'tur (MDA ciro = adet × TEPF; ankastre ve hava temizleme hariç). ${H.yontem==='kart'?`Tahmin (Hedef Gerçekleştirme Kartı formülü) = mağazanın ${esc(H.ortad||'')} aylık ortalaması × kategori TR tahmin endeksi; MDA ciro tahmini = tahmini adet × mağazanın bu ayki ortalama TEPF'i; tahmin gerçekleşenin altına inmez. TR endeksleri: MDA ${ek('MDA')} · Ankastre ${ek('DAV')} · Süpürge ${ek('BU')} · Robot ${ek('ROBOT')} · KEA ${ek('FD')} · MUM ${ek('MUM')} · FAEM ${ek('FAEM')} · Hava ${ek('HAVA')}.`:'Tahmin = şu anki tempo, kalan günlerin gün katsayısıyla (Pzt–Per 1,0 · Cuma 1,2 · Cmt 1,7 · Paz 2,1).'} Tempoda = tahmin hedefi geçiyor · Sınırda = tahmin %85–99 · Geride = tahmin %85'in altında. KEA'da hedef ilk baremdir. Kazanç = brüt bonus, Hedef Kontrol dosyasındaki kurallarla hesaplanır: "şu an" bugünkü satışla hak edilen, "tahmini" ay sonu tahmini tutarsa hak edilecek tutardır. Hava temizleme kazancı kişi başıdır. Kaynak: ${esc(H.kaynak)}</div>`;
-  XL=()=>({ad:'Hedef '+HTUR.find(x=>x[0]===tur)[1]+' '+(rg?tc(rg)+' ':'')+H.gun+' '+AYAD[H.ay-1],h:['Kod','Mağaza','SPV','Bölge','Hedef sayfası','Hedef','Gerçekleşen','Gerçekleşme %','Ay sonu tahmini','Tahmin %','Kalan','Günlük gereken','Durum','Kazanç şu an (TL)','Kazanç tahmini (TL)'],
+  XL=()=>({ad:'Hedef '+(tumu?'Tümü':HTUR.find(x=>x[0]===tur)[1])+' '+(rg?tc(rg)+' ':'')+H.gun+' '+AYAD[H.ay-1],h:['Kod','Mağaza','SPV','Bölge','Hedef sayfası','Hedef','Gerçekleşen','Gerçekleşme %','Ay sonu tahmini','Tahmin %','Kalan','Günlük gereken','Durum','Kazanç şu an (TL)','Kazanç tahmini (TL)'],
     rows:rows.map(r=>[r.kod,r.ad,r.spv,r.bolge,r.S,r.x.h,r.c.g,Math.round(r.c.o*100),r.c.fc,Math.round(r.c.of*100),r.c.kal,G.kalan>0?Math.round(r.c.kal/G.kalan*10)/10:'',HDUR[r.c.d][1],r.x.bn!=null?r.x.bn:'',r.x.bf!=null?r.x.bf:''])});
   return s;
 }
@@ -2562,6 +2583,7 @@ function render(keep){
   const ng=$('#navgun'); if(ng){const g0=D.gunluk&&D.gunluk[0]; ng.classList.toggle('al',!!(g0&&/^(hata|uyari)$/.test(g0.tur)))}
   const on=document.querySelector('nav button.on'); if(on&&on.scrollIntoView)on.scrollIntoView({inline:'nearest',block:'nearest'});
   if(BLG){BKEYS.forEach(k=>{sel[k]=BLG}); if(sel.rg==null)sel.rg=BLG}
+  if(!(tab==='daha'&&sel.dh==='hedef'))sel.hay='';
   const y=window.scrollY; XL=null;
   {const html=({ozet:vOzet,kat:vKat,mag:vMag,urun:vUrun,trf:vTrf,daha:vDaha}[tab]||vOzet)(); if(!(keep&&keep.nodeType===1&&yerindeCiz(keep,html)))M.innerHTML=html}
   bindChips();
