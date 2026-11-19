@@ -292,6 +292,7 @@ main{padding-bottom:calc(160px + env(safe-area-inset-bottom))}
 <button style="--c:#B266E0" data-t="urun"><b>⌕</b>Ara</button>
 <button style="--c:#F0544F" data-t="trf"><b>⇄</b>Transfer</button>
 <button style="--c:#14B8A6" data-t="daha" data-s="brand"><b>▤</b>BRAND</button>
+<button style="--c:#7C5CFF" data-t="daha" data-s="gecmis"><b>◷</b>BSH Geçmiş</button>
 <button style="--c:#E8590C" data-t="daha" data-s="fiyat"><b>₺</b>Fiyat</button>
 <button style="--c:#F5C518" data-t="daha" data-s="ihtiyac"><b>☑</b>İhtiyaç</button>
 <button style="--c:#FF5FA2" data-t="daha" data-s="gid"><b>↗</b>Gidişat</button>
@@ -1218,7 +1219,7 @@ async function brandYukle(){
     const r=await fetch('brand.enc?'+Date.now(),{cache:'no-store'}); if(!r.ok)throw new Error(r.status);
     BR=await openPack(await r.text(),LS.get('pw'),true); BRHATA='';
   }catch(e){BRHATA='BRAND verisi alınamadı.'}
-  if(tab==='daha'&&sel.dh==='brand')render();
+  if(tab==='daha'&&(sel.dh==='brand'||sel.dh==='gecmis'))render();
 }
 const brandOran=h=>/[İIÜU]HS|PAY/i.test(h||'');
 function brandFmt(v,h){
@@ -1377,6 +1378,48 @@ function brandIdx(){
   });
   RG.forEach((r,k)=>S.set(k,r));
   _bi={src:BR,S,ayList:[...ayList.values()].sort((a,b)=>a.k-b.k)}; return _bi;
+}
+/* ---- BSH Geçmiş (v146): raporlar/analizler/<yıl>_Bolge_Bazli_Satis_Adetleri.xlsx → brand.enc içindeki 'gecmis' ----
+   Bölgeler: toplam, aylık ortalama, mağaza başı ortalama, pay; aylık tablo; bölgeye dokun → mağazalar (ay ay) */
+const GKIS={'DOĞU MARMARA':'D.Mar','BATI MARMARA':'B.Mar','İÇ ANADOLU':'İç An','GÜNEY ANADOLU':'Güney','EGE AKDENİZ':'Ege Ak'};
+function vGecmis(){
+  if(!BR){ brandYukle();
+    return BRHATA&&BRHATA!=='yukleniyor'?`<div class="msg">${esc(BRHATA)}<br>İnterneti kontrol edip tekrar dene.</div>`:'<div class="msg">Geçmiş veri yükleniyor…</div>'; }
+  const GG=BR.gecmis||[]; if(!GG.length)return '<div class="msg">Geçmiş veri yok. Depoda raporlar/analizler/…_Bolge_Bazli_Satis_Adetleri.xlsx bulunamadı.</div>';
+  const yil=GG.some(g=>String(g.yil)===String(sel.gyl))?String(sel.gyl):String(GG[0].yil), G=GG.find(g=>String(g.yil)===yil);
+  const dk=G.dep.map(d=>d.ad), dad=dk.includes(sel.gdp)?sel.gdp:dk[0], Dp=G.dep.find(d=>d.ad===dad);
+  const na=G.aylar.length, sum=a=>a.reduce((x,y)=>x+y,0), ort=a=>sum(a)/na, f1=v=>(Math.round(v*10)/10).toLocaleString('tr-TR');
+  const B=Dp.bolge.map(b=>({...b,t:sum(b.ay)})).sort((a,b)=>b.t-a.t), FT=sum(B.map(b=>b.t));
+  const vurgu=BLG||GAB;
+  let s=(GG.length>1?chips(GG.map(g=>[String(g.yil),String(g.yil)]),yil,'gyl'):'')+chips(dk.map(d=>[d,d]),dad,'gdp');
+  if(sel.gbr&&B.some(b=>b.ad===sel.gbr)){
+    const b=B.find(x=>x.ad===sel.gbr), rk=B.indexOf(b)+1;
+    const Ms=Dp.magaza.filter(m=>m.b===b.ad).map(m=>({...m,t:sum(m.ay)})).sort((x,y)=>y.t-x.t), mx=Math.max(1,...Ms.map(m=>m.t));
+    s+=`<div class="row" style="margin:0 0 8px"><button class="chip" data-gbr="">← Bütün bölgeler</button></div>`;
+    s+=`<div class="card dep"><b style="font-size:16px">${esc(tc(b.ad))}</b> <small style="color:var(--mut)">${esc(tc(b.yon))} · ${dad} · ${G.yil} ${esc(G.aylar[0])}–${esc(G.aylar[na-1])}</small>
+      <div class="g4" style="grid-template-columns:repeat(3,1fr);margin-top:8px"><div><small>Toplam</small><b>${nf(b.t)}</b></div><div><small>Aylık ort.</small><b>${nf(b.t/na)}</b></div><div><small>Sıra / pay</small><b>${rk}. · %${f1(FT?b.t/FT*100:0)}</b></div></div></div>`;
+    s+=`<div class="note" style="margin:0 0 6px">${Ms.length} mağaza · çok satan üstte · ay ay görmek için mağazaya dokun</div><div class="card dep" style="padding:4px 0">`;
+    s+=Ms.map((m,i)=>`<details class="gmg" style="border-top:${i?'1px solid var(--line)':'0'}"><summary style="list-style:none;cursor:pointer;display:grid;grid-template-columns:22px 1fr auto auto;gap:4px 10px;align-items:center;padding:8px 12px">
+      <small style="color:var(--mut)">${i+1}</small><span style="min-width:0"><b style="font-size:13px">${esc(m.ad.replace(/^Media\s+/i,''))}</b> <small style="color:var(--mut)">${esc(m.kod)}${m.not?' · '+esc(m.not):''}</small><div style="height:5px;margin-top:4px;background:var(--line);border-radius:3px"><i style="display:block;height:100%;border-radius:3px;background:#7C5CFF;width:${m.t?Math.max(2,Math.round(m.t/mx*100)):0}%"></i></div></span>
+      <b style="text-align:right">${nf(m.t)}</b><small style="color:var(--mut);text-align:right;min-width:52px">${f1(m.t/na)}/ay</small></summary>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:2px 12px 10px 44px">${G.aylar.map((a,j)=>`<div style="background:var(--bg2,rgba(127,127,127,.08));border-radius:6px;padding:4px 6px"><small style="color:var(--mut)">${esc(a)}</small><br><b>${nf(m.ay[j])}</b></div>`).join('')}</div></details>`).join('');
+    return s+'</div>';
+  }
+  s+=`<div class="note" style="margin:0 0 8px">${dad} satış adedi · ${G.yil} ${esc(G.aylar[0])}–${esc(G.aylar[na-1])} (${na} ay) · bölgeye dokun: mağazalar</div>`;
+  const mxb=Math.max(1,...B.map(b=>b.t));
+  s+='<div class="card dep" style="padding:4px 0">'+B.map((b,i)=>`<div data-gbr="${esc(b.ad)}" style="cursor:pointer;padding:9px 12px;${i?'border-top:1px solid var(--line);':''}${b.ad===vurgu?'background:var(--ga);':''}">
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><span><b>${i+1}. ${esc(tc(b.ad))}</b> <small style="color:var(--mut)">${esc(tc(b.yon))} · ${b.n} mağaza</small></span><span><b>${nf(b.t)}</b> <span class="chev">›</span></span></div>
+    <div style="height:6px;margin:5px 0 4px;background:var(--line);border-radius:3px"><i style="display:block;height:100%;border-radius:3px;background:#7C5CFF;width:${Math.max(2,Math.round(b.t/mxb*100))}%"></i></div>
+    <small style="color:var(--mut)">Aylık ort. <b style="color:var(--ink)">${nf(b.t/na)}</b> · mağaza başı <b style="color:var(--ink)">${f1(b.n?b.t/na/b.n:0)}</b>/ay · pay <b style="color:var(--ink)">%${f1(FT?b.t/FT*100:0)}</b></small></div>`).join('')+'</div>';
+  const dg=Dp.diger.map(x=>({...x,t:sum(x.ay)})), GT=FT+sum(dg.map(x=>x.t));
+  s+=`<div class="card dep"><div class="g4" style="grid-template-columns:repeat(${2+dg.length},1fr)"><div><small>Fiziksel</small><b>${nf(FT)}</b></div>${dg.map(x=>`<div><small>${esc(tc(x.ad))}</small><b>${nf(x.t)}</b></div>`).join('')}<div><small>Genel toplam</small><b>${nf(GT)}</b></div></div></div>`;
+  // aylık tablo: satır ay, sütun bölge (her ayın en yükseği kalın, seçili bölge vurgulu)
+  const ord=Dp.bolge.slice();
+  s+=`<div class="note" style="margin:10px 0 4px">Ay ay bölgeler · her ayın en yükseği kalın</div><div class="card dep" style="padding:0;overflow-x:auto"><table style="font-size:12px"><tr><th style="text-align:left;padding:6px 8px">Ay</th>${ord.map(b=>`<th style="text-align:right;padding:6px 5px;${b.ad===vurgu?'background:var(--ga-line);color:#fff':''}">${esc(GKIS[b.ad]||tc(b.ad))}</th>`).join('')}<th style="text-align:right;padding:6px 8px">Fiziksel</th></tr>`+
+    G.aylar.map((a,j)=>{const mx=Math.max(...ord.map(b=>b.ay[j])); return `<tr style="border-top:1px solid var(--line)"><td style="padding:5px 8px">${esc(a.slice(0,3))}</td>${ord.map(b=>`<td style="text-align:right;padding:5px;${b.ad===vurgu?'background:var(--ga);':''}${b.ay[j]===mx?'font-weight:800':''}">${nf(b.ay[j])}</td>`).join('')}<td style="text-align:right;padding:5px 8px;color:var(--mut)">${nf(sum(ord.map(b=>b.ay[j])))}</td></tr>`}).join('')+
+    `<tr style="border-top:2px solid var(--line);font-weight:700"><td style="padding:6px 8px">Ort.</td>${ord.map(b=>`<td style="text-align:right;padding:6px 5px;${b.ad===vurgu?'background:var(--ga)':''}">${nf(sum(b.ay)/na)}</td>`).join('')}<td style="text-align:right;padding:6px 8px">${nf(FT/na)}</td></tr></table></div>`;
+  if(G.aciklama)s+=`<div class="note">${esc(G.aciklama)}</div>`;
+  return s;
 }
 function vBrandMag(){
   const I=brandIdx(), q=fold(sel.q), rg=sel.brg2||'';
@@ -2056,12 +2099,14 @@ function vDaha(){
   if(sub==='per')return back+vPer();
   if(sub==='ihtiyac')return back+vIht();
   if(sub==='brand')return back+vBrand();
+  if(sub==='gecmis')return back+vGecmis();
   if(sub==='fiyat')return back+vFiyat();
   if(sub==='gunluk')return back+vGunluk();
   return [['stok','▥','Stok','Ay sonuna yetmeyen, biten ve bitmek üzere olan stoklar; stoksuz çok satan ve satmayan ürünler'],
           ['bugun','✔','Bugün ne yapmalı','Seçili bölge için: tutması zor hedefler, biten stoklar, satış yapmayanlar; bölge karnesi görseli'],
           ['fiyat','₺','Fiyat','Ürün ara, MediaMarkt sitesindeki güncel fiyatını aç (artikel ile)'],
           ['brand','▤','BRAND','Aylık BRAND tabloları: departman bazlı TR satışları (2025–2026)'],
+          ['gecmis','◷','BSH Geçmiş','2025 bölge ve mağaza bazlı satış adetleri: MDA, VC (SDA), FAEM · aylık'],
           ['ihtiyac','☰','İhtiyaç listeleri','Ankastre ve SDA: hangi mağazaya hangi modelden kaç sipariş'],
           ['img','▣','Sıralama Görsel','6 sıralama tablosu görseli (MDA, Ankastre, VC, FOOD, FAEM, Hava)'],
           ['gid','↗','Gidişat','Önceki rapora göre günlük satış, sıra ve tahmin değişimi'],
@@ -2597,6 +2642,7 @@ function render(keep){
   M.querySelectorAll('[data-mk]').forEach(el=>el.onclick=e=>{e.stopPropagation();const k=el.dataset.mk; if(k===ANKK){toast('Ankara mağazaları MDA/Ankastre stoğunu ortak depodan kullanır');return} go('mag',()=>{sel.mk=k})});
   M.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{if(b.dataset.back==='mk')sel.mk=null;if(b.dataset.back==='dh'){sel.dh='';if(sel.dhfrom){tab=sel.dhfrom;sel.dhfrom='';LS.set('tab',tab)}}render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-kimg]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();kartResim(b.dataset.kimg,b.dataset.kk,b.dataset.ks==='1')});
+  M.querySelectorAll('[data-gbr]').forEach(el=>el.onclick=()=>{sel.gbr=el.dataset.gbr;render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-bk]').forEach(el=>el.onclick=()=>{sel.bk=el.dataset.bk;sel.bl='';sel.q='';render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-bkback]').forEach(el=>el.onclick=()=>{sel.bk=null;render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-bf]').forEach(el=>el.onclick=()=>{sel.bf=+el.dataset.bf;sel.bs=0;sel.q='';sel.brg='';render();window.scrollTo(0,0)});
