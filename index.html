@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="153">
+<meta name="surum" content="154">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -279,7 +279,7 @@ main{padding-bottom:calc(160px + env(safe-area-inset-bottom))}
 </style>
 </head>
 <body>
-<header><div class="row"><div><h1 id="ttl">Ham Data</h1><small id="sub">yükleniyor…</small></div><div><small id="surum" title="Uygulama sürümü" style="opacity:.65;margin-right:6px">v153</small><button class="ib" id="rf" title="Veriyi yenile">↻</button> <button class="ib" id="th" title="Tema">◐</button> <button class="ib" id="gn" title="Uygulamayı güncelle (yeni sürümü al)">⬆</button> <button class="ib" id="st" title="Çıkış yap (şifreyi bu cihazdan sil)">Çıkış</button></div></div><div class="row" style="justify-content:flex-end;margin-top:6px"><select id="blg" class="ib" title="Bölge seçimi: yalnız seçilen bölge görünür"></select></div></header>
+<header><div class="row"><div><h1 id="ttl">Ham Data</h1><small id="sub">yükleniyor…</small></div><div><small id="surum" title="Uygulama sürümü" style="opacity:.65;margin-right:6px">v154</small><button class="ib" id="rf" title="Veriyi yenile">↻</button> <button class="ib" id="th" title="Tema">◐</button> <button class="ib" id="gn" title="Uygulamayı güncelle (yeni sürümü al)">⬆</button> <button class="ib" id="st" title="Çıkış yap (şifreyi bu cihazdan sil)">Çıkış</button></div></div><div class="row" style="justify-content:flex-end;margin-top:6px"><select id="blg" class="ib" title="Bölge seçimi: yalnız seçilen bölge görünür"></select></div></header>
 <div id="byt" hidden></div>
 <div id="upd" hidden><span>Yeni sürüm var</span><button id="updgo">Yenile</button></div>
 <main id="m"></main>
@@ -2431,6 +2431,51 @@ function kisiKart(p){
       <div><small style="color:var(--mut)">Son çalışma günü</small><br>${son?`<b>${trT(son)}</b> <span class="pb ${kalanCls(g)}" style="font-size:11px;padding:1px 6px">${kalanTxt(g)}</span>`:`<b style="color:var(--mut)">${sureli?'tarih yok':'süresiz'}</b>`}</div>
     </div>${alim&&alim!=='Personel Bulundu'?`<div class="note" style="margin:4px 0 0">${esc(alim)}</div>`:''}</div>`;
 }
+/* Personel PDF (v154): ekrandaki seçim, yatay A4 sayfalar (canvas → JPEG → pdfYap), paylaş ya da indir */
+let PERX=null;
+function personelSayfalar(){
+  if(!PERX)return [];
+  const vt=lstAd(), NAVY='#16294D',YEL='#FFD60A',INK='#111827',MUT='#4B5563',LINE='#D0D7E2',GA='#FFF6CC';
+  const W=11.69,H=8.27,Mg=.4,U=150, RH=.27, TOP=1.25, ROWS=Math.floor((H-TOP-.55)/RH);
+  const C=[['Mağaza',2.05],['Ad Soyad',2.0],['Bölüm',.6],['Hedeflendirme',1.05],['Çalışma',.75],['İşe giriş',.85],['Kıdem',.85],['Son gün',.85],['Kalan',.95],['İzin',.85]];
+  const sc=(W-2*Mg)/C.reduce((a,x)=>a+x[1],0); C.forEach(x=>x[1]*=sc);
+  const sat=[]; PERX.rows.forEach(({m,L})=>L.forEach((p,i)=>sat.push({m,p,ilk:i===0})));
+  const sayf=[]; for(let i=0;i<Math.max(1,sat.length);i+=ROWS)sayf.push(sat.slice(i,i+ROWS));
+  const baslik=`PERSONEL${PERX.rg?' · '+tc(PERX.rg).toLocaleUpperCase('tr'):' · TÜRKİYE'}${PERX.cw?' · '+(PERX.cw==='SÜRELİ'?'SÜRELİ':'SÜRESİZ'):''}`;
+  const nK=sat.filter(x=>x.p[2]).length;
+  return sayf.map((S,pi)=>{
+    const c=document.createElement('canvas'); c.width=W*U; c.height=H*U; const g=c.getContext('2d');
+    const font=(pt,w)=>{g.font=`${w||700} ${pt/72*U}px Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif`};
+    const T=(x,y,t,pt,col,ha,w,max)=>{font(pt,w);t=String(t);if(max){while(t.length>2&&g.measureText(t).width>max*U)t=t.slice(0,-2)+'…'}g.fillStyle=col||INK;g.textAlign=ha||'left';g.textBaseline='middle';g.fillText(t,x*U,y*U)};
+    g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);
+    g.fillStyle=NAVY;g.fillRect(0,0,c.width,.85*U);
+    T(Mg,.33,baslik,16,'#fff','left',900); T(Mg,.64,`${PERX.rows.length} mağaza · ${nK} kişi · personel listesi ${vt}`,10,'#C9D6EE','left',600);
+    T(W-Mg,.33,'BSH · MEDIAMARKT',11,YEL,'right',800); T(W-Mg,.64,`Sayfa ${pi+1}/${sayf.length}`,10,'#C9D6EE','right',600);
+    let y=TOP-.05, x=Mg; g.fillStyle='#E8EDF5'; g.fillRect(Mg*U,(y-.16)*U,(W-2*Mg)*U,.32*U);
+    C.forEach(([t,w])=>{T(x+.06,y,t,9,NAVY,'left',800);x+=w}); y+=.16;
+    S.forEach(({m,p,ilk},ri)=>{
+      const ga=m.bolge===GAB, gk=gunKalan(p[7]);
+      if(ga){g.fillStyle=GA;g.fillRect(Mg*U,y*U,(W-2*Mg)*U,RH*U)}
+      if(ilk||ri===0){g.fillStyle=LINE;g.fillRect(Mg*U,y*U,(W-2*Mg)*U,1.4)}
+      const yc=y+RH/2, v=[ilk||ri===0?m.ad:'', p[2]?tc(p[2]):'Açık pozisyon', p[3], p[4]||p[3], p[5]?tc(p[5]):'', trT(p[6]), p[11]||'', p[7]?trT(p[7]):(p[5]==='SÜRESİZ'?'süresiz':'–'), p[7]?kalanTxt(gk):'', p[8]||''];
+      let xx=Mg; C.forEach(([t,w],ci)=>{const col=ci===8&&gk!=null?(gk<=15?'#C92A2A':gk<=45?'#B07A00':'#2B7A45'):ci===1&&!p[2]?'#B07A00':ci===0?NAVY:INK;
+        T(xx+.06,yc,v[ci],ci<2?9.5:9,col,'left',ci===0||ci===1?800:600,w-.1);xx+=w});
+      y+=RH});
+    T(Mg,H-.25,'Son gün = personel listesindeki "İşten Çıkış Tarihi" (süreli sözleşme bitişi) · kalan gün bugüne göre · sarı satır: Güney Anadolu',8,MUT,'left',600);
+    return c;
+  });
+}
+const lstAd=()=>D&&D.personel_kisi?D.personel_kisi.dosya.replace(/^BSH_Personel_Listesi_|\.xlsx$/g,''):(D&&D.personel_liste||'');
+async function personelPdf(){
+  let cs; try{cs=personelSayfalar()}catch(e){toast('PDF hazırlanamadı');return}
+  if(!cs.length){toast('Paylaşılacak personel yok');return}
+  toast('PDF hazırlanıyor…');
+  const list=await Promise.all(cs.map(c=>new Promise(res=>c.toBlob(b=>res({b,w:c.width,h:c.height}),'image/jpeg',.9))));
+  const blob=await pdfYap(list), ad=('Personel_'+(PERX.rg?tc(PERX.rg)+'_':'')+(PERX.cw?(PERX.cw==='SÜRELİ'?'Sureli_':'Suresiz_'):'')+lstAd()).replace(/[^\wÇĞİÖŞÜçğıöşü\-.]+/g,'_')+'.pdf';
+  const f=new File([blob],ad,{type:'application/pdf'});
+  try{ if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'BSH Personel'});return} }catch(e){if(e&&e.name==='AbortError')return}
+  excelIndir(f); toast('PDF kaydedildi (İndirilenler)');
+}
 function vPer(){
   const rg=sel.prg||'', q=fold(sel.q), DEP=['MDA','VC','FOOD','FAEM'], cw=sel.pcw||'';
   const PK=(D.personel_kisi&&D.personel_kisi.k)||[], pf=PK.filter(p=>!cw||(p[5]===cw&&p[2]));
@@ -2441,7 +2486,7 @@ function vPer(){
   const rk=new Set(rows.map(m=>m.kod)), kisiler=pf.filter(p=>p[2]&&rk.has(p[0]));
   const cnt={}, pn=v=>{v=String(v||'');const m=v.match(/^(\d+)x$/);return m?+m[1]:/^Var$/.test(v)?1:0};
   DEP.forEach(k=>{cnt[k]={var:0,dol:0,acik:0,yok:0,kisi:0};rows.forEach(m=>{const x=m.k[k],c=perCls(x&&x.per);if(cnt[k][c]!=null)cnt[k][c]++;cnt[k].kisi+=pn(x&&x.per)})});
-  const lst=D.personel_kisi?D.personel_kisi.dosya.replace(/^BSH_Personel_Listesi_|\.xlsx$/g,''):D.personel_liste;
+  const lst=lstAd();
   let s=(lst?`<div class="card dep" style="padding:8px 12px"><b>Personel listesi: ${esc(lst)}</b><div class="note" style="margin:2px 0 0">Aşağıdaki durum bu listeye göre · mağazaya dokun: çalışanlar</div></div>`:'')+`<input type="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="q" placeholder="Mağaza ya da personel adı ara…" value="${esc(sel.q||'')}">`+bolgeChips('prg',rg)+
     chips([['','Hepsi'],['SÜRELİ','Süreli'],['SÜRESİZ','Süresiz']],cw,'pcw');
   const nS=PK.filter(p=>p[2]&&rk.has(p[0])&&p[5]==='SÜRELİ').length, nZ=PK.filter(p=>p[2]&&rk.has(p[0])&&p[5]==='SÜRESİZ').length;
@@ -2458,14 +2503,24 @@ function vPer(){
   const acik=DEP.map(k=>[k,rows.filter(m=>perCls(m.k[k]&&m.k[k].per)==='acik')]).filter(x=>x[1].length);
   if(acik.length&&!cw)s+=`<div class="card dep" style="border-left:5px solid #f0a500;background:color-mix(in srgb,#ffe9b8 38%,var(--card))"><b>Açık noktalar · ${acik.reduce((a,x)=>a+x[1].length,0)}</b><span class="note" style="margin:0"> personel aranıyor${rg?' · '+tc(rg):''}</span>`+
     acik.map(([k,L])=>`<div class="urow" style="grid-template-columns:64px 1fr;align-items:start"><span><b>${k}</b> <span class="note" style="margin:0">${L.length}</span></span><span style="display:flex;flex-wrap:wrap;gap:5px">${L.map(m=>`<span class="pb acik" data-pmk="${m.kod}" style="cursor:pointer;white-space:normal">${esc(m.ad)}</span>`).join('')}</span></div>`).join('')+'</div>';
-  s+='<div class="note" style="margin:0 0 8px">Mağazaya dokun: çalışanlar aşağıda açılır · büyük sayı = promotör kişi sayısı (2x = 2 kişi) · dolaylı: FAEM\'ci/VC\'ci aynı işi yapıyor · açık nokta: personel aranıyor</div>';
+  s+='<div class="note" style="margin:0 0 8px">Rozetler: 2x = mağazada 2 kişi · dolaylı: FAEM\'ci/VC\'ci aynı işi yapıyor · açık nokta: personel aranıyor</div>';
   const ac=sel.pmk||(q&&qk&&qk.size===1?[...qk][0]:'');
   const SIR=p=>(p[2]?0:1)*10+Math.max(0,DEP.indexOf(p[3]));
-  s+='<div class="tw"><table><thead><tr><th>Mağaza</th>'+DEP.map(k=>`<th>${k}</th>`).join('')+'</tr></thead><tbody>'+
-    rows.map(m=>{const L=(byK.get(m.kod)||[]).slice().sort((a,b)=>SIR(a)-SIR(b)||a[2].localeCompare(b[2],'tr')), on=ac===m.kod;
-      return `<tr class="${m.bolge===GAB?'ga':''}" data-pmk="${m.kod}" style="cursor:pointer${on?';outline:2px solid var(--ga-line);outline-offset:-2px':''}"><td>${on?'▾':'▸'} ${esc(m.ad)}${cw?` <small style="color:var(--mut)">${L.filter(p=>p[2]).length} kişi</small>`:''}</td>`+DEP.map(k=>{const x=m.k[k];return `<td><span class="pb ${perCls(x&&x.per)}">${esc(perTxt(x&&x.per))}</span></td>`}).join('')+'</tr>'+
-        (on?`<tr><td colspan="5" style="white-space:normal;padding:4px 8px 10px;background:var(--card)"><div style="display:flex;justify-content:space-between;align-items:center;margin:4px 0"><b>${esc(m.ad)} · ${L.filter(p=>p[2]).length} kişi${cw?' ('+(cw==='SÜRELİ'?'süreli':'süresiz')+')':''}</b><button class="chip" data-mk="${m.kod}" style="margin:0">Mağaza sayfası ›</button></div>${L.length?L.map(kisiKart).join(''):'<div class="note">Bu mağazada listede personel yok.</div>'}</td></tr>`:'');
-    }).join('')+'</tbody></table></div>';
+  const kL=m=>(byK.get(m.kod)||[]).slice().sort((a,b)=>SIR(a)-SIR(b)||a[2].localeCompare(b[2],'tr'));
+  // Excel / PDF: ekrandaki seçim (bölge, süreli/süresiz, arama) — kişi kişi
+  PERX={rg,cw,rows:rows.map(m=>({m,L:kL(m)}))};
+  XL=()=>({ad:'Personel '+(rg?tc(rg)+' ':'')+(cw?(cw==='SÜRELİ'?'Süreli ':'Süresiz '):'')+lst,
+    h:['Bölge','SPV','Kod','Mağaza','Ad Soyad','Bölüm','Hedeflendirme','Çalışma','İşe giriş','Kıdem','Son çalışma günü','Kalan gün','Haftalık izin','Durum','İşe alım durumu'],
+    rows:PERX.rows.flatMap(({m,L})=>L.map(p=>[tc(m.bolge),m.spv,m.kod,m.ad,p[2]?tc(p[2]):'AÇIK POZİSYON',p[3],p[4],p[5]?tc(p[5]):'',trT(p[6]).replace('–',''),p[11],trT(p[7]).replace('–',''),p[7]?gunKalan(p[7]):'',p[8],p[9],p[10]]))});
+  s+=`<div class="row" style="margin:0 0 8px;gap:8px;justify-content:space-between;align-items:center"><span class="note" style="margin:0">${rows.length} mağaza · ${kisiler.length} kişi · mağazaya dokun: çalışanlar</span><span style="display:flex;gap:6px">${XLB}<button class="chip rs" id="perPdf">⇪ PDF paylaş</button></span></div>`;
+  s+=rows.map(m=>{const L=kL(m), on=ac===m.kod, n=L.filter(p=>p[2]).length, na=L.filter(p=>!p[2]).length;
+    return `<div class="card dep ${m.bolge===GAB?'ga':''}" style="padding:0;overflow:hidden${on?';outline:2px solid var(--ga-line)':''}">
+      <div data-pmk="${m.kod}" style="display:flex;align-items:center;gap:10px;padding:11px 12px;cursor:pointer">
+        <div style="flex:1;min-width:0"><b style="font-size:14.5px">${esc(m.ad)}</b> <small style="color:var(--mut)">${n} kişi${na?' · '+na+' açık':''}</small>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">${DEP.map(k=>{const x=m.k[k];return `<span class="pb ${perCls(x&&x.per)}" style="font-size:11.5px">${k} ${esc(perTxt(x&&x.per))}</span>`}).join('')}</div></div>
+        <i class="acb" style="width:42px;height:42px;font-size:22px;${on?'transform:rotate(180deg);background:linear-gradient(135deg,var(--org),#e8590c)':''}">▾</i></div>
+      ${on?`<div style="padding:0 10px 10px;border-top:1px solid var(--line)"><div style="display:flex;justify-content:space-between;align-items:center;margin:8px 2px 2px"><b>${n} kişi${cw?' ('+(cw==='SÜRELİ'?'süreli':'süresiz')+')':''}</b><button class="chip" data-mk="${m.kod}" style="margin:0">Mağaza sayfası ›</button></div>${L.length?L.map(kisiKart).join(''):'<div class="note">Bu mağazada listede personel yok.</div>'}</div>`:''}</div>`;
+  }).join('');
   if(!PK.length)s+='<div class="note">Kişi bilgisi yok: personel listesi okunamadı.</div>';
   return s;
 }
@@ -2707,7 +2762,8 @@ function render(keep){
   M.querySelectorAll('[data-mk]').forEach(el=>el.onclick=e=>{e.stopPropagation();const k=el.dataset.mk; if(k===ANKK){toast('Ankara mağazaları MDA/Ankastre stoğunu ortak depodan kullanır');return} go('mag',()=>{sel.mk=k})});
   M.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{if(b.dataset.back==='mk')sel.mk=null;if(b.dataset.back==='dh'){sel.dh='';if(sel.dhfrom){tab=sel.dhfrom;sel.dhfrom='';LS.set('tab',tab)}}render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-kimg]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();kartResim(b.dataset.kimg,b.dataset.kk,b.dataset.ks==='1')});
-  M.querySelectorAll('[data-pmk]').forEach(el=>el.onclick=e=>{e.stopPropagation();const k=el.dataset.pmk,tr=el.tagName==='TR';sel.pmk=(tr&&sel.pmk===k)?'_':k;render();if(!tr){const r=M.querySelector(`tr[data-pmk="${k}"]`);if(r)r.scrollIntoView({block:'start'})}});
+  M.querySelectorAll('[data-pmk]').forEach(el=>el.onclick=e=>{e.stopPropagation();const k=el.dataset.pmk,kart=el.parentNode&&el.parentNode.classList.contains('card')&&el===el.parentNode.firstElementChild;const acik=(sel.pmk||'')===k;sel.pmk=(kart&&acik)?'_':k;render();if(!(kart&&acik)){const r=M.querySelector(`.card>[data-pmk="${k}"]`);if(r)r.scrollIntoView({block:'start'});window.scrollBy(0,-84)}});
+  {const pp=$('#perPdf'); if(pp)pp.onclick=e=>{e.preventDefault();personelPdf()}}
   M.querySelectorAll('[data-gbr]').forEach(el=>el.onclick=()=>{sel.gbr=el.dataset.gbr;render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-bk]').forEach(el=>el.onclick=()=>{sel.bk=el.dataset.bk;sel.bl='';sel.q='';render();window.scrollTo(0,0)});
   M.querySelectorAll('[data-bkback]').forEach(el=>el.onclick=()=>{sel.bk=null;render();window.scrollTo(0,0)});
