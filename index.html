@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="154">
+<meta name="surum" content="155">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -279,7 +279,7 @@ main{padding-bottom:calc(160px + env(safe-area-inset-bottom))}
 </style>
 </head>
 <body>
-<header><div class="row"><div><h1 id="ttl">Ham Data</h1><small id="sub">yükleniyor…</small></div><div><small id="surum" title="Uygulama sürümü" style="opacity:.65;margin-right:6px">v154</small><button class="ib" id="rf" title="Veriyi yenile">↻</button> <button class="ib" id="th" title="Tema">◐</button> <button class="ib" id="gn" title="Uygulamayı güncelle (yeni sürümü al)">⬆</button> <button class="ib" id="st" title="Çıkış yap (şifreyi bu cihazdan sil)">Çıkış</button></div></div><div class="row" style="justify-content:flex-end;margin-top:6px"><select id="blg" class="ib" title="Bölge seçimi: yalnız seçilen bölge görünür"></select></div></header>
+<header><div class="row"><div><h1 id="ttl">Ham Data</h1><small id="sub">yükleniyor…</small></div><div><small id="surum" title="Uygulama sürümü" style="opacity:.65;margin-right:6px">v155</small><button class="ib" id="rf" title="Veriyi yenile">↻</button> <button class="ib" id="th" title="Tema">◐</button> <button class="ib" id="gn" title="Uygulamayı güncelle (yeni sürümü al)">⬆</button> <button class="ib" id="st" title="Çıkış yap (şifreyi bu cihazdan sil)">Çıkış</button></div></div><div class="row" style="justify-content:flex-end;margin-top:6px"><select id="blg" class="ib" title="Bölge seçimi: yalnız seçilen bölge görünür"></select></div></header>
 <div id="byt" hidden></div>
 <div id="upd" hidden><span>Yeni sürüm var</span><button id="updgo">Yenile</button></div>
 <main id="m"></main>
@@ -2489,6 +2489,8 @@ function vPer(){
   const lst=lstAd();
   let s=(lst?`<div class="card dep" style="padding:8px 12px"><b>Personel listesi: ${esc(lst)}</b><div class="note" style="margin:2px 0 0">Aşağıdaki durum bu listeye göre · mağazaya dokun: çalışanlar</div></div>`:'')+`<input type="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="q" placeholder="Mağaza ya da personel adı ara…" value="${esc(sel.q||'')}">`+bolgeChips('prg',rg)+
     chips([['','Hepsi'],['SÜRELİ','Süreli'],['SÜRESİZ','Süresiz']],cw,'pcw');
+  {const nk=pf.filter(p=>p[2]&&(!rg||((magList().map.get(p[0])||{}).bolge===rg))&&(!q||fold(p[2]).includes(q)||fold((magList().map.get(p[0])||{}).ad||'').includes(q))).length;
+   s+=`<div class="card dep" style="padding:9px 12px;display:flex;align-items:center;gap:8px;justify-content:space-between;border-left:5px solid var(--ga-line)"><span style="min-width:0"><small style="color:var(--mut)">Paylaş / Excel</small><br><b>${cw?(cw==='SÜRELİ'?'Süreli':'Süresiz'):'Bütün'} personel · ${nk} kişi${rg?' · '+esc(tc(rg)):''}</b></span><span style="display:flex;gap:6px;flex:0 0 auto">${XLB}<button class="chip rs" id="perPdf">⇪ PDF</button></span></div>`;}
   const nS=PK.filter(p=>p[2]&&rk.has(p[0])&&p[5]==='SÜRELİ').length, nZ=PK.filter(p=>p[2]&&rk.has(p[0])&&p[5]==='SÜRESİZ').length;
   if(!cw){
     s+=`<div class="card dep"><div style="text-align:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line)"><div style="font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em">Toplam BSH personel${rg?' · '+tc(rg):''}</div><b style="font-size:26px">${DEP.reduce((a,k)=>a+cnt[k].kisi,0)}</b><span style="font-size:13px;color:var(--mut)"> kişi</span>${PK.length?`<div class="note" style="margin:2px 0 0">Süreli ${nS} · Süresiz ${nZ}</div>`:''}</div><div class="g4">`+DEP.map(k=>`<div><small>${k}</small><b>${cnt[k].kisi}<span style="font-size:12px;color:var(--mut)"> kişi</span></b><small style="text-transform:none">${cnt[k].var+cnt[k].dol}/${rows.length} mağazada${cnt[k].acik?' · '+cnt[k].acik+' açık':''} · ${cnt[k].yok} yok</small></div>`).join('')+'</div></div>';
@@ -2512,7 +2514,7 @@ function vPer(){
   XL=()=>({ad:'Personel '+(rg?tc(rg)+' ':'')+(cw?(cw==='SÜRELİ'?'Süreli ':'Süresiz '):'')+lst,
     h:['Bölge','SPV','Kod','Mağaza','Ad Soyad','Bölüm','Hedeflendirme','Çalışma','İşe giriş','Kıdem','Son çalışma günü','Kalan gün','Haftalık izin','Durum','İşe alım durumu'],
     rows:PERX.rows.flatMap(({m,L})=>L.map(p=>[tc(m.bolge),m.spv,m.kod,m.ad,p[2]?tc(p[2]):'AÇIK POZİSYON',p[3],p[4],p[5]?tc(p[5]):'',trT(p[6]).replace('–',''),p[11],trT(p[7]).replace('–',''),p[7]?gunKalan(p[7]):'',p[8],p[9],p[10]]))});
-  s+=`<div class="row" style="margin:0 0 8px;gap:8px;justify-content:space-between;align-items:center"><span class="note" style="margin:0">${rows.length} mağaza · ${kisiler.length} kişi · mağazaya dokun: çalışanlar</span><span style="display:flex;gap:6px">${XLB}<button class="chip rs" id="perPdf">⇪ PDF paylaş</button></span></div>`;
+  s+=`<div class="note" style="margin:0 0 8px">${rows.length} mağaza · ${kisiler.length} kişi · mağazaya dokun: çalışanlar</div>`;
   s+=rows.map(m=>{const L=kL(m), on=ac===m.kod, n=L.filter(p=>p[2]).length, na=L.filter(p=>!p[2]).length;
     return `<div class="card dep ${m.bolge===GAB?'ga':''}" style="padding:0;overflow:hidden${on?';outline:2px solid var(--ga-line)':''}">
       <div data-pmk="${m.kod}" style="display:flex;align-items:center;gap:10px;padding:11px 12px;cursor:pointer">
