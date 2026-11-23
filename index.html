@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F3864">
-<meta name="surum" content="158">
+<meta name="surum" content="159">
 <script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ham Data">
@@ -279,7 +279,7 @@ main{padding-bottom:calc(160px + env(safe-area-inset-bottom))}
 </style>
 </head>
 <body>
-<header><div class="row"><div><h1 id="ttl">Ham Data</h1><small id="sub">yükleniyor…</small></div><div><small id="surum" title="Uygulama sürümü" style="opacity:.65;margin-right:6px">v158</small><button class="ib" id="rf" title="Veriyi yenile">↻</button> <button class="ib" id="th" title="Tema">◐</button> <button class="ib" id="gn" title="Uygulamayı güncelle (yeni sürümü al)">⬆</button> <button class="ib" id="st" title="Çıkış yap (şifreyi bu cihazdan sil)">Çıkış</button></div></div><div class="row" style="justify-content:flex-end;margin-top:6px"><select id="blg" class="ib" title="Bölge seçimi: yalnız seçilen bölge görünür"></select></div></header>
+<header><div class="row"><div><h1 id="ttl">Ham Data</h1><small id="sub">yükleniyor…</small></div><div><small id="surum" title="Uygulama sürümü" style="opacity:.65;margin-right:6px">v159</small><button class="ib" id="rf" title="Veriyi yenile">↻</button> <button class="ib" id="th" title="Tema">◐</button> <button class="ib" id="gn" title="Uygulamayı güncelle (yeni sürümü al)">⬆</button> <button class="ib" id="st" title="Çıkış yap (şifreyi bu cihazdan sil)">Çıkış</button></div></div><div class="row" style="justify-content:flex-end;margin-top:6px"><select id="blg" class="ib" title="Bölge seçimi: yalnız seçilen bölge görünür"></select></div></header>
 <div id="byt" hidden></div>
 <div id="upd" hidden><span>Yeni sürüm var</span><button id="updgo">Yenile</button></div>
 <main id="m"></main>
@@ -1286,9 +1286,19 @@ function vBrand(){
   const yil=yillar.includes(+sel.by)?+sel.by:yillar[0];
   if(sel.bf==null||!F[sel.bf]){
     let s=chips([['ay','Aylar'],['mag','Mağazalar']],'ay','bm')+chips(yillar.map(y=>[String(y),String(y)]),String(yil),'by');
-    s+=`<div class="note" style="margin:0 0 8px">${yil} · ay seç · ay seç · mağaza karşılaştırması için Mağazalar</div>`;
-    F.forEach((f,i)=>{ if(f.yil!==yil)return;
-      s+=`<div class="card"><div class="sm" data-bf="${i}"><div class="rk">${f.ay||'–'}</div><div class="nm"><b>${esc(f.etiket)}</b><span style="white-space:normal">${esc(f.ad)} · ${f.sayfalar.length} sayfa</span></div><span class="chev">›</span></div></div>`});
+    // v159: ay içinde en çok günlü dönem üstte (1-22 > 1-15 > 1-8; gün yazmayan = ayın tamamı en üstte), "En son yüklenen" kartı, G+ aç/kapa
+    const gp=sel.bgp==='1', gun=f=>{const m=String(f.ad).match(/^\s*1-(\d+)/);return m?+m[1]:99}, isG=f=>/G\+/.test(f.ad);
+    const kat=f=>{const a=fold(f.ad);return /floor|supurge/.test(a)?'FloorCare':/\bmda\b/.test(a)?'MDA':/\bsda\b/.test(a)?'SDA':/\btv\b/.test(a)?'TV':''};
+    const sira=(a,b)=>(b.f.yil-a.f.yil)||(b.f.ay-a.f.ay)||(gun(b.f)-gun(a.f))||(isG(a.f)-isG(b.f))||String(a.f.ad).localeCompare(String(b.f.ad),'tr');
+    const T=F.map((f,i)=>({f,i})).filter(x=>gp||!isG(x.f)).sort(sira);
+    if(T.length){const s0=T[0].f, son=T.filter(x=>x.f.yil===s0.yil&&x.f.ay===s0.ay&&gun(x.f)===gun(s0)), g0=gun(s0);
+      const bt=['MDA','SDA','FloorCare','TV'].map(k=>[k,son.find(x=>kat(x.f)===k)]).filter(x=>x[1]).concat(son.filter(x=>!kat(x.f)).map(x=>[x.f.ad,x]));
+      s+=`<div class="card dep" style="border-left:5px solid #14B8A6;background:color-mix(in srgb,#14B8A6 10%,var(--card))"><small style="color:var(--mut)">En son yüklenen</small><br><b style="font-size:16px">${g0<99?'1-'+g0+' ':''}${esc(s0.etiket||'')}</b>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">${bt.map(([k,x])=>`<button class="chip rs" data-bf="${x.i}" style="font-size:14px;padding:9px 14px;margin:0">${esc(k.length>14?k.slice(0,14)+'…':k)}${gp&&isG(x.f)?' G+':''}</button>`).join('')}</div></div>`}
+    s+=chips([['','G+\'sız'],['1','G+ dahil']],gp?'1':'','bgp');
+    s+=`<div class="note" style="margin:0 0 8px">${yil} · en yeni dönem üstte · mağaza karşılaştırması için Mağazalar</div>`;
+    T.forEach(({f,i})=>{ if(f.yil!==yil)return;
+      s+=`<div class="card"><div class="sm" data-bf="${i}"><div class="rk">${f.ay||'–'}</div><div class="nm"><b>${esc(f.etiket)}${gun(f)<99?' · 1-'+gun(f):''}</b><span style="white-space:normal">${esc(f.ad)} · ${f.sayfalar.length} sayfa</span></div><span class="chev">›</span></div></div>`});
     return s;
   }
   const f=F[sel.bf], si=(sel.bs!=null&&f.sayfalar[sel.bs])?sel.bs:0, S=f.sayfalar[si];
